@@ -46,4 +46,12 @@ public class RecipeIngredient implements Serializable {
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
 
+    // JOIN 
+    @ManyToOne
+    @JoinColumn(name = "IngredientId", insertable = false, updatable = false)
+    private Ingredient ingredient;
+    
+    @ManyToOne
+    @JoinColumn(name = "RecipeId", insertable = false, updatable = false)
+    private Recipe recipe;
 }

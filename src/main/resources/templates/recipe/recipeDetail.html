@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${recipe.name}">Chi tiết món ăn</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5 mb-5">
+    <a href="/recipes/list" class="btn btn-secondary mb-3">&larr; Quay lại danh sách</a>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="display-5 fw-bold text-primary" th:text="${recipe.name}">Tên món</h1>
+            <p class="lead" th:text="${recipe.description}">Mô tả món ăn...</p>
+            
+            <div class="d-flex gap-3 mb-4">
+                <span class="badge bg-warning text-dark fs-6" th:text="'Độ khó: ' + ${recipe.difficulty}"></span>
+                <span class="badge bg-success fs-6" th:text="'Khẩu phần: ' + ${recipe.servings} + ' người'"></span>
+                <span class="badge bg-danger fs-6" th:text="'Tổng Calo: ' + ${recipe.totalCalories}"></span>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">🛒 Thành phần nguyên liệu</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center" 
+                        th:each="item : ${recipe.recipeIngredients}">
+                        <div>
+                            <strong th:text="${item.ingredient.name}">Tên nguyên liệu</strong>
+                            <span th:if="${item.ingredient.isActive == false}" class="badge bg-danger ms-2">Mới (Chờ duyệt)</span>
+                            
+                            <br>
+                            <small class="text-muted" th:text="${item.note}"></small>
+                        </div>
+                        <span class="badge bg-light text-dark border">
+                            <span th:text="${item.quantity}">100</span>
+                            <span th:text="${item.unit}">g</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-info text-white">👨‍🍳 Các bước thực hiện</div>
+                <div class="card-body">
+                    <div th:each="step : ${recipe.recipeSteps}" class="mb-3">
+                        <h5 class="fw-bold text-secondary" th:text="'Bước ' + ${step.stepNumber}"></h5>
+                        <p th:text="${step.instruction}"></p>
+                        <hr th:if="${!stepStat.last}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <img th:src="${recipe.imageUrl != null ? recipe.imageUrl : 'https://placehold.co/600x400'}" class="card-img-top">
+                <div class="card-body">
+                    <p><strong>Thời gian chuẩn bị:</strong> <span th:text="${recipe.prepTimeMin} + ' phút'"></span></p>
+                    <p><strong>Thời gian nấu:</strong> <span th:text="${recipe.cookTimeMin} + ' phút'"></span></p>
+                    <p><strong>Người đăng:</strong> User ID <span th:text="${recipe.createdByUserId}"></span></p>
+                    <p><strong>Trạng thái:</strong> <span th:text="${recipe.status}">PENDING</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

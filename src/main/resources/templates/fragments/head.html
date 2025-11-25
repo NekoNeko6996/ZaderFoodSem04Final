@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="common-head">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Zader Food - Smart Meal Planner</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!--user define css-->
+    <link rel="stylesheet" th:href="@{/css/header.css}">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        // main, ...
+                        "primary-gradient-start": "#4A56E2",
+                        "primary-gradient-end": "#8A4AEE",
+                        "primary-cta": "#18D2B4",
+                        "secondary-accent": "#4A56E2",
+                        "background": "#F9F9FB",
+                        "container": "#FFFFFF",
+                        "text-primary": "#2C2C4E",
+                        "text-secondary": "#8A94A6",
+                        "status-success": "#2ECC71",
+                        "status-error": "#E74C3C",
+                        
+                        // alert, ...
+                        "primary": "#17d3b4",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#11211e",    /* Alert cần màu này */
+                        "zader-text-primary": "#2C2C4E",  /* Alert cần màu này */
+                        
+                        /* BỘ MÀU ALERT */
+                        "zader-success": "#2ECC71",  /* Xanh lá */
+                        "zader-error": "#E74C3C",    /* Đỏ */
+                        "zader-warning": "#F39C12",  /* Cam vàng */
+                        "zader-info": "#3498DB"      /* Xanh dương */
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        DEFAULT: "8px",
+                        lg: "12px",
+                        xl: "16px",
+                        full: "9999px"
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body></body>
+</html>

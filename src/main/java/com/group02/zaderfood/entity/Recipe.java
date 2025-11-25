@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.*;
 
 @Data
@@ -65,4 +66,10 @@ public class Recipe implements Serializable {
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
 
+    // JOIN
+    @OneToMany(mappedBy = "recipe")
+    private List<RecipeIngredient> recipeIngredients;
+
+    @OneToMany(mappedBy = "recipe")
+    private List<RecipeStep> recipeSteps;
 }

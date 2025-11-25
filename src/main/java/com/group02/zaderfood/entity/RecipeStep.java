@@ -41,5 +41,10 @@ public class RecipeStep implements Serializable {
 
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
+    
+    // JOIN
+    @ManyToOne
+    @JoinColumn(name = "RecipeId", insertable = false, updatable = false)
+    private Recipe recipe;
 
 }

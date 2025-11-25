@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Danh sách công thức</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📜 Danh sách món ăn</h2>
+        <a href="/recipes/create" class="btn btn-success">+ Thêm món mới</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4" th:each="recipe : ${recipes}">
+            <div class="card h-100 shadow-sm">
+                <img th:src="${recipe.imageUrl != null ? recipe.imageUrl : 'https://placehold.co/600x400?text=No+Image'}" 
+                     class="card-img-top" alt="Recipe Image" style="height: 200px; object-fit: cover;">
+                
+                <div class="card-body">
+                    <h5 class="card-title text-primary" th:text="${recipe.name}">Tên món</h5>
+                    <p class="card-text text-muted" 
+                       th:text="${recipe.description != null ? #strings.abbreviate(recipe.description, 50) : 'Chưa có mô tả'}"></p>
+                    
+                    <div class="d-flex justify-content-between text-small">
+                        <span class="badge bg-info" th:text="${recipe.difficulty}">EASY</span>
+                        <span th:text="${recipe.totalCalories + ' kcal'}">0 kcal</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0">
+                    <a th:href="@{/recipes/detail/{id}(id=${recipe.recipeId})}" class="btn btn-outline-primary w-100">Xem chi tiết</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

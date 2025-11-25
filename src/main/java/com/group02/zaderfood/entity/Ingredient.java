@@ -39,7 +39,10 @@ public class Ingredient implements Serializable {
 
     @Column(name = "ImageUrl")
     private String imageUrl;
-
+    
+    @Column(name = "CreatedByUserId")
+    private Integer createdByUserId;
+    
     @Column(name = "CategoryId")
     private Integer categoryId;
 
