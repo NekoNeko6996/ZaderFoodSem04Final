@@ -31,13 +31,9 @@ public class RecipeController {
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         RecipeCreationDTO form = new RecipeCreationDTO();
-        // Mặc định thêm 1 dòng trống để UI đẹp
         form.getIngredients().add(new IngredientInputDTO());
-        
         model.addAttribute("recipeForm", form);
-        // Load danh sách nguyên liệu có sẵn để user chọn (Dropdown/Datalist)
         model.addAttribute("availableIngredients", ingredientService.findAllActiveIngredients());
-        // Load danh sách danh mục (Thịt, cá...) cho trường hợp tạo mới
         model.addAttribute("categories", ingredientService.findAllCategories());
         
         return "recipe/addRecipe";
@@ -46,26 +42,24 @@ public class RecipeController {
     @PostMapping("/create")
     public String createRecipe(@ModelAttribute RecipeCreationDTO form, 
                                @AuthenticationPrincipal CustomUserDetails currentUser) {
-        // Logic xử lý lưu trữ (Sẽ giải thích kỹ ở phần Service sau nếu bạn cần)
-        // 1. Duyệt list form.ingredients
-        // 2. Nếu isNewIngredient == true -> Lưu vào bảng Ingredients (IsActive=false), lấy ID mới
-        // 3. Lưu Recipe -> Lấy ID
-        // 4. Lưu RecipeIngredients (Nối ID Recipe và ID Ingredient)
-        
+        /* ----------------------------------------
+         * Storage processing logic
+         * 1. Browse the form.ingredients list
+         * 2. If isNewIngredient == true -> Save to the Ingredients table (IsActive=false), get the new ID
+         * 3. Save Recipe -> Get ID
+         * 4. Save RecipeIngredients (Connect Recipe ID and Ingredient ID)
+        */
         recipeService.createFullRecipe(form, currentUser.getUserId());
         return "redirect:/recipes/my-recipes";
     }
     
-    // 1. Trang danh sách tất cả công thức
     @GetMapping("/list")
     public String listRecipes(Model model) {
-        // Lấy list recipe sắp xếp mới nhất lên đầu
         List<Recipe> recipes = recipeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         model.addAttribute("recipes", recipes);
         return "recipe/recipeList";
     }
 
-    // 2. Trang xem chi tiết 1 công thức
     @GetMapping("/detail/{id}")
     public String viewRecipeDetail(@PathVariable Integer id, Model model) {
         Recipe recipe = recipeRepository.findById(id)

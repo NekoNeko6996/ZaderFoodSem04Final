@@ -25,24 +25,33 @@ public class RecipeService {
     @Autowired private IngredientRepository ingredientRepository;
     @Autowired private RecipeIngredientRepository recipeIngredientRepository;
     @Autowired private RecipeStepRepository recipeStepRepository;
+    @Autowired private FileStorageService fileStorageService;
 
     @Transactional // Đảm bảo lưu tất cả hoặc không lưu gì cả nếu lỗi
     public void createFullRecipe(RecipeCreationDTO form, int userId) {
         
-        // 1. LƯU BẢNG RECIPES (Thông tin chung) [cite: 4]
+        // 1. RECIPES 
         Recipe recipe = new Recipe();
         recipe.setName(form.getName());
         recipe.setDescription(form.getDescription());
-        recipe.setDifficulty(DifficultyLevel.valueOf(form.getDifficulty())); // Convert String sang Enum
+        recipe.setDifficulty(DifficultyLevel.valueOf(form.getDifficulty())); // Convert String to Enum
         recipe.setPrepTimeMin(form.getPrepTimeMin());
         recipe.setCookTimeMin(form.getCookTimeMin());
         recipe.setServings(form.getServings());
         recipe.setCreatedByUserId(userId);
-        recipe.setStatus(RecipeStatus.PENDING); // Mặc định chờ duyệt [cite: 9]
+        recipe.setStatus(RecipeStatus.PENDING);
         recipe.setCreatedAt(LocalDateTime.now());
+        recipe.setUpdatedAt(LocalDateTime.now());
+        
+        // process file
+        String coverImgUrl = fileStorageService.storeFile(form.getImageFile());
+        String videoUrl = fileStorageService.storeFile(form.getVideoFile());
+        
+        recipe.setImageUrl(coverImgUrl);
         
         // Lưu Recipe để lấy ID
         Recipe savedRecipe = recipeRepository.save(recipe);
+        
 
         // 2. LƯU NGUYÊN LIỆU (Xử lý tách Mới/Cũ) [cite: 18, 145]
         for (IngredientInputDTO input : form.getIngredients()) {
@@ -57,11 +66,15 @@ public class RecipeService {
                 newIng.setFat(input.getFat());
                 newIng.setCarbs(input.getCarbs());
                 newIng.setCategoryId(input.getCategoryId());
+                newIng.setCreatedAt(LocalDateTime.now());
+                newIng.setUpdatedAt(LocalDateTime.now());
+                
+                String ingImgUrl = fileStorageService.storeFile(input.getNewIngredientImage());
+                newIng.setImageUrl(ingImgUrl);
                 
                 // Quan trọng: Đánh dấu là chưa duyệt & lưu người tạo
                 newIng.setIsActive(false); // Hoặc set Status = PENDING
                 newIng.setCreatedByUserId(userId); 
-                recipe.setCreatedAt(LocalDateTime.now());
 
                 // Lưu nguyên liệu mới xuống DB
                 Ingredient savedIng = ingredientRepository.save(newIng);
@@ -95,6 +108,8 @@ public class RecipeService {
                     step.setStepNumber(stepNum++);
                     step.setInstruction(instruction);
                     // step.setMediaUrl(...) // Nếu có upload ảnh bước
+                    step.setCreatedAt(LocalDateTime.now());
+                    step.setUpdatedAt(LocalDateTime.now());
                     
                     recipeStepRepository.save(step);
                 }
