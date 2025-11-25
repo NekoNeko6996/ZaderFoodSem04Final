@@ -14,6 +14,7 @@ import com.group02.zaderfood.repository.RecipeIngredientRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
 import com.group02.zaderfood.repository.RecipeStepRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,5 +116,12 @@ public class RecipeService {
                 }
             }
         }
+    }
+    
+    public List<Recipe> findRecipesByIngredientIds(List<Integer> ingredientIds) {
+        if (ingredientIds == null || ingredientIds.isEmpty()) {
+            return List.of(); // Trả về list rỗng nếu không chọn gì
+        }
+        return recipeRepository.findRecipesByIngredientIds(ingredientIds);
     }
 }

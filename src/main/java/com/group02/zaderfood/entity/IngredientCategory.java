@@ -32,5 +32,9 @@ public class IngredientCategory implements Serializable {
 
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
-
+    
+    @ManyToOne(fetch = FetchType.LAZY) 
+    @JoinColumn(name = "CategoryId", insertable = false, updatable = false)
+    private IngredientCategory ingredientCategory;
+    
 }

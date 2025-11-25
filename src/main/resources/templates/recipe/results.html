@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Smart Nutrition - Recipe Suggestions</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
+            }
+        </style>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {"primary": "#3bbf41", "background-light": "#FAFAFA", "background-dark": "#141e14", "dark-ink": "#263238", "soft-grey": "#78909C", "nutri-green": "#4CAF50", "chef-orange": "#FF7043"},
+                        fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light dark:bg-background-dark">
+        <div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+            <header class="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3 bg-white text-dark-ink sticky top-0 z-10 border-b border-gray-200">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-dark-ink text-lg font-bold">Zader Food</h2>
+                </div>
+                <nav class="hidden md:flex flex-1 justify-center gap-8">
+                    <a class="text-dark-ink/80 hover:text-dark-ink text-sm font-medium" th:href="@{/}">Home</a>
+                    <a class="text-dark-ink text-sm font-bold" th:href="@{/recipes}">Recipes</a>
+                </nav>
+            </header>
+
+            <main class="flex flex-1 w-full">
+                <div class="flex flex-col lg:flex-row w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 gap-8">
+
+                    <aside class="w-full lg:w-1/4 lg:max-w-xs shrink-0">
+                        <div class="sticky top-24">
+                            <div class="flex h-full flex-col justify-between bg-white dark:bg-dark-ink/50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="material-symbols-outlined text-nutri-green text-2xl">kitchen</span>
+                                        <h1 class="text-dark-ink dark:text-white text-base font-bold">Selected Ingredients</h1>
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <div th:each="ing : ${selectedIngredients}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                                            <span class="material-symbols-outlined text-nutri-green text-base">check_circle</span>
+                                            <p class="text-dark-ink dark:text-gray-300 text-sm font-medium" th:text="${ing.name}">Chicken</p>
+                                        </div>
+                                    </div>
+                                    <a th:href="@{/recipes/search(ids=${#strings.listJoin(selectedIngredients.![ingredientId], ',')})}" 
+                                       class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-medium text-nutri-green hover:underline">
+                                        <span class="material-symbols-outlined text-lg">edit</span>
+                                        Change Ingredients
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <div class="flex-1 flex flex-col gap-8">
+                        <div class="flex flex-col gap-6">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                                <p class="text-dark-ink dark:text-white text-3xl md:text-4xl font-black">Recipe Suggestions</p>
+                                <p th:if="${recipes.isEmpty()}" class="text-red-500 font-medium">No recipes found matching these ingredients.</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                                <div th:each="recipe : ${recipes}" class="flex flex-col bg-white dark:bg-dark-ink/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-shadow hover:shadow-lg group">
+                                    <div class="w-full bg-center bg-no-repeat aspect-video bg-cover group-hover:scale-105 transition-transform duration-500" 
+                                         th:style="'background-image: url(' + ${recipe.imageUrl != null ? recipe.imageUrl : 'https://via.placeholder.com/400'} + ');'">
+                                    </div>
+
+                                    <div class="p-4 flex flex-col gap-3 flex-1">
+                                        <div class="flex-1">
+                                            <p class="text-dark-ink dark:text-white text-base font-bold leading-normal truncate" th:text="${recipe.name}">Recipe Name</p>
+
+                                            <p class="text-nutri-green text-sm font-bold mt-1">Matched!</p>
+
+                                            <p class="text-soft-grey text-sm font-normal">
+                                                <span th:text="${recipe.totalCalories}">0</span> kcal | 
+                                                <span th:text="${recipe.cookTimeMin}">0</span> min
+                                            </p>
+                                        </div>
+
+                                        <div class="flex flex-col sm:flex-row gap-2 mt-2">
+                                            <a th:href="@{/recipes/detail/{id}(id=${recipe.recipeId})}" 
+                                               class="w-full flex items-center justify-center h-10 px-4 text-sm font-bold text-white bg-nutri-green rounded-lg hover:bg-opacity-90 transition">
+                                                View Recipe
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </body>
+</html>
