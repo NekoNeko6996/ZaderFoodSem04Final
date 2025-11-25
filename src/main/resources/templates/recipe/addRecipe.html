@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Thêm công thức mới</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <style>
+            .ingredient-row {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+            }
+            .new-ingredient-form {
+                display: none;
+                background: #e9ecef;
+                padding: 10px;
+                margin-top: 10px;
+                border-radius: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container mt-4">
+            <h2>🍳 Đăng công thức món ăn mới</h2>
+
+            <form th:action="@{/recipes/create}" th:object="${recipeForm}" method="post">
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">Thông tin món ăn</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tên món ăn:</label>
+                            <input type="text" th:field="*{name}" class="form-control" required placeholder="Ví dụ: Phở Bò Nam Định">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Độ khó:</label>
+                                <select th:field="*{difficulty}" class="form-select">
+                                    <option value="EASY">Dễ</option>
+                                    <option value="MEDIUM">Trung bình</option>
+                                    <option value="HARD">Khó</option>
+                                    <option value="CHEF_LEVEL">Siêu khó</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Khẩu phần (người):</label>
+                                <input type="number" th:field="*{servings}" class="form-control" min="1" required>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Chuẩn bị (phút):</label>
+                                <input type="number" th:field="*{prepTimeMin}" class="form-control" min="0" placeholder="VD: 15">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Nấu (phút):</label>
+                                <input type="number" th:field="*{cookTimeMin}" class="form-control" min="0" placeholder="VD: 30">
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label fw-bold">Mô tả ngắn:</label>
+                            <textarea th:field="*{description}" class="form-control" rows="2" placeholder="Giới thiệu sơ qua về món ăn..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white d-flex justify-content-between">
+                        <span>Danh sách nguyên liệu</span>
+                        <button type="button" class="btn btn-sm btn-light" onclick="addIngredientRow()">+ Thêm nguyên liệu</button>
+                    </div>
+                    <div class="card-body" id="ingredients-container">
+                        <datalist id="ingredientListData">
+                            <option th:each="ing : ${availableIngredients}" 
+                                    th:value="${ing.name}" 
+                                    th:data-id="${ing.ingredientId}">
+                            </option>
+                        </datalist>
+
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">Các bước thực hiện</div>
+                    <div class="card-body" id="steps-container">
+                        <button type="button" class="btn btn-secondary mb-3" onclick="addStepRow()">+ Thêm bước</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100">Lưu công thức</button>
+            </form>
+        </div>
+
+        <script th:inline="javascript">
+            /* Lấy danh sách category từ server để render vào form thêm mới */
+            const categories = [[${categories}]];
+            let ingredientIndex = 0;
+            let stepIndex = 0;
+
+            // Hàm render 1 dòng nguyên liệu
+            function addIngredientRow() {
+                const container = document.getElementById('ingredients-container');
+
+                // Tạo chuỗi HTML cho Category Options
+                let categoryOptions = '<option value="">-- Chọn loại --</option>';
+                categories.forEach(cat => {
+                    categoryOptions += `<option value="${cat.categoryId}">${cat.name}</option>`;
+                });
+
+                const html = `
+                <div class="ingredient-row" id="ing-row-${ingredientIndex}">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Nguyên liệu #${ingredientIndex + 1}</h5>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeRow('ing-row-${ingredientIndex}')">Xóa</button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="existing-section">
+                                <label>Tìm nguyên liệu:</label>
+                                <input list="ingredientListData" 
+                                       class="form-control" 
+                                       placeholder="Gõ để tìm..." 
+                                       onchange="updateHiddenId(this, ${ingredientIndex})">
+                                <input type="hidden" name="ingredients[${ingredientIndex}].existingIngredientId" id="ing-id-${ingredientIndex}">
+                            </div>
+                    
+                            <div class="new-section mt-2" style="display:none;">
+                                <input type="text" name="ingredients[${ingredientIndex}].newName" class="form-control" placeholder="Tên nguyên liệu mới (VD: Lá é)">
+                            </div>
+
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="ingredients[${ingredientIndex}].isNewIngredient" 
+                                       value="true"
+                                       id="check-new-${ingredientIndex}" 
+                                       onchange="toggleNewIngredient(${ingredientIndex})">
+                                <label class="form-check-label text-danger fw-bold" for="check-new-${ingredientIndex}">
+                                    Không tìm thấy? Thêm nguyên liệu mới
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>Số lượng:</label>
+                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].quantity" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Đơn vị:</label>
+                            <input type="text" name="ingredients[${ingredientIndex}].unit" class="form-control" placeholder="gam, thìa..." required>
+                        </div>
+                         <div class="col-md-3">
+                            <label>Ghi chú:</label>
+                            <input type="text" name="ingredients[${ingredientIndex}].note" class="form-control" placeholder="thái lát...">
+                        </div>
+                    </div>
+
+                    <div class="new-ingredient-form row mt-3" id="new-form-${ingredientIndex}">
+                        <div class="col-12"><small class="text-muted">Nhập thông tin dinh dưỡng cho 100g nguyên liệu mới này:</small></div>
+                        <div class="col-md-3">
+                            <label>Danh mục:</label>
+                            <select name="ingredients[${ingredientIndex}].categoryId" class="form-select">${categoryOptions}</select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Calo (kcal):</label>
+                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].caloriesPer100g" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <label>Protein (g):</label>
+                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].protein" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <label>Fat (g):</label>
+                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].fat" class="form-control">
+                        </div>
+                         <div class="col-md-2">
+                            <label>Carb (g):</label>
+                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].carbs" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', html);
+                ingredientIndex++;
+            }
+
+            // Hàm chuyển đổi giữa "Chọn cũ" và "Nhập mới"
+            function toggleNewIngredient(index) {
+                const row = document.getElementById(`ing-row-${index}`);
+                const checkbox = document.getElementById(`check-new-${index}`);
+                const existingSection = row.querySelector('.existing-section');
+                const newSection = row.querySelector('.new-section');
+                const newForm = document.getElementById(`new-form-${index}`);
+
+                if (checkbox.checked) {
+                    existingSection.style.display = 'none';
+                    newSection.style.display = 'block';
+                    newForm.style.display = 'flex';
+                } else {
+                    existingSection.style.display = 'block';
+                    newSection.style.display = 'none';
+                    newForm.style.display = 'none';
+                }
+            }
+
+            // Hàm lấy ID từ datalist khi user chọn tên
+            function updateHiddenId(input, index) {
+                const datalist = document.getElementById('ingredientListData');
+                const hiddenInput = document.getElementById(`ing-id-${index}`);
+                const options = datalist.options;
+
+                // Reset trước
+                hiddenInput.value = '';
+
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === input.value) {
+                        hiddenInput.value = options[i].getAttribute('data-id');
+                        break;
+                    }
+                }
+            }
+
+            // Hàm thêm bước thực hiện
+            function addStepRow() {
+                const container = document.getElementById('steps-container');
+
+                // Tạo ID duy nhất cho dòng này để có thể xóa
+                const currentRowId = `step-row-${stepIndex}`;
+
+                const html = `
+                <div class="input-group mb-2" id="${currentRowId}">
+                    <span class="input-group-text">Bước ${stepIndex + 1}</span>
+                    <textarea name="steps" class="form-control" rows="2" placeholder="Ví dụ: Đun sôi nước, sau đó thả rau vào..." required></textarea>
+                    <button type="button" class="btn btn-outline-danger" onclick="removeRow('${currentRowId}')">Xóa</button>
+                </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', html);
+                stepIndex++;
+            }
+
+            // Đảm bảo hàm removeRow đã có (nếu chưa thì thêm vào)
+            function removeRow(elementId) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.remove();
+                }
+            }
+
+            // Tự động thêm 1 bước trống khi load trang
+            // (Bạn tìm đoạn window.onload cũ và sửa lại như sau)
+            window.onload = function () {
+                addIngredientRow(); // Thêm 1 dòng nguyên liệu
+                addStepRow();       // Thêm 1 bước thực hiện
+            };
+        </script>
+    </body>
+</html>

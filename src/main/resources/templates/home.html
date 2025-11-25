@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <!--head-->
+    <head th:replace="~{fragments/head :: common-head}"></head>
+    
+    <body class="bg-white font-display">
+        <div class="relative flex min-h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden">
+            <header th:replace="~{fragments/header :: header-content}"></header>
+            <main class="flex-grow">
+                <div class="relative w-full @container">
+                    <div class="flex min-h-[40vh] md:min-h-[50vh] w-full flex-col items-center justify-center gap-6 bg-cover bg-center bg-no-repeat p-4 text-center @[480px]:gap-8" data-alt="A high-quality, vibrant photograph of a freshly prepared pasta dish." style='background-image: linear-gradient(rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.4) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuDmagPbrsNvHsBQ0YZyKWeqmsDJiBYVC-yVonGhp54XkEDjrKDRGU9mZcKwdAwVPrvJj5tsfL-sglEPVsq-RQTxZX7svTgRuHxLmCHw_T6RrrzgCEZTzvJ-Tzo1tIHz_zvsJseI805TVToydnjcQN4N6IsRvdlJvkh7dPElmYrpqOLU2uTgJeDPcwa8e1gB4TsseJtAGq1dx4TvXK5RVCIZCcsEoFzXJMtkUV369jIEc_Mg3L9TuSRqgp7ciFuu36hb2R67irs8zJ34");'>
+                        <div class="flex flex-col gap-2 max-w-3xl">
+                            <h1 class="text-[#263238] text-4xl font-black leading-tight tracking-[-0.033em] @[480px]:text-6xl @[480px]:font-black @[480px]:leading-tight">
+                                Discover Your Next Favorite Meal
+                            </h1>
+                            <h2 class="text-[#78909C] text-base font-medium leading-normal @[480px]:text-lg">
+                                Personalized Recipes, Smart Plans
+                            </h2>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-center gap-3">
+                            <button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 @[480px]:h-12 @[480px]:px-6 bg-[#FF7043] text-white text-sm font-bold leading-normal tracking-[0.015em] @[480px]:text-base hover:bg-opacity-90 transition-all shadow-lg">
+                                <span class="truncate">Explore Recipes</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <section class="w-full bg-background-light py-12 md:py-20">
+                    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mb-10">
+                            <h2 class="text-3xl md:text-4xl font-bold text-[#263238] tracking-tight">Explore Our Delicious Recipes</h2>
+                            <p class="mt-2 text-lg text-[#78909C]">Discover a world of flavor with our hand-picked popular recipes.</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                            <div class="flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg">
+                                <img alt="Spaghetti Bolognese" class="h-48 w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABy7tILl5b5fwFmMy1dYQE0Fgdc7IrfqoDTvAjCGlAeVZt4-JRevfrkbkRoZjsJvM1eeOQnuezPhRjCH9UtfcWP8DtbnakOyik9uwSOYqUhaIfrgz_ALYjuRjFg3ig68lkJRvLNiE38b0e2IlzPGdCsIaJka49wydeh7VsVjSOktToERHH5FnEgvH-K29E2N8P81FhBuaHr5eGfbsyEMquqNnr6Hagij_KY0obFphfPSLPhxMtnerFxQCqkh7UtOWT4Nk4t8yecagK"/>
+                                <div class="flex flex-1 flex-col p-6">
+                                    <h3 class="text-lg font-bold text-[#263238]">Classic Spaghetti Bolognese</h3>
+                                    <p class="mt-2 text-sm text-[#78909C] flex-grow">A rich and savory meat sauce served over perfectly cooked pasta. A timeless family favorite.</p>
+                                    <span class="mt-4 text-sm font-medium text-[#78909C]">450 Calories</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg">
+                                <img alt="Grilled Chicken Salad" class="h-48 w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnez1aejS41Rcgw6Q2vEANHUHcVl-jBVmXaE-GJN-UVSt24i05i4R5UK80Pd5Sza-W-fl9UZoDkM1m3q5J7LqrQrxgjHyL3R0IdgpaTZvuNzKkO8m4fyRS9XiFXO_P0NTVjZHonEGH0rt77f7s5gUCLH4-unr-cN1CL_ePcuTL4P89Xmhazl_pXAZSbYILjfs40851o3b6tURcdA1MlaRPFdiPwYe1GONKFCgdNlsJm4FI2SfS9ItcFoeqWQ3Kc-cNvHV-5zpxeHa9"/>
+                                <div class="flex flex-1 flex-col p-6">
+                                    <h3 class="text-lg font-bold text-[#263238]">Grilled Chicken Salad</h3>
+                                    <p class="mt-2 text-sm text-[#78909C] flex-grow">A light and refreshing salad with tender grilled chicken, fresh greens, and a zesty vinaigrette.</p>
+                                    <span class="mt-4 text-sm font-medium text-[#78909C]">320 Calories</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg">
+                                <img alt="Vegetable Stir-fry" class="h-48 w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKW9Vdd1UtW_Sj4XIlvpcSPqZpyJf4iGxDnUEjzBrzSDECB0AyqHQ6LBnD1zTxXa4i-XelES--dn8FfmiHRESGgB5pG0sHnWQPWkBaZ6h3zg2y9g-Tz8fybLHv3fmj-Q15tn0SW7gOc1r8VzXFEPZg_OLlTSbC8T_EthgAYdxH4LmeH7Hsdee9LC2zMRRYHWyaOz0h0fq4WWfjnJt4adAKB15I6D_bLwEt6z_poiEzPba3-Xv2zjxTOK6kzP4GgXn8DhuO8Q1ncgp3"/>
+                                <div class="flex flex-1 flex-col p-6">
+                                    <h3 class="text-lg font-bold text-[#263238]">Quick Vegetable Stir-fry</h3>
+                                    <p class="mt-2 text-sm text-[#78909C] flex-grow">A colorful mix of crisp vegetables stir-fried in a savory sauce. Ready in under 20 minutes.</p>
+                                    <span class="mt-4 text-sm font-medium text-[#78909C]">280 Calories</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg">
+                                <img alt="Chocolate Avocado Mousse" class="h-48 w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgMmOfNFwGfj5Figqt3TmIegrkJ6KyTFbh-ZoloEZhJActBMuKgPzaVh1xFr15KR368pK4-P5eWaQUkP8sugLtwy4N9U2Tuk8Xvax5ktO1Vj39CCJsF5zjFdVAnV_9KO6iL3zz5Uf4mC6-dBzX4c42BvcfOSv6IfsUy2hLr40jkbLa5Asq0rmqmlpbAkprEb98HJl3G92HSCZIDKyCHmVR7m02MBkL5KC00vZr5Q22-BUc88IICZXFfpnhm46Z8HwV1Zg_oWCJVSVW"/>
+                                <div class="flex flex-1 flex-col p-6">
+                                    <h3 class="text-lg font-bold text-[#263238]">Avocado Chocolate Mousse</h3>
+                                    <p class="mt-2 text-sm text-[#78909C] flex-grow">A surprisingly creamy and healthy dessert made from avocado, cocoa, and a touch of sweetness.</p>
+                                    <span class="mt-4 text-sm font-medium text-[#78909C]">250 Calories</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity">
+                    <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-xl">
+                        <div class="flex justify-center mb-4">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#4CAF50]/10 text-[#4CAF50]">
+                                <span class="material-symbols-outlined text-3xl" data-icon="login">login</span>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold text-[#263238]">Login Required</h3>
+                        <p class="mt-2 text-sm text-[#78909C]">Please login to perform this action.</p>
+                        <div class="mt-6 flex justify-center gap-3">
+                            <button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#4CAF50] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-all">
+                                <span class="truncate">Login</span>
+                            </button>
+                            <button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-200 text-gray-700 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 transition-all">
+                                <span class="truncate">Cancel</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="flex w-full flex-col gap-6 bg-[#FAFAFA] px-5 py-10 text-center @container">
+                <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-4 @[480px]:flex-row @[480px]:justify-around">
+                    <a class="text-[#78909C] text-sm font-normal leading-normal min-w-40 hover:text-[#263238] transition-colors" href="#">Privacy Policy</a>
+                    <a class="text-[#78909C] text-sm font-normal leading-normal min-w-40 hover:text-[#263238] transition-colors" href="#">Terms of Service</a>
+                    <a class="text-[#78909C] text-sm font-normal leading-normal min-w-40 hover:text-[#263238] transition-colors" href="#">Contact Us</a>
+                </div>
+                <p class="text-[#78909C] text-sm font-normal leading-normal">© 2024 Zader Food. All rights reserved.</p>
+            </footer>
+        </div>
+    </body></html>
