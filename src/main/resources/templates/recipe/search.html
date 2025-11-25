@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Smart Meal Planner - Ingredient Selector</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            .selected-ing {
+                background-color: #4CAF50 !important;
+                color: white !important;
+                border: none !important;
+            }
+        </style>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {"primary": "#4bbe4f", "background-light": "#f6f8f6", "background-dark": "#141e15", "nutri-green": "#4CAF50", "card-white": "#FFFFFF", "dark-ink": "#263238", "text-dark": "#131613", "text-muted": "#6b806b", "smart-white": "#FAFAFA"},
+                        fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-smart-white dark:bg-background-dark text-text-dark dark:text-white">
+        <div class="relative flex min-h-screen w-full flex-col">
+            <header class="sticky top-0 z-50 w-full bg-card-white text-dark-ink shadow-sm">
+                <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <div class="flex flex-shrink-0 items-center gap-2">
+                        <span class="text-xl font-bold">Zader Food</span>
+                    </div>
+                    <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-6">
+                        <a class="text-sm font-medium hover:text-nutri-green" th:href="@{/}">Home</a>
+                        <a class="text-sm font-medium hover:text-nutri-green" th:href="@{/recipes}">Recipes</a>
+                    </nav>
+                </div>
+            </header>
+
+            <main class="flex h-full grow flex-col">
+                <div class="flex flex-1 justify-center px-4 py-10 sm:px-6 lg:px-8">
+                    <div class="flex w-full max-w-7xl flex-1 flex-col gap-8 lg:flex-row">
+
+                        <div class="flex flex-1 flex-col">
+                            <div class="mb-4 flex min-w-72 flex-col gap-2">
+                                <p class="text-4xl font-black leading-tight text-text-dark dark:text-white">What's in Your Kitchen?</p>
+                                <p class="text-base font-normal text-text-muted dark:text-gray-400">Select ingredients to find delicious recipe ideas.</p>
+                            </div>
+
+                            <div class="sticky top-[64px] z-40 bg-smart-white py-3 dark:bg-background-dark">
+                                <label class="flex h-14 min-w-40 w-full flex-col">
+                                    <div class="flex h-full w-full flex-1 items-stretch rounded-lg border border-smart-mist bg-card-white dark:border-gray-600 dark:bg-gray-800">
+                                        <div class="flex items-center justify-center pl-4 text-text-muted"><span class="material-symbols-outlined">search</span></div>
+                                        <input id="searchInput" onkeyup="filterIngredients()" class="form-input h-full w-full border-none bg-transparent px-4 text-base focus:outline-0 focus:ring-0" placeholder="Search for ingredients..."/>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 p-1 pb-4">
+                                <button class="flex h-9 items-center justify-center gap-x-2 rounded-lg bg-nutri-green px-4 text-card-white"><p class="text-sm font-medium">All</p></button>
+                            </div>
+
+                            <div class="flex flex-col gap-8" id="ingredientsContainer">
+                                <div th:each="entry : ${categories}">
+                                    <h2 class="pb-3 pt-5 text-[22px] font-bold leading-tight tracking-[-0.015em] text-dark-ink dark:text-white" 
+                                        th:text="${entry.key}">
+                                        Category Name Placeholder
+                                    </h2>
+
+                                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                                        <button th:each="ing : ${entry.value}" 
+                                                th:id="'btn-ing-' + ${ing.ingredientId}"
+                                                th:data-id="${ing.ingredientId}"
+                                                th:data-name="${ing.name}"
+                                                onclick="toggleIngredient(this)"
+                                                class="ingredient-btn flex h-10 w-full cursor-pointer items-center justify-center rounded-lg border border-smart-mist bg-card-white px-4 hover:border-nutri-green transition-colors">
+                                            <p class="text-sm font-medium text-text-dark dark:text-white" th:text="${ing.name}">Ingredient Name</p>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <aside class="w-full lg:w-80 lg:min-w-80">
+                            <div class="sticky top-20 flex flex-col gap-4 rounded-xl border border-smart-mist bg-card-white p-6 dark:border-gray-700 dark:bg-gray-800 shadow-sm">
+                                <h3 class="text-lg font-bold text-text-dark dark:text-white">
+                                    Your Ingredients (<span id="countDisplay">0</span>)
+                                </h3>
+
+                                <div id="selectedContainer" class="flex flex-wrap gap-2 min-h-[50px]">
+                                    <p id="emptyMsg" class="text-sm text-gray-400 italic">No ingredients selected.</p>
+                                </div>
+
+                                <button onclick="submitSearch()" class="mt-4 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-nutri-green px-4 text-base font-bold text-card-white hover:opacity-90 transition">
+                                    <span class="truncate">Find Recipes</span>
+                                </button>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            let selectedIds = [];
+            const selectedContainer = document.getElementById('selectedContainer');
+            const countDisplay = document.getElementById('countDisplay');
+            const emptyMsg = document.getElementById('emptyMsg');
+
+            document.addEventListener("DOMContentLoaded", function () {
+                // Thymeleaf sẽ render list ID thành mảng JS: [1, 2, 3]
+                const preSelectedIds = [[${preSelectedIds}]];
+
+                if (preSelectedIds && preSelectedIds.length > 0) {
+                    preSelectedIds.forEach(id => {
+                        // Tìm nút bấm có ID tương ứng
+                        const btn = document.getElementById('btn-ing-' + id);
+                        if (btn) {
+                            // Giả lập hành động click để chạy logic chọn
+                            toggleIngredient(btn);
+                        }
+                    });
+                }
+            });
+
+            // --- HÀM NÀY ĐÃ ĐƯỢC SỬA LẠI ---
+            function toggleIngredient(element) {
+                // Lấy dữ liệu từ data-id và data-name
+                // Lưu ý: getAttribute trả về chuỗi, cần ép kiểu ID về số nguyên
+                const id = parseInt(element.getAttribute('data-id'));
+                const name = element.getAttribute('data-name');
+
+                // Logic cũ giữ nguyên, chỉ thay đổi cách lấy btn (vì element chính là btn rồi)
+                const btn = element;
+
+                if (selectedIds.includes(id)) {
+                    // REMOVE
+                    selectedIds = selectedIds.filter(item => item !== id);
+                    btn.classList.remove('selected-ing');
+                    removeTag(id);
+                } else {
+                    // ADD
+                    selectedIds.push(id);
+                    btn.classList.add('selected-ing');
+                    addTag(id, name, btn.id); // Truyền thêm btn.id để tag biết nút nào để toggle lại
+                }
+                updateUI();
+            }
+
+            // --- SỬA LẠI HÀM addTag ĐỂ XỬ LÝ NÚT CLOSE ---
+            function addTag(id, name, btnId) {
+                const tag = document.createElement('div');
+                tag.id = 'tag-' + id;
+                tag.className = 'flex h-8 items-center justify-center gap-x-1.5 rounded-full bg-nutri-green pl-3 pr-2 text-card-white animate-fade-in';
+
+                // Nút tắt trên Tag cần gọi lại toggleIngredient bằng cách trỏ tới nút gốc
+                // Hoặc đơn giản hơn là viết hàm remove riêng, nhưng để đơn giản ta giả lập click lại nút gốc
+                tag.innerHTML = `
+            <p class="text-sm font-medium">${name}</p>
+            <button onclick="document.getElementById('${btnId}').click()" class="text-card-white/70 hover:text-card-white">
+                <span class="!text-base material-symbols-outlined">close</span>
+            </button>
+        `;
+                selectedContainer.appendChild(tag);
+            }
+
+            // ... Các hàm removeTag, updateUI, filterIngredients, submitSearch GIỮ NGUYÊN ...
+
+            function removeTag(id) {
+                const tag = document.getElementById('tag-' + id);
+                if (tag)
+                    tag.remove();
+            }
+
+            function updateUI() {
+                countDisplay.innerText = selectedIds.length;
+                if (selectedIds.length > 0) {
+                    emptyMsg.style.display = 'none';
+                } else {
+                    emptyMsg.style.display = 'block';
+                }
+            }
+
+            function filterIngredients() {
+                const input = document.getElementById('searchInput');
+                const filter = input.value.toLowerCase();
+                const buttons = document.getElementsByClassName('ingredient-btn');
+
+                for (let i = 0; i < buttons.length; i++) {
+                    const txtValue = buttons[i].textContent || buttons[i].innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        buttons[i].style.display = "";
+                    } else {
+                        buttons[i].style.display = "none";
+                    }
+                }
+            }
+
+            function submitSearch() {
+                if (selectedIds.length === 0) {
+                    alert("Please select at least one ingredient!");
+                    return;
+                }
+                window.location.href = '/recipes/suggestions?ids=' + selectedIds.join(',');
+            }
+        </script>
+    </body>
+</html>

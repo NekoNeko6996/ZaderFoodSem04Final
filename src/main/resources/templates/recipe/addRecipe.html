@@ -1,262 +1,350 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
     <head>
-        <title>Thêm công thức mới</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Add New Recipe - Zader Food</title>
+
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
         <style>
-            .ingredient-row {
-                background: #f8f9fa;
-                padding: 15px;
-                border-radius: 8px;
-                margin-bottom: 10px;
-                border: 1px solid #ddd;
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             }
-            .new-ingredient-form {
+            /* Style for preview image */
+            .ing-db-preview {
+                width: 48px;
+                height: 48px;
+                border-radius: 8px;
+                object-fit: cover;
+                border: 1px solid #dee3de;
                 display: none;
-                background: #e9ecef;
-                padding: 10px;
-                margin-top: 10px;
-                border-radius: 5px;
             }
         </style>
+
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary": "#4cae4f", "primary-dark": "#3d8b40", "background-light": "#f6f7f6",
+                            "background-dark": "#151d15", "dark-ink": "#263238", "soft-grey": "#78909c",
+                            "card-white": "#FFFFFF", "border-color": "#dee3de"
+                        },
+                        fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
     </head>
-    <body>
-        <div class="container mt-4">
-            <h2>🍳 Đăng công thức món ăn mới</h2>
+    <body class="font-display bg-background-light text-dark-ink">
 
-            <form th:action="@{/recipes/create}" th:object="${recipeForm}" method="post">
+        <div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-border-color px-6 sm:px-10 lg:px-20 py-3 bg-card-white sticky top-0 z-10">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-bold leading-tight text-primary">Zader Food</h2>
+                </div>
+                <nav class="hidden md:flex flex-1 justify-center gap-8">
+                    <a class="text-sm font-medium hover:text-primary" href="#">Home</a>
+                    <a class="text-primary text-sm font-bold" href="#">Recipes</a>
+                </nav>
+                <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 bg-gray-200"></div>
+            </header>
 
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">Thông tin món ăn</div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Tên món ăn:</label>
-                            <input type="text" th:field="*{name}" class="form-control" required placeholder="Ví dụ: Phở Bò Nam Định">
+            <main class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col w-full max-w-4xl gap-8">
+                    <h1 class="text-4xl font-black leading-tight tracking-[-0.033em]">Add New Recipe</h1>
+
+                    <form th:action="@{/recipes/create}" th:object="${recipeForm}" method="post" enctype="multipart/form-data" class="flex flex-col gap-6">
+
+                        <div class="bg-card-white rounded-xl border border-border-color p-6 shadow-sm">
+                            <p class="text-base font-medium pb-4 border-b border-border-color mb-4">Media Upload</p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium pb-2">Cover Image (*)</span>
+                                    <label class="relative flex flex-col items-center justify-center w-full h-48 border-2 border-border-color border-dashed rounded-lg cursor-pointer bg-background-light hover:bg-gray-100 transition overflow-hidden group">
+
+                                        <div id="cover-placeholder" class="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <span class="material-symbols-outlined text-4xl text-soft-grey group-hover:text-primary transition">cloud_upload</span>
+                                            <p class="mb-1 text-sm text-soft-grey"><span class="font-semibold text-primary">Click to upload</span> image</p>
+                                            <p class="text-xs text-soft-grey">MAX. 800x400px</p>
+                                        </div>
+
+                                        <img id="cover-preview-img" src="" class="absolute inset-0 w-full h-full object-cover hidden" alt="Cover Preview" />
+
+                                        <input type="file" th:field="*{imageFile}" class="hidden" accept="image/*" required onchange="previewCoverImage(this)" />
+                                    </label>
+                                </div>
+
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium pb-2">Instruction Video (Optional)</span>
+                                    <label class="flex flex-col items-center justify-center w-full h-48 border-2 border-border-color border-dashed rounded-lg cursor-pointer bg-background-light hover:bg-gray-100 transition">
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <span class="material-symbols-outlined text-4xl text-soft-grey">movie</span>
+                                            <p class="mb-1 text-sm text-soft-grey"><span class="font-semibold text-primary">Upload</span> video</p>
+                                            <p class="text-xs text-soft-grey">MP4, WEBM (MAX 100MB)</p>
+                                        </div>
+                                        <input type="file" th:field="*{videoFile}" class="hidden" accept="video/*" />
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Độ khó:</label>
-                                <select th:field="*{difficulty}" class="form-select">
-                                    <option value="EASY">Dễ</option>
-                                    <option value="MEDIUM">Trung bình</option>
-                                    <option value="HARD">Khó</option>
-                                    <option value="CHEF_LEVEL">Siêu khó</option>
-                                </select>
+                        <div class="bg-card-white rounded-xl border border-border-color p-6 shadow-sm flex flex-col gap-6">
+                            <p class="text-base font-medium pb-2 border-b border-border-color">General Information</p>
+
+                            <label class="flex flex-col w-full">
+                                <span class="text-base font-medium pb-2">Recipe Name</span>
+                                <input type="text" th:field="*{name}" class="form-input w-full rounded-lg border-border-color bg-background-light focus:ring-primary/50 focus:border-primary h-14 px-4" placeholder="Ex: Classic Beef Noodle Soup" required/>
+                            </label>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <label class="flex flex-col">
+                                    <span class="text-base font-medium pb-2">Difficulty</span>
+                                    <select th:field="*{difficulty}" class="form-select w-full rounded-lg border-border-color bg-background-light h-14">
+                                        <option value="EASY">Easy</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HARD">Hard</option>
+                                        <option value="CHEF_LEVEL">Chef Level</option>
+                                    </select>
+                                </label>
+                                <label class="flex flex-col">
+                                    <span class="text-base font-medium pb-2">Servings</span>
+                                    <input type="number" th:field="*{servings}" class="form-input w-full rounded-lg border-border-color bg-background-light h-14" min="1" required/>
+                                </label>
+                                <label class="flex flex-col">
+                                    <span class="text-base font-medium pb-2">Prep Time (mins)</span>
+                                    <input type="number" th:field="*{prepTimeMin}" class="form-input w-full rounded-lg border-border-color bg-background-light h-14" min="0" placeholder="15"/>
+                                </label>
+                                <label class="flex flex-col">
+                                    <span class="text-base font-medium pb-2">Cook Time (mins)</span>
+                                    <input type="number" th:field="*{cookTimeMin}" class="form-input w-full rounded-lg border-border-color bg-background-light h-14" min="0" placeholder="30"/>
+                                </label>
                             </div>
 
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Khẩu phần (người):</label>
-                                <input type="number" th:field="*{servings}" class="form-control" min="1" required>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Chuẩn bị (phút):</label>
-                                <input type="number" th:field="*{prepTimeMin}" class="form-control" min="0" placeholder="VD: 15">
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Nấu (phút):</label>
-                                <input type="number" th:field="*{cookTimeMin}" class="form-control" min="0" placeholder="VD: 30">
-                            </div>
+                            <label class="flex flex-col w-full">
+                                <span class="text-base font-medium pb-2">Short Description</span>
+                                <textarea th:field="*{description}" class="form-textarea w-full rounded-lg border-border-color bg-background-light focus:ring-primary/50 focus:border-primary min-h-32 p-4" placeholder="Write a short and enticing description..."></textarea>
+                            </label>
                         </div>
 
-                        <div class="mt-3">
-                            <label class="form-label fw-bold">Mô tả ngắn:</label>
-                            <textarea th:field="*{description}" class="form-control" rows="2" placeholder="Giới thiệu sơ qua về món ăn..."></textarea>
+                        <div class="bg-card-white rounded-xl border border-border-color p-6 shadow-sm">
+                            <p class="text-base font-medium pb-4 border-b border-border-color mb-4">Ingredients</p>
+
+                            <div id="ingredients-container" class="flex flex-col gap-4">
+                                <datalist id="ingredientListData">
+                                    <option th:each="ing : ${availableIngredients}" 
+                                            th:value="${ing.name}" 
+                                            th:data-id="${ing.ingredientId}"
+                                            th:data-image="${ing.imageUrl}">
+                                    </option>
+                                </datalist>
+                            </div>
+
+                            <button type="button" onclick="addIngredientRow()" class="mt-4 flex items-center justify-center gap-2 w-full rounded-lg h-12 bg-primary/10 text-primary font-bold hover:bg-primary/20 transition">
+                                <span class="material-symbols-outlined text-xl">add</span> Add Ingredient
+                            </button>
                         </div>
-                    </div>
+
+                        <div class="bg-card-white rounded-xl border border-border-color p-6 shadow-sm">
+                            <p class="text-base font-medium pb-4 border-b border-border-color mb-4">Cooking Instructions</p>
+                            <div id="steps-container" class="flex flex-col gap-4"></div>
+                            <button type="button" onclick="addStepRow()" class="mt-4 flex items-center justify-center gap-2 w-full rounded-lg h-12 bg-primary/10 text-primary font-bold hover:bg-primary/20 transition">
+                                <span class="material-symbols-outlined text-xl">playlist_add</span> Add Step
+                            </button>
+                        </div>
+
+                        <div class="flex justify-end gap-4 pt-4 pb-10">
+                            <a href="/" class="flex items-center justify-center rounded-lg h-12 bg-soft-grey/20 text-soft-grey px-8 text-base font-bold hover:bg-soft-grey/30 transition">Cancel</a>
+                            <button type="submit" class="flex items-center justify-center rounded-lg h-12 bg-primary text-white px-8 text-base font-bold hover:bg-primary-dark shadow-md transition">Save Recipe</button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white d-flex justify-content-between">
-                        <span>Danh sách nguyên liệu</span>
-                        <button type="button" class="btn btn-sm btn-light" onclick="addIngredientRow()">+ Thêm nguyên liệu</button>
-                    </div>
-                    <div class="card-body" id="ingredients-container">
-                        <datalist id="ingredientListData">
-                            <option th:each="ing : ${availableIngredients}" 
-                                    th:value="${ing.name}" 
-                                    th:data-id="${ing.ingredientId}">
-                            </option>
-                        </datalist>
-
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-info text-white">Các bước thực hiện</div>
-                    <div class="card-body" id="steps-container">
-                        <button type="button" class="btn btn-secondary mb-3" onclick="addStepRow()">+ Thêm bước</button>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-lg w-100">Lưu công thức</button>
-            </form>
+            </main>
         </div>
 
         <script th:inline="javascript">
-            /* Lấy danh sách category từ server để render vào form thêm mới */
             const categories = [[${categories}]];
             let ingredientIndex = 0;
             let stepIndex = 0;
 
-            // Hàm render 1 dòng nguyên liệu
+            // --- A. PREVIEW COVER IMAGE ---
+            function previewCoverImage(input) {
+                const placeholder = document.getElementById('cover-placeholder');
+                const previewImg = document.getElementById('cover-preview-img');
+
+                const file = input.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        previewImg.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    previewImg.src = "";
+                    previewImg.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                }
+            }
+
+            // --- B. PREVIEW NEW INGREDIENT IMAGE ---
+            function previewNewIngImage(input, index) {
+                const previewId = `upload-preview-${index}`;
+                const previewImg = document.getElementById(previewId);
+
+                const file = input.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        previewImg.classList.remove('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    previewImg.src = "";
+                    previewImg.classList.add('hidden');
+                }
+            }
+
+            // --- C. RENDER INGREDIENT ROW (Translated) ---
             function addIngredientRow() {
                 const container = document.getElementById('ingredients-container');
-
-                // Tạo chuỗi HTML cho Category Options
-                let categoryOptions = '<option value="">-- Chọn loại --</option>';
-                categories.forEach(cat => {
-                    categoryOptions += `<option value="${cat.categoryId}">${cat.name}</option>`;
-                });
+                let categoryOptions = '<option value="">-- Category --</option>';
+                if (categories) {
+                    categories.forEach(cat => categoryOptions += `<option value="${cat.categoryId}">${cat.name}</option>`);
+                }
 
                 const html = `
-                <div class="ingredient-row" id="ing-row-${ingredientIndex}">
-                    <div class="d-flex justify-content-between mb-2">
-                        <h5>Nguyên liệu #${ingredientIndex + 1}</h5>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="removeRow('ing-row-${ingredientIndex}')">Xóa</button>
-                    </div>
+                <div class="flex flex-col gap-3 p-4 border border-border-color rounded-lg bg-background-light relative group" id="ing-row-${ingredientIndex}">
+                    <button type="button" onclick="removeRow('ing-row-${ingredientIndex}')" class="absolute top-2 right-2 text-soft-grey hover:text-red-500 transition p-1">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+            
+                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                        <img id="db-preview-${ingredientIndex}" src="" class="ing-db-preview shadow-sm" alt="db-img">
 
-                    <div class="row">
-                        <div class="col-md-5">
+                        <div class="flex-1 w-full">
                             <div class="existing-section">
-                                <label>Tìm nguyên liệu:</label>
-                                <input list="ingredientListData" 
-                                       class="form-control" 
-                                       placeholder="Gõ để tìm..." 
-                                       onchange="updateHiddenId(this, ${ingredientIndex})">
+                                <input list="ingredientListData" class="form-input w-full rounded-lg border-border-color h-12 text-sm" placeholder="Search ingredient..." onchange="updateIngredientInfo(this, ${ingredientIndex})">
                                 <input type="hidden" name="ingredients[${ingredientIndex}].existingIngredientId" id="ing-id-${ingredientIndex}">
                             </div>
                     
-                            <div class="new-section mt-2" style="display:none;">
-                                <input type="text" name="ingredients[${ingredientIndex}].newName" class="form-control" placeholder="Tên nguyên liệu mới (VD: Lá é)">
+                            <div class="new-section hidden space-y-2">
+                                <input type="text" name="ingredients[${ingredientIndex}].newName" class="form-input w-full rounded-lg border-border-color h-12 text-sm" placeholder="New ingredient name">
+                        
+                                <div class="flex items-center gap-3">
+                                    <img id="upload-preview-${ingredientIndex}" class="hidden w-10 h-10 rounded object-cover border border-gray-300 shadow-sm" alt="preview">
+                                    <input type="file" 
+                                           name="ingredients[${ingredientIndex}].newIngredientImage" 
+                                           onchange="previewNewIngImage(this, ${ingredientIndex})"
+                                           class="text-sm text-soft-grey file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
+                                           accept="image/*">
+                                </div>
                             </div>
 
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" 
-                                       name="ingredients[${ingredientIndex}].isNewIngredient" 
-                                       value="true"
-                                       id="check-new-${ingredientIndex}" 
-                                       onchange="toggleNewIngredient(${ingredientIndex})">
-                                <label class="form-check-label text-danger fw-bold" for="check-new-${ingredientIndex}">
-                                    Không tìm thấy? Thêm nguyên liệu mới
-                                </label>
+                            <div class="flex items-center mt-2">
+                                <input type="checkbox" id="check-new-${ingredientIndex}" 
+                                       name="ingredients[${ingredientIndex}].isNewIngredient" value="true"
+                                       onchange="toggleNewIngredient(${ingredientIndex})"
+                                       class="form-checkbox rounded text-primary focus:ring-primary border-gray-300 size-4">
+                                <label for="check-new-${ingredientIndex}" class="ml-2 text-xs font-medium text-primary cursor-pointer select-none">Not found? Add new</label>
                             </div>
                         </div>
 
-                        <div class="col-md-2">
-                            <label>Số lượng:</label>
-                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].quantity" class="form-control" required>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].quantity" class="form-input w-24 rounded-lg border-border-color h-12 text-sm" placeholder="Qty" required>
+                            <input type="text" name="ingredients[${ingredientIndex}].unit" class="form-input w-24 rounded-lg border-border-color h-12 text-sm" placeholder="Unit" required>
                         </div>
-                        <div class="col-md-2">
-                            <label>Đơn vị:</label>
-                            <input type="text" name="ingredients[${ingredientIndex}].unit" class="form-control" placeholder="gam, thìa..." required>
-                        </div>
-                         <div class="col-md-3">
-                            <label>Ghi chú:</label>
-                            <input type="text" name="ingredients[${ingredientIndex}].note" class="form-control" placeholder="thái lát...">
-                        </div>
+                
+                        <input type="text" name="ingredients[${ingredientIndex}].note" class="form-input w-full md:w-1/4 rounded-lg border-border-color h-12 text-sm" placeholder="Note (e.g. sliced)">
                     </div>
 
-                    <div class="new-ingredient-form row mt-3" id="new-form-${ingredientIndex}">
-                        <div class="col-12"><small class="text-muted">Nhập thông tin dinh dưỡng cho 100g nguyên liệu mới này:</small></div>
-                        <div class="col-md-3">
-                            <label>Danh mục:</label>
-                            <select name="ingredients[${ingredientIndex}].categoryId" class="form-select">${categoryOptions}</select>
-                        </div>
-                        <div class="col-md-2">
-                            <label>Calo (kcal):</label>
-                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].caloriesPer100g" class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label>Protein (g):</label>
-                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].protein" class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label>Fat (g):</label>
-                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].fat" class="form-control">
-                        </div>
-                         <div class="col-md-2">
-                            <label>Carb (g):</label>
-                            <input type="number" step="0.1" name="ingredients[${ingredientIndex}].carbs" class="form-control">
-                        </div>
+                    <div class="new-ingredient-form hidden grid grid-cols-2 md:grid-cols-5 gap-3 mt-2 pt-3 border-t border-dashed border-gray-300" id="new-form-${ingredientIndex}">
+                        <div class="col-span-2 md:col-span-5 text-xs text-soft-grey italic">Nutrition (per 100g):</div>
+                        <select name="ingredients[${ingredientIndex}].categoryId" class="form-select w-full rounded-lg border-border-color text-xs h-10">${categoryOptions}</select>
+                        <input type="number" step="0.1" name="ingredients[${ingredientIndex}].caloriesPer100g" class="form-input w-full rounded-lg border-border-color text-xs h-10" placeholder="Calories">
+                        <input type="number" step="0.1" name="ingredients[${ingredientIndex}].protein" class="form-input w-full rounded-lg border-border-color text-xs h-10" placeholder="Protein">
+                        <input type="number" step="0.1" name="ingredients[${ingredientIndex}].fat" class="form-input w-full rounded-lg border-border-color text-xs h-10" placeholder="Fat">
+                        <input type="number" step="0.1" name="ingredients[${ingredientIndex}].carbs" class="form-input w-full rounded-lg border-border-color text-xs h-10" placeholder="Carbs">
                     </div>
-                </div>
-                `;
-
+                </div>`;
                 container.insertAdjacentHTML('beforeend', html);
                 ingredientIndex++;
             }
 
-            // Hàm chuyển đổi giữa "Chọn cũ" và "Nhập mới"
-            function toggleNewIngredient(index) {
-                const row = document.getElementById(`ing-row-${index}`);
-                const checkbox = document.getElementById(`check-new-${index}`);
-                const existingSection = row.querySelector('.existing-section');
-                const newSection = row.querySelector('.new-section');
-                const newForm = document.getElementById(`new-form-${index}`);
-
-                if (checkbox.checked) {
-                    existingSection.style.display = 'none';
-                    newSection.style.display = 'block';
-                    newForm.style.display = 'flex';
-                } else {
-                    existingSection.style.display = 'block';
-                    newSection.style.display = 'none';
-                    newForm.style.display = 'none';
-                }
-            }
-
-            // Hàm lấy ID từ datalist khi user chọn tên
-            function updateHiddenId(input, index) {
+            // --- D. LOGIC EXISTING SELECT ---
+            function updateIngredientInfo(input, index) {
                 const datalist = document.getElementById('ingredientListData');
                 const hiddenInput = document.getElementById(`ing-id-${index}`);
+                const imgPreview = document.getElementById(`db-preview-${index}`);
                 const options = datalist.options;
 
-                // Reset trước
                 hiddenInput.value = '';
+                imgPreview.style.display = 'none';
+                imgPreview.src = '';
 
                 for (let i = 0; i < options.length; i++) {
                     if (options[i].value === input.value) {
                         hiddenInput.value = options[i].getAttribute('data-id');
+                        const imgUrl = options[i].getAttribute('data-image');
+                        if (imgUrl && imgUrl !== 'null') {
+                            imgPreview.src = imgUrl;
+                            imgPreview.style.display = 'block';
+                        }
                         break;
                     }
                 }
             }
 
-            // Hàm thêm bước thực hiện
+            // --- E. LOGIC TOGGLE NEW ---
+            function toggleNewIngredient(index) {
+                const checkbox = document.getElementById(`check-new-${index}`);
+                const row = document.getElementById(`ing-row-${index}`);
+                const existingSection = row.querySelector('.existing-section');
+                const newSection = row.querySelector('.new-section');
+                const newForm = document.getElementById(`new-form-${index}`);
+                const dbPreview = document.getElementById(`db-preview-${index}`);
+
+                if (checkbox.checked) {
+                    existingSection.classList.add('hidden');
+                    newSection.classList.remove('hidden');
+                    newForm.classList.remove('hidden');
+                    if (dbPreview)
+                        dbPreview.style.display = 'none';
+                } else {
+                    existingSection.classList.remove('hidden');
+                    newSection.classList.add('hidden');
+                    newForm.classList.add('hidden');
+                }
+            }
+
+            // --- F. RENDER STEPS (Translated) ---
             function addStepRow() {
                 const container = document.getElementById('steps-container');
-
-                // Tạo ID duy nhất cho dòng này để có thể xóa
-                const currentRowId = `step-row-${stepIndex}`;
-
+                const id = `step-row-${stepIndex}`;
                 const html = `
-                <div class="input-group mb-2" id="${currentRowId}">
-                    <span class="input-group-text">Bước ${stepIndex + 1}</span>
-                    <textarea name="steps" class="form-control" rows="2" placeholder="Ví dụ: Đun sôi nước, sau đó thả rau vào..." required></textarea>
-                    <button type="button" class="btn btn-outline-danger" onclick="removeRow('${currentRowId}')">Xóa</button>
-                </div>
-                `;
-
+                <div class="flex gap-4 items-start" id="${id}">
+                    <div class="flex items-center justify-center size-8 rounded-full bg-primary/20 text-primary font-bold text-sm shrink-0">${stepIndex + 1}</div>
+                    <textarea name="steps" class="form-textarea w-full rounded-lg border-border-color min-h-[80px] p-3 text-sm" placeholder="Describe this step..." required></textarea>
+                    <button type="button" onclick="removeRow('${id}')" class="mt-2 text-soft-grey hover:text-red-500 transition"><span class="material-symbols-outlined">delete</span></button>
+                </div>`;
                 container.insertAdjacentHTML('beforeend', html);
                 stepIndex++;
             }
 
-            // Đảm bảo hàm removeRow đã có (nếu chưa thì thêm vào)
-            function removeRow(elementId) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.remove();
-                }
+            function removeRow(id) {
+                document.getElementById(id)?.remove();
             }
 
-            // Tự động thêm 1 bước trống khi load trang
-            // (Bạn tìm đoạn window.onload cũ và sửa lại như sau)
             window.onload = function () {
-                addIngredientRow(); // Thêm 1 dòng nguyên liệu
-                addStepRow();       // Thêm 1 bước thực hiện
+                addIngredientRow();
+                addStepRow();
             };
         </script>
     </body>
