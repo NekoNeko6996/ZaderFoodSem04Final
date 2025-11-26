@@ -10,11 +10,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
 public class UserProfileDTO {
-    // Thông tin từ bảng Users
     private String fullName;
-    private String email; // Read-only
+    private String email;
 
-    // Thông tin từ bảng UserProfiles
+    //  UserProfiles
     private BigDecimal weightKg;
     private BigDecimal heightCm;    
     

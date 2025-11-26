@@ -22,14 +22,12 @@ public class AccountController {
     @GetMapping("/user/settings")
     public String showSettings(Model model,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        // ^ Spring Security sẽ tự tiêm object CustomUserDetails vào đây
 
         if (currentUser == null) {
-            return "redirect:/login"; // Đề phòng trường hợp session hết hạn
+            return "redirect:/login";
         }
 
         try {
-            // Lấy ID trực tiếp từ CustomUserDetails
             Integer userId = currentUser.getUserId();
 
             UserProfileDTO userProfileDTO = userService.getUserProfile(userId);
@@ -54,7 +52,6 @@ public class AccountController {
         try {
             Integer userId = currentUser.getUserId();
 
-            // Gọi service với ID
             userService.updateUserProfile(userId, dto);
 
             redirectAttributes.addFlashAttribute("successMessage", "Profile updated successfully!");
@@ -75,11 +72,9 @@ public class AccountController {
             userService.changePassword(currentUser.getUserId(), dto);
             redirectAttributes.addFlashAttribute("successMessage", "");
         } catch (Exception e) {
-            // Nếu lỗi, gửi lại thông báo lỗi
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         
-        // Quay lại trang settings
         return "redirect:/user/settings";
     }
 }

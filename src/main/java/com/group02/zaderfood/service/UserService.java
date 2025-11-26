@@ -30,6 +30,10 @@ public class UserService {
 
     @Autowired
     private UserProfileRepository userProfileRepository;
+    
+    public boolean isEmailExists(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
 
     public void registerUser(UserRegisterDTO registerDTO) throws Exception {
         // 1. Kiểm tra Email đã tồn tại chưa
@@ -49,7 +53,7 @@ public class UserService {
                 .passwordHash(passwordEncoder.encode(registerDTO.getPassword())) // Mã hóa BCrypt
                 .role(UserRole.USER) // Dùng Enum: Mặc định là USER
                 .status(UserStatus.ACTIVE) // Dùng Enum: Mặc định là ACTIVE
-                .isEmailVerified(false)
+                .isEmailVerified(true)
                 .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build();
