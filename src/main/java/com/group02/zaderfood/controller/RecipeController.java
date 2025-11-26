@@ -10,6 +10,7 @@ import com.group02.zaderfood.service.CustomUserDetails;
 import com.group02.zaderfood.service.IngredientService;
 import com.group02.zaderfood.service.RecipeService;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,10 +42,23 @@ public class RecipeController {
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         RecipeCreationDTO form = new RecipeCreationDTO();
-        form.getIngredients().add(new IngredientInputDTO());
+        form.getIngredients().add(new IngredientInputDTO());    
         model.addAttribute("recipeForm", form);
+        
+        // category
+        List<Map<String, Object>> simpleCategories = ingredientService.findAllCategories().stream()
+                .map(cat -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("categoryId", cat.getCategoryId()); // Ensure this getter exists
+                    map.put("name", cat.getName());             // Ensure this getter exists
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        model.addAttribute("categories", simpleCategories);
+        // ---------------------------
+
         model.addAttribute("availableIngredients", ingredientService.findAllActiveIngredients());
-        model.addAttribute("categories", ingredientService.findAllCategories());
 
         return "recipe/addRecipe";
     }
