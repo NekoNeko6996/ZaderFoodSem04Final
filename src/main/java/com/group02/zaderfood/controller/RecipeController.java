@@ -93,12 +93,10 @@ public class RecipeController {
         return "recipe/recipeDetail";
     }
 
-    // Trang 1: Chọn nguyên liệu
     @GetMapping("/search")
     public String searchPage(@RequestParam(name = "ids", required = false) List<Integer> ids, Model model) {
         List<Ingredient> allIngredients = ingredientRepository.findAll();
 
-        // Group category (Code cũ của bạn)
         Map<String, List<Ingredient>> ingredientsByCategory = allIngredients.stream()
                 .collect(Collectors.groupingBy(ing -> {
                     if (ing.getIngredientCategory() != null) {
@@ -108,27 +106,17 @@ public class RecipeController {
                 }));
 
         model.addAttribute("categories", ingredientsByCategory);
-
-        // --- THÊM DÒNG NÀY ---
-        // Gửi danh sách ID đã chọn sang View (nếu có), nếu null thì gửi list rỗng
         model.addAttribute("preSelectedIds", ids != null ? ids : new ArrayList<>());
 
         return "recipe/search";
     }
 
-    // Trang 2: Kết quả  tìm kiếm
     @GetMapping("/suggestions")
     public String suggestionsPage(@RequestParam(name = "ids") List<Integer> ingredientIds, Model model) {
-        // 1. Lấy danh sách nguyên liệu đã chọn để hiển thị lại ở Sidebar
         List<Ingredient> selectedIngredients = ingredientRepository.findAllById(ingredientIds);
         model.addAttribute("selectedIngredients", selectedIngredients);
-
-        // 2. Tìm công thức dựa trên list ID nguyên liệu (Logic tìm kiếm nằm ở Service)
-        // Logic đơn giản: Tìm món có chứa ít nhất 1 trong các nguyên liệu này
         List<Recipe> matchedRecipes = recipeService.findRecipesByIngredientIds(ingredientIds);
-
         model.addAttribute("recipes", matchedRecipes);
-
         return "recipe/results";
     }
 }

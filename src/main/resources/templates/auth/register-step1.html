@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html class="light" lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head> <meta charset="utf-8"/>
+        <title>Sign Up - Step 1</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <script id="tailwind-config">
+            tailwind.config = {
+                theme: {extend: {colors: {"nutri-green": "#4CAF50", "chef-orange": "#FF7043", "dark-ink": "#263238", "soft-grey": "#78909C", "smart-mist": "#ECEFF1", "card-white": "#FFFFFF", "smart-white": "#FAFAFA", "error": "#E53935"}, fontFamily: {"display": ["Plus Jakarta Sans", "sans-serif"]}}}
+            }
+        </script>
+    </head>
+    <body class="font-display">
+        <div th:replace="~{fragments/auth-header :: header}"></div>
+
+        <div class="relative flex h-auto min-h-screen w-full flex-col items-center justify-center bg-smart-white p-4 sm:p-6 lg:p-8">
+            <div class="w-full max-w-md">
+                <form th:action="@{/register/step1}" method="POST" class="flex flex-col items-center rounded-xl border border-smart-mist bg-card-white p-6 shadow-lg sm:p-8">
+
+                    <div class="w-full mb-6 flex gap-2">
+                        <div class="h-1 flex-1 bg-nutri-green rounded"></div>
+                        <div class="h-1 flex-1 bg-smart-mist rounded"></div>
+                        <div class="h-1 flex-1 bg-smart-mist rounded"></div>
+                    </div>
+
+                    <h1 class="text-dark-ink text-[32px] font-bold pb-2">Create Account</h1>
+                    <p class="text-soft-grey pb-6">Enter your email to verify.</p>
+
+                    <div th:if="${error}" class="w-full mb-4 p-3 bg-red-100 text-error rounded-lg text-sm text-center" th:text="${error}"></div>
+
+                    <div class="w-full">
+                        <label class="flex flex-col">
+                            <p class="text-dark-ink text-sm font-medium pb-2">Email Address</p>
+                            <input name="email" type="email" required
+                                   class="w-full rounded-lg border border-smart-mist h-12 p-4 text-dark-ink focus:ring-2 focus:ring-nutri-green/50 focus:border-nutri-green outline-none"
+                                   placeholder="Enter your email" />
+                        </label>
+                    </div>
+
+                    <button type="submit" class="w-full h-12 mt-6 rounded-lg bg-nutri-green text-white font-bold hover:opacity-90">
+                        Send OTP Code
+                    </button>
+
+                    <p class="text-soft-grey text-sm pt-6">Already have an account? <a class="font-bold text-nutri-green hover:underline" th:href="@{/login}">Login</a></p>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>
