@@ -63,11 +63,25 @@
                             </div>
 
                             <div class="flex flex-wrap gap-2 p-1 pb-4">
-                                <button class="flex h-9 items-center justify-center gap-x-2 rounded-lg bg-nutri-green px-4 text-card-white"><p class="text-sm font-medium">All</p></button>
+                                <button id="btn-cat-all"
+                                        data-cat="all"
+                                        onclick="filterByCategory('all')"
+                                        class="filter-btn active-filter flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-nutri-green text-card-white px-4 transition-colors">
+                                    <p class="text-sm font-medium">All</p>
+                                </button>
+
+                                <button th:each="entry : ${categories}"
+                                        th:id="'btn-cat-' + ${entry.key}"
+                                        th:data-cat="${entry.key}"
+                                        onclick="filterByCategory(this.getAttribute('data-cat'))"
+                                        class="filter-btn flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg border border-smart-mist bg-card-white px-4 hover:bg-gray-100 text-dark-ink dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 transition-colors">
+                                        <p class="text-sm font-medium" th:text="${entry.key}">Category Name</p>
+                                </button>
                             </div>
 
                             <div class="flex flex-col gap-8" id="ingredientsContainer">
-                                <div th:each="entry : ${categories}">
+                                <div th:each="entry : ${categories}" class="category-section" 
+                                     th:data-category="${entry.key}">
                                     <h2 class="pb-3 pt-5 text-[22px] font-bold leading-tight tracking-[-0.015em] text-dark-ink dark:text-white" 
                                         th:text="${entry.key}">
                                         Category Name Placeholder
@@ -208,6 +222,56 @@
                     return;
                 }
                 window.location.href = '/recipes/suggestions?ids=' + selectedIds.join(',');
+            }
+
+            function filterByCategory(categoryName) {
+                // 1. Ẩn/Hiện các section tương ứng
+                const sections = document.querySelectorAll('.category-section');
+
+                sections.forEach(section => {
+                    // Lấy tên category của section đó
+                    const sectionCat = section.getAttribute('data-category');
+
+                    if (categoryName === 'all' || sectionCat === categoryName) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+
+                // 2. Cập nhật màu sắc nút bấm (Active state)
+                updateFilterButtonStyles(categoryName);
+            }
+
+            function updateFilterButtonStyles(activeCategoryName) {
+                const allButtons = document.querySelectorAll('.filter-btn');
+
+                // Style cho nút Active (Xanh lá, chữ trắng)
+                const activeClass = ['bg-nutri-green', 'text-card-white', 'border-none'];
+                // Style cho nút Inactive (Trắng, viền xám)
+                const inactiveClass = ['bg-card-white', 'border', 'border-smart-mist', 'text-dark-ink', 'hover:bg-gray-100', 'dark:bg-gray-800', 'dark:border-gray-600', 'dark:text-white'];
+
+                allButtons.forEach(btn => {
+                    // Reset về Inactive trước
+                    btn.classList.remove(...activeClass);
+                    btn.classList.add(...inactiveClass);
+
+                    // Kiểm tra xem nút này có phải nút đang bấm không
+                    // Logic: Nếu bấm 'all' thì check id 'btn-cat-all'
+                    // Nếu bấm category cụ thể thì so sánh onclick hoặc id
+
+                    let isMatch = false;
+                    if (activeCategoryName === 'all' && btn.id === 'btn-cat-all') {
+                        isMatch = true;
+                    } else if (btn.id === 'btn-cat-' + activeCategoryName) {
+                        isMatch = true;
+                    }
+
+                    if (isMatch) {
+                        btn.classList.remove(...inactiveClass);
+                        btn.classList.add(...activeClass);
+                    }
+                });
             }
         </script>
     </body>

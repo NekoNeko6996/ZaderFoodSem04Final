@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>AI Calorie Estimator - Zader Food</title>
+        <link href="https://fonts.googleapis.com" rel="preconnect"/>
+        <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
+            }
+
+            /* Tinh chỉnh thanh cuộn cho đẹp và mảnh hơn */
+            .custom-scroll::-webkit-scrollbar {
+                width: 6px;
+            }
+            .custom-scroll::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .custom-scroll::-webkit-scrollbar-thumb {
+                background-color: #e2e8f0;
+                border-radius: 20px;
+            }
+            .custom-scroll:hover::-webkit-scrollbar-thumb {
+                background-color: #cbd5e1;
+            }
+
+            /* Hiệu ứng fade-in mượt mà */
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+        </style>
+
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "nutri-green": "#4CAF50",
+                            "deep-forest": "#388E3C",
+                            "dark-ink": "#1e293b",
+                            "soft-grey": "#64748b",
+                            "smart-mist": "#f1f5f9",
+                            "smart-white": "#f8fafc",
+                            "card-white": "#FFFFFF",
+                            "protein-blue": "#3b82f6",
+                            "carbs-gold": "#eab308",
+                            "fat-red": "#ef4444",
+                        },
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-smart-white text-dark-ink">
+
+        <header class="bg-card-white shadow-sm sticky top-0 z-50">
+            <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-2">
+                    <div class="h-8 w-8 bg-nutri-green rounded-full flex items-center justify-center text-white font-bold">Z</div>
+                    <span class="text-xl font-bold tracking-tight">Zader Food</span>
+                </div>
+                <nav class="hidden md:flex gap-6 font-medium text-sm text-soft-grey">
+                    <a href="#" class="hover:text-nutri-green">Home</a>
+                    <a href="#" class="hover:text-nutri-green">Recipes</a>
+                    <a href="#" class="text-nutri-green">AI Tools</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex flex-1 justify-center py-12 px-4 sm:px-6">
+            <div class="flex flex-col w-full max-w-5xl gap-10">
+
+                <div class="flex flex-col gap-3 text-center">
+                    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-dark-ink">
+                        AI <span class="text-nutri-green">Calorie Estimator</span>
+                    </h1>
+                    <p class="text-soft-grey text-lg max-w-2xl mx-auto">
+                        Snap a photo or describe your meal. Let AI analyze your food.
+                    </p>
+                </div>
+
+                <div class="bg-card-white rounded-2xl shadow-xl shadow-gray-100/50 p-8 flex flex-col gap-8 border border-white">
+
+                    <div id="drop-zone" class="group border-2 border-dashed border-smart-mist hover:border-nutri-green hover:bg-nutri-green/5 transition-all duration-300 rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer bg-smart-white/50 relative overflow-hidden">
+                        <input type="file" id="imageInput" accept="image/png, image/jpeg, .jpg" class="hidden">
+
+                        <div id="upload-placeholder" class="flex flex-col items-center">
+                            <div class="h-16 w-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined text-4xl text-nutri-green">add_a_photo</span>
+                            </div>
+                            <p class="text-dark-ink font-semibold text-lg">Click to upload image</p>
+                            <p class="text-soft-grey text-sm mt-1">or drag and drop here (JPG, PNG)</p>
+                        </div>
+
+                        <img id="preview-image" class="hidden h-64 w-auto object-contain rounded-lg shadow-md z-10" />
+                        <button id="remove-img-btn" class="hidden absolute top-4 right-4 bg-white/90 p-2 rounded-full hover:bg-red-50 text-soft-grey hover:text-red-500 shadow-sm z-20 transition-colors" title="Remove image">
+                            <span class="material-symbols-outlined text-xl">close</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="relative flex-1">
+                            <input id="textInput" class="w-full rounded-xl bg-smart-mist/30 border-transparent focus:border-nutri-green focus:bg-white focus:ring-0 text-dark-ink h-14 pl-5 pr-12 text-lg transition-all placeholder:text-gray-400" placeholder="E.g., Grilled salmon with asparagus..." />
+                            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">edit</span>
+                        </div>
+
+                        <button id="analyzeBtn" onclick="analyzeFood()" class="sm:w-auto w-full min-w-[200px] h-14 bg-nutri-green text-white text-lg font-bold rounded-xl hover:bg-deep-forest transition-all shadow-lg shadow-nutri-green/20 active:scale-95 flex items-center justify-center gap-2">
+                            <span id="btnText">Analyze Meal</span>
+                            <span id="btnLoader" class="hidden material-symbols-outlined animate-spin">progress_activity</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultsSection" class="hidden flex-col gap-8 animate-fade-in">
+
+                    <div class="bg-card-white rounded-2xl shadow-xl shadow-gray-100/50 p-8 border border-gray-50">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-gray-100 pb-8">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="px-3 py-1 bg-nutri-green/10 text-nutri-green text-xs font-bold uppercase rounded-full tracking-wider">Result</span>
+                                    <div class="flex items-center gap-1 text-soft-grey text-sm">
+                                        <span class="material-symbols-outlined text-base">schedule</span>
+                                        <span id="resTime">-- mins</span>
+                                    </div>
+                                </div>
+                                <h2 id="resDishName" class="text-3xl md:text-4xl font-extrabold text-dark-ink leading-tight">Dish Name</h2>
+                            </div>
+
+                            <div class="flex flex-col items-end min-w-[140px]">
+                                <span class="text-sm font-medium text-soft-grey uppercase tracking-wide">Total Energy</span>
+                                <div class="flex items-baseline gap-1 text-nutri-green">
+                                    <span id="resCalories" class="text-5xl md:text-6xl font-black">0</span>
+                                    <span class="text-xl font-bold text-soft-grey">kcal</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div class="bg-protein-blue/5 p-6 rounded-2xl border border-protein-blue/10 flex flex-col items-center justify-center gap-1 group hover:bg-protein-blue/10 transition-colors">
+                                <span class="text-sm font-bold text-protein-blue uppercase tracking-wider">Protein</span>
+                                <span id="resProtein" class="text-3xl font-black text-dark-ink group-hover:scale-105 transition-transform">0g</span>
+                            </div>
+                            <div class="bg-carbs-gold/5 p-6 rounded-2xl border border-carbs-gold/10 flex flex-col items-center justify-center gap-1 group hover:bg-carbs-gold/10 transition-colors">
+                                <span class="text-sm font-bold text-carbs-gold uppercase tracking-wider">Carbs</span>
+                                <span id="resCarbs" class="text-3xl font-black text-dark-ink group-hover:scale-105 transition-transform">0g</span>
+                            </div>
+                            <div class="bg-fat-red/5 p-6 rounded-2xl border border-fat-red/10 flex flex-col items-center justify-center gap-1 group hover:bg-fat-red/10 transition-colors">
+                                <span class="text-sm font-bold text-fat-red uppercase tracking-wider">Fat</span>
+                                <span id="resFat" class="text-3xl font-black text-dark-ink group-hover:scale-105 transition-transform">0g</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-2">
+                        <div class="bg-card-white p-8 rounded-2xl shadow-lg border border-gray-50 flex flex-col h-full">
+                            <h3 class="text-xl font-bold text-dark-ink mb-6 flex items-center gap-3">
+                                <div class="p-2 bg-green-100 rounded-lg text-nutri-green">
+                                    <span class="material-symbols-outlined">grocery</span>
+                                </div>
+                                Ingredients
+                            </h3>
+                            <ul id="resIngredients" class="space-y-4 text-dark-ink custom-scroll overflow-y-auto pr-4 max-h-[400px] flex-1">
+                            </ul>
+                        </div>
+
+                        <div class="bg-card-white p-8 rounded-2xl shadow-lg border border-gray-50 flex flex-col h-full">
+                            <h3 class="text-xl font-bold text-dark-ink mb-6 flex items-center gap-3">
+                                <div class="p-2 bg-orange-100 rounded-lg text-orange-500">
+                                    <span class="material-symbols-outlined">cooking</span>
+                                </div>
+                                Instructions
+                            </h3>
+                            <ol id="resInstructions" class="space-y-6 text-dark-ink custom-scroll overflow-y-auto pr-4 max-h-[400px] flex-1">
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-6 pt-10 border-t border-gray-200">
+                    <h3 class="text-2xl font-bold text-dark-ink px-2 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-soft-grey">history</span> 
+                        Recent Scans
+                    </h3>
+                    <div id="historyList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <script>
+            // --- 1. Variables & Elements ---
+            const dropZone = document.getElementById('drop-zone');
+            const imageInput = document.getElementById('imageInput');
+            const previewImage = document.getElementById('preview-image');
+            const uploadPlaceholder = document.getElementById('upload-placeholder');
+            const removeImgBtn = document.getElementById('remove-img-btn');
+            const textInput = document.getElementById('textInput');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const resultsSection = document.getElementById('resultsSection');
+
+            // --- 2. Image Handling ---
+            dropZone.addEventListener('click', (e) => {
+                if (e.target !== removeImgBtn && !removeImgBtn.contains(e.target))
+                    imageInput.click();
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-nutri-green', 'bg-nutri-green/5');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-nutri-green', 'bg-nutri-green/5');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-nutri-green', 'bg-nutri-green/5');
+                if (e.dataTransfer.files.length)
+                    handleFile(e.dataTransfer.files[0]);
+            });
+
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files.length)
+                    handleFile(e.target.files[0]);
+            });
+
+            removeImgBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetImage();
+            });
+
+            function handleFile(file) {
+                // --- THÊM ĐOẠN KIỂM TRA NÀY ---
+                const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+                if (!validTypes.includes(file.type)) {
+                    alert("Invalid file type! Please upload only PNG or JPG images.");
+                    return; // Dừng lại, không xử lý tiếp
+                }
+                // -------------------------------
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewImage.classList.remove('hidden');
+                    removeImgBtn.classList.remove('hidden');
+                    uploadPlaceholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function resetImage() {
+                imageInput.value = '';
+                previewImage.src = '';
+                previewImage.classList.add('hidden');
+                removeImgBtn.classList.add('hidden');
+                uploadPlaceholder.classList.remove('hidden');
+            }
+
+            // --- 3. API Call ---
+            async function analyzeFood() {
+                const userText = textInput.value.trim();
+                const fileInput = document.getElementById('imageInput');
+
+                if (!userText && (!fileInput.files || fileInput.files.length === 0)) {
+                    alert("Please enter a food name or upload an image.");
+                    return;
+                }
+
+                setLoading(true);
+                resultsSection.classList.add('hidden');
+
+                const formData = new FormData();
+                if (userText)
+                    formData.append("text", userText);
+                if (fileInput.files.length > 0)
+                    formData.append("image", fileInput.files[0]);
+
+                try {
+                    const response = await fetch('/api/ai/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok)
+                        throw new Error("Server error");
+                    const resultData = await response.json();
+
+                    if (resultData.error) {
+                        alert(resultData.error);
+                    } else {
+                        renderResults(resultData);
+                        saveToHistory(resultData);
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    alert("Could not analyze. Please try again.");
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            function setLoading(isLoading) {
+                analyzeBtn.disabled = isLoading;
+                if (isLoading) {
+                    btnText.textContent = "Analyzing...";
+                    btnLoader.classList.remove('hidden');
+                    analyzeBtn.classList.add('opacity-80', 'cursor-not-allowed');
+                } else {
+                    btnText.textContent = "Analyze Meal";
+                    btnLoader.classList.add('hidden');
+                    analyzeBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                }
+            }
+
+            // --- 4. Render Results (Improved) ---
+            function renderResults(data) {
+                document.getElementById('resDishName').textContent = data.dishName || "Unknown Dish";
+                document.getElementById('resTime').textContent = data.time || "-- mins";
+                document.getElementById('resCalories').textContent = data.calories || 0;
+                document.getElementById('resProtein').textContent = data.protein || "0g";
+                document.getElementById('resCarbs').textContent = data.carbs || "0g";
+                document.getElementById('resFat').textContent = data.fat || "0g";
+
+                // Render Ingredients with nice bullets
+                const ingList = document.getElementById('resIngredients');
+                ingList.innerHTML = (data.ingredients || []).map(i => `
+                    <li class="flex items-start gap-3 group">
+                        <span class="mt-2 h-2 w-2 rounded-full bg-nutri-green flex-shrink-0 group-hover:scale-125 transition-transform"></span>
+                        <span class="text-base text-gray-700 leading-relaxed">${i}</span>
+                    </li>
+                `).join('');
+
+                // Render Instructions with numbers
+                const instList = document.getElementById('resInstructions');
+                instList.innerHTML = (data.instructions || []).map((step, index) => `
+                    <li class="flex gap-4">
+                        <span class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold text-sm">
+                            ${index + 1}
+                        </span>
+                        <span class="text-base text-gray-700 leading-loose flex-1 pt-1">${step}</span>
+                    </li>
+                `).join('');
+
+                resultsSection.classList.remove('hidden');
+                // Scroll nhẹ xuống kết quả
+                setTimeout(() => {
+                    resultsSection.scrollIntoView({behavior: 'smooth', block: 'start'});
+                }, 100);
+            }
+
+            // --- 5. History (Styled) ---
+            function saveToHistory(data) {
+                let history = JSON.parse(localStorage.getItem('zaderFoodHistory') || '[]');
+                const newEntry = {
+                    name: data.dishName,
+                    cals: data.calories,
+                    date: new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})
+                };
+
+                // Remove duplicate if same name exists at top
+                if (history.length > 0 && history[0].name === newEntry.name)
+                    return;
+
+                history.unshift(newEntry);
+                if (history.length > 6)
+                    history.pop();
+                localStorage.setItem('zaderFoodHistory', JSON.stringify(history));
+                loadHistory();
+            }
+
+            function loadHistory() {
+                const history = JSON.parse(localStorage.getItem('zaderFoodHistory') || '[]');
+                const listContainer = document.getElementById('historyList');
+
+                if (history.length === 0) {
+                    listContainer.innerHTML = `<p class="text-soft-grey col-span-3 text-center py-4">No scans yet. Try analyzing a meal!</p>`;
+                    return;
+                }
+
+                listContainer.innerHTML = history.map(item => `
+                    <div class="bg-white p-5 rounded-xl border border-smart-mist shadow-sm hover:shadow-md transition-shadow flex justify-between items-center group cursor-pointer">
+                        <div>
+                            <h4 class="font-bold text-dark-ink group-hover:text-nutri-green transition-colors line-clamp-1">${item.name}</h4>
+                            <p class="text-xs text-soft-grey mt-1">${item.date}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="block font-black text-nutri-green text-lg">${item.cals}</span>
+                            <span class="text-xs text-soft-grey">kcal</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            window.onload = loadHistory;
+        </script>
+    </body>
+</html>

@@ -38,6 +38,7 @@ public class SecurityConfig {
                         "/default/**",
                         "/uploads/**"
                 ).permitAll()
+                .requestMatchers("/ai-tools/**").authenticated()
                 .requestMatchers("/recipes/create", "/recipes/save").authenticated()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
