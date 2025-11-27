@@ -40,70 +40,256 @@
                 <div class="flex flex-col lg:flex-row w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 gap-8">
 
                     <aside class="w-full lg:w-1/4 lg:max-w-xs shrink-0">
-                        <div class="sticky top-24">
-                            <div class="flex h-full flex-col justify-between bg-white dark:bg-dark-ink/50 p-6 rounded-xl border border-gray-200 shadow-sm">
-                                <div class="flex flex-col gap-4">
-                                    <div class="flex items-center gap-3">
-                                        <span class="material-symbols-outlined text-nutri-green text-2xl">kitchen</span>
-                                        <h1 class="text-dark-ink dark:text-white text-base font-bold">Selected Ingredients</h1>
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <div th:each="ing : ${selectedIngredients}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                                            <span class="material-symbols-outlined text-nutri-green text-base">check_circle</span>
-                                            <p class="text-dark-ink dark:text-gray-300 text-sm font-medium" th:text="${ing.name}">Chicken</p>
+                        <div class="sticky top-24 space-y-6">
+
+                            <form id="filterForm" th:action="@{/recipes/suggestions}" method="get" class="flex flex-col gap-6">
+
+                                <th:block th:if="${param.ids}">
+                                    <input type="hidden" name="ids" th:each="id : ${param.ids}" th:value="${id}" />
+                                </th:block>
+
+                                <div class="bg-white dark:bg-dark-ink/50 p-6 rounded-xl border border-gray-200 shadow-sm" th:if="${not #lists.isEmpty(selectedIngredients)}">
+                                    <div class="flex flex-col gap-4">
+                                        <div class="flex items-center gap-3">
+                                            <span class="material-symbols-outlined text-nutri-green text-2xl">kitchen</span>
+                                            <h1 class="text-dark-ink dark:text-white text-base font-bold">Selected Ingredients</h1>
                                         </div>
+                                        <div class="flex flex-col gap-2">
+                                            <div th:each="ing : ${selectedIngredients}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                                                <span class="material-symbols-outlined text-nutri-green text-base">check_circle</span>
+                                                <p class="text-dark-ink dark:text-gray-300 text-sm font-medium" th:text="${ing.name}">Ingredient</p>
+                                            </div>
+                                        </div>
+                                        <a th:href="@{/recipes/search(ids=${#strings.listJoin(selectedIngredients.![ingredientId], ',')})}" 
+                                           class="mt-2 w-full flex items-center justify-center gap-2 text-sm font-medium text-nutri-green hover:underline">
+                                            <span class="material-symbols-outlined text-lg">edit</span>
+                                            Change Ingredients
+                                        </a>
                                     </div>
-                                    <a th:href="@{/recipes/search(ids=${#strings.listJoin(selectedIngredients.![ingredientId], ',')})}" 
-                                       class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-medium text-nutri-green hover:underline">
-                                        <span class="material-symbols-outlined text-lg">edit</span>
-                                        Change Ingredients
+                                </div>
+
+                                <div class="bg-white dark:bg-dark-ink/50 p-6 rounded-xl border border-gray-200 shadow-sm text-center" th:if="${#lists.isEmpty(selectedIngredients)}">
+                                    <p class="text-sm text-gray-500 mb-3">Viewing all recipes.</p>
+                                    <a th:href="@{/recipes/search}" class="btn bg-nutri-green text-white px-4 py-2 rounded-lg text-sm font-bold w-full block">
+                                        Find by Ingredients
                                     </a>
                                 </div>
-                            </div>
+
+                                <div class="bg-white dark:bg-dark-ink/50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <span class="material-symbols-outlined text-dark-ink dark:text-white">tune</span>
+                                        <h2 class="text-dark-ink dark:text-white text-base font-bold">Filters</h2>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Max Calories</label>
+                                            <input type="number" name="maxCalories" th:value="${maxCalories}" placeholder="e.g. 500" 
+                                                   class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-nutri-green focus:ring focus:ring-nutri-green/20 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        </div>
+
+                                        <div>
+                                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Max Cook Time (min)</label>
+                                            <input type="number" name="maxTime" th:value="${maxTime}" placeholder="e.g. 30" 
+                                                   class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-nutri-green focus:ring focus:ring-nutri-green/20 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        </div>
+
+                                        <div>
+                                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Difficulty</label>
+                                            <select name="difficulty" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-nutri-green focus:ring focus:ring-nutri-green/20 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                                <option value="">Any</option>
+                                                <option value="EASY" th:selected="${difficulty == 'EASY'}">Easy</option>
+                                                <option value="MEDIUM" th:selected="${difficulty == 'MEDIUM'}">Medium</option>
+                                                <option value="HARD" th:selected="${difficulty == 'HARD'}">Hard</option>
+                                            </select>
+                                        </div>
+
+                                        <button type="submit" class="w-full bg-dark-ink text-white font-bold py-2 rounded-lg hover:bg-opacity-90 transition">
+                                            Apply Filters
+                                        </button>
+
+                                        <a th:href="@{/recipes/suggestions(ids=${param.ids})}" class="block text-center text-xs text-gray-500 hover:text-nutri-green mt-2">
+                                            Reset Filters
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </aside>
 
                     <div class="flex-1 flex flex-col gap-8">
+
+                        <div class="flex flex-col gap-4">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-symbols-outlined text-gray-400">search</span>
+                                </div>
+                                <input type="text" 
+                                       name="keyword" 
+                                       form="filterForm" 
+                                       th:value="${keyword}"
+                                       class="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-nutri-green focus:ring-1 focus:ring-nutri-green sm:text-sm shadow-sm dark:bg-dark-ink/50 dark:border-gray-700 dark:text-white" 
+                                       placeholder="Search recipes by name (e.g., Salad, Pasta)...">
+
+                                <button type="submit" form="filterForm" class="absolute inset-y-2 right-2 px-4 bg-nutri-green text-white text-sm font-bold rounded-lg hover:bg-opacity-90">
+                                    Search
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="flex flex-col gap-6">
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                                <p class="text-dark-ink dark:text-white text-3xl md:text-4xl font-black">Recipe Suggestions</p>
-                                <p th:if="${recipes.isEmpty()}" class="text-red-500 font-medium">No recipes found matching these ingredients.</p>
+                                <h2 class="text-dark-ink dark:text-white text-3xl font-black">
+                                    <span th:text="${#lists.isEmpty(recipeMatches) ? 'No Recipes Found' : 'Recipes Found'}">Recipe Suggestions</span>
+                                    <span class="text-lg font-medium text-gray-500 ml-2" 
+                                          th:text="'(' + ${recipeMatches != null ? recipeMatches.size() : 0} + ' results)'">(0 results)</span>
+                                </h2>
                             </div>
+
+                            <p th:if="${#lists.isEmpty(recipeMatches)}" class="text-gray-500 italic bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                No recipes found matching your criteria. Try adjusting the filters or search keywords.
+                            </p>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
 
-                                <div th:each="recipe : ${recipes}" class="flex flex-col bg-white dark:bg-dark-ink/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-shadow hover:shadow-lg group">
+                                <div th:each="match : ${recipeMatches}" class="flex flex-col bg-white dark:bg-dark-ink/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-shadow hover:shadow-lg group relative">
+
+                                    <button 
+                                        th:data-id="${match.recipe.recipeId}"
+                                        th:data-name="${match.recipe.name}"
+                                        onclick="toggleHeart(event, this)"
+                                        class="absolute top-3 left-3 z-20 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 hover:bg-white text-gray-400 hover:text-red-500 shadow-sm transition-colors backdrop-blur-sm"
+                                        title="Add to Favorites">
+                                        <span class="material-symbols-outlined !text-[20px]">favorite</span>
+                                    </button>
+
+                                    <div th:if="${not #lists.isEmpty(selectedIngredients)}"
+                                         class="absolute top-3 right-3 z-10 px-2 py-1 rounded-lg text-xs font-bold text-white shadow-sm"
+                                         th:classappend="${match.matchPercentage == 100 ? 'bg-nutri-green' : (match.matchPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500')}">
+                                        <span th:text="${match.matchPercentage} + '% Match'"></span>
+                                    </div>
+
                                     <div class="w-full bg-center bg-no-repeat aspect-video bg-cover group-hover:scale-105 transition-transform duration-500" 
-                                         th:style="'background-image: url(' + ${recipe.imageUrl != null ? recipe.imageUrl : 'https://via.placeholder.com/400'} + ');'">
+                                         th:style="'background-image: url(' + ${match.recipe.imageUrl != null ? match.recipe.imageUrl : 'https://via.placeholder.com/400'} + ');'">
                                     </div>
 
                                     <div class="p-4 flex flex-col gap-3 flex-1">
                                         <div class="flex-1">
-                                            <p class="text-dark-ink dark:text-white text-base font-bold leading-normal truncate" th:text="${recipe.name}">Recipe Name</p>
+                                            <p class="text-dark-ink dark:text-white text-base font-bold leading-normal truncate" th:text="${match.recipe.name}">Recipe Name</p>
 
-                                            <p class="text-nutri-green text-sm font-bold mt-1">Matched!</p>
+                                            <th:block th:if="${not #lists.isEmpty(selectedIngredients)}">
 
-                                            <p class="text-soft-grey text-sm font-normal">
-                                                <span th:text="${recipe.totalCalories}">0</span> kcal | 
-                                                <span th:text="${recipe.cookTimeMin}">0</span> min
-                                            </p>
+                                                <div th:if="${match.missingCount > 0 && match.matchPercentage < 100}" class="mt-2">
+                                                    <p class="text-xs text-red-500 font-bold mb-1">
+                                                        Missing <span th:text="${match.missingCount}">2</span> ingredients:
+                                                    </p>
+                                                    <div class="flex flex-wrap gap-1">
+                                                        <span th:each="missingItem, iter : ${match.missingIngredients}" 
+                                                              th:if="${iter.index < 3}"
+                                                              class="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] rounded border border-red-100 font-medium truncate max-w-[100px]"
+                                                              th:text="${missingItem}">Item</span>
+                                                        <span th:if="${match.missingCount > 3}" class="text-[10px] text-gray-400 font-medium">...</span>
+                                                    </div>
+                                                </div>
+
+                                                <div th:if="${match.matchPercentage == 100}" class="mt-2">
+                                                    <p class="text-nutri-green text-sm font-bold flex items-center gap-1">
+                                                        <span class="material-symbols-outlined !text-lg">check_circle</span> You have everything!
+                                                    </p>
+                                                </div>
+
+                                            </th:block>
+
+                                            <div class="flex items-center gap-2 mt-3 text-soft-grey text-sm pt-2 border-t border-gray-100 dark:border-gray-700">
+                                                <span class="flex items-center gap-1"><span class="material-symbols-outlined !text-[16px]">local_fire_department</span> <span th:text="${match.recipe.totalCalories}">0</span></span>
+                                                <span>|</span>
+                                                <span class="flex items-center gap-1"><span class="material-symbols-outlined !text-[16px]">schedule</span> <span th:text="${match.recipe.cookTimeMin}">0</span>m</span>
+                                                <span th:if="${match.recipe.difficulty}">|</span>
+                                                <span th:if="${match.recipe.difficulty}" class="uppercase text-xs font-bold" th:classappend="${match.recipe.difficulty.name() == 'EASY' ? 'text-green-500' : (match.recipe.difficulty.name() == 'MEDIUM' ? 'text-yellow-500' : 'text-red-500')}" th:text="${match.recipe.difficulty}">EASY</span>
+                                            </div>
                                         </div>
 
                                         <div class="flex flex-col sm:flex-row gap-2 mt-2">
-                                            <a th:href="@{/recipes/detail/{id}(id=${recipe.recipeId})}" 
+                                            <a th:href="@{/recipes/detail/{id}(id=${match.recipe.recipeId})}" 
                                                class="w-full flex items-center justify-center h-10 px-4 text-sm font-bold text-white bg-nutri-green rounded-lg hover:bg-opacity-90 transition">
                                                 View Recipe
                                             </a>
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
-
                     </div>
                 </div>
             </main>
         </div>
+
+        <!--toast--> 
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
     </body>
+
+    <script>
+        // Hàm xử lý khi click trái tim (ĐÃ SỬA)
+        function toggleHeart(event, btnElement) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // 1. Lấy dữ liệu từ attribute
+            const recipeId = btnElement.getAttribute('data-id');
+            const recipeName = btnElement.getAttribute('data-name');
+            const icon = btnElement.querySelector('span');
+
+            // 2. GỌI TOAST LOADING
+            const loadingToastId = ZaderToast.loading(`Adding "${recipeName}" to your favorites...`);
+
+            setTimeout(() => {
+                fetch('/recipes/api/favorite/' + recipeId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                        .then(response => {
+                            if (response.status === 401) {
+                                throw new Error("UNAUTHORIZED");
+                            }
+                            if (!response.ok) {
+                                throw new Error("SERVER_ERROR");
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            ZaderToast.remove(loadingToastId);
+
+                            if (data.status === 'added' || data.status === 'exists') {
+                                // Success logic
+                                const msg = data.status === 'exists'
+                                        ? `"${recipeName}" is already in your favorites.`
+                                        : `"${recipeName}" has been added to favorites!`;
+
+                                ZaderToast.success(msg);
+
+                                // Update Icon UI
+                                icon.classList.remove('text-gray-400');
+                                icon.classList.add('text-red-500', 'fill-current');
+                                icon.style.fontVariationSettings = "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24";
+
+                                // Animation
+                                btnElement.classList.add('scale-110');
+                                setTimeout(() => btnElement.classList.remove('scale-110'), 200);
+                            }
+                        })
+                        .catch(error => {
+                            ZaderToast.remove(loadingToastId);
+
+                            if (error.message === "UNAUTHORIZED") {
+                                ZaderToast.error("Please login to save recipes!");
+                            } else {
+                                ZaderToast.error("Failed to add recipe. Please try again.");
+                            }
+                            console.error('Error:', error);
+                        });
+            }, 500);
+        }
+    </script>
 </html>

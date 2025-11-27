@@ -2,6 +2,7 @@ package com.group02.zaderfood.controller;
 
 import com.group02.zaderfood.dto.IngredientInputDTO;
 import com.group02.zaderfood.dto.RecipeCreationDTO;
+import com.group02.zaderfood.dto.RecipeMatchDTO;
 import com.group02.zaderfood.entity.Ingredient;
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.repository.IngredientRepository;
@@ -26,6 +27,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 @Controller
 @RequestMapping("/recipes")
 public class RecipeController {
@@ -42,9 +46,9 @@ public class RecipeController {
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         RecipeCreationDTO form = new RecipeCreationDTO();
-        form.getIngredients().add(new IngredientInputDTO());    
+        form.getIngredients().add(new IngredientInputDTO());
         model.addAttribute("recipeForm", form);
-        
+
         // category
         List<Map<String, Object>> simpleCategories = ingredientService.findAllCategories().stream()
                 .map(cat -> {
@@ -112,11 +116,49 @@ public class RecipeController {
     }
 
     @GetMapping("/suggestions")
-    public String suggestionsPage(@RequestParam(name = "ids") List<Integer> ingredientIds, Model model) {
-        List<Ingredient> selectedIngredients = ingredientRepository.findAllById(ingredientIds);
-        model.addAttribute("selectedIngredients", selectedIngredients);
-        List<Recipe> matchedRecipes = recipeService.findRecipesByIngredientIds(ingredientIds);
-        model.addAttribute("recipes", matchedRecipes);
+    public String suggestionsPage(
+            @RequestParam(name = "ids", required = false) List<Integer> ingredientIds,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "maxCalories", required = false) Integer maxCalories,
+            @RequestParam(name = "maxTime", required = false) Integer maxTime,
+            @RequestParam(name = "difficulty", required = false) String difficulty,
+            Model model) {
+
+        // 1. Sidebar Selected Ingredients
+        if (ingredientIds != null && !ingredientIds.isEmpty()) {
+            model.addAttribute("selectedIngredients", ingredientRepository.findAllById(ingredientIds));
+        } else {
+            model.addAttribute("selectedIngredients", new ArrayList<>());
+        }
+
+        // 2. Gọi Service mới trả về List<RecipeMatchDTO>
+        List<RecipeMatchDTO> matchResults = recipeService.findRecipesWithMissingIngredients(ingredientIds, keyword, maxCalories, maxTime, difficulty);
+
+        model.addAttribute("recipeMatches", matchResults); // Đổi tên biến model để phân biệt
+
+        // 3. Giữ trạng thái filter
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("maxCalories", maxCalories);
+        model.addAttribute("maxTime", maxTime);
+        model.addAttribute("difficulty", difficulty);
+
         return "recipe/results";
+    }
+
+    @PostMapping("/api/favorite/{recipeId}")
+    @ResponseBody
+    public ResponseEntity<?> addToFavorite(@PathVariable Integer recipeId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body("User not logged in");
+        }
+
+        boolean added = recipeService.toggleFavorite(currentUser.getUserId(), recipeId);
+
+        if (added) {
+            return ResponseEntity.ok().body(Map.of("message", "Added to favorites", "status", "added"));
+        } else {
+            return ResponseEntity.ok().body(Map.of("message", "Already in favorites", "status", "exists"));
+        }
     }
 }

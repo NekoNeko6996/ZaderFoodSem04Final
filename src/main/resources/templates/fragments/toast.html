@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <body>
+
+        <div th:fragment="toast-system">
+
+            <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
+            </div>
+
+            <script>
+                const ZaderToast = {
+                    container: document.getElementById('toast-container'),
+
+                    // Template HTML cho Toast
+                    createToastElement(message, type, id) {
+                        const el = document.createElement('div');
+                        el.id = id;
+                        // Style chung
+                        let classes = "pointer-events-auto flex items-center w-full max-w-xs p-4 space-x-3 text-gray-500 bg-white rounded-lg shadow-lg dark:text-gray-400 dark:bg-gray-800 border-l-4 transition-all duration-300 transform translate-x-full opacity-0";
+
+                        // Style theo Type
+                        let icon = '';
+                        if (type === 'success') {
+                            classes += " border-green-500";
+                            icon = `<div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
+                                        <span class="material-symbols-outlined !text-[20px]">check</span>
+                                    </div>`;
+                        } else if (type === 'error') {
+                            classes += " border-red-500";
+                            icon = `<div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">
+                                        <span class="material-symbols-outlined !text-[20px]">error</span>
+                                    </div>`;
+                        } else if (type === 'loading') {
+                            classes += " border-blue-500";
+                            icon = `<div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg dark:bg-blue-800 dark:text-blue-200">
+                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>`;
+                        }
+
+                        el.className = classes;
+                        el.innerHTML = `
+                            ${icon}
+                            <div class="text-sm font-normal break-words">${message}</div>
+                        `;
+                        return el;
+                    },
+
+                    // Hàm gọi Loading (Trả về ID để đóng sau này)
+                    loading(message) {
+                        const id = 'toast-' + Date.now();
+                        const el = this.createToastElement(message, 'loading', id);
+                        this.container.appendChild(el);
+
+                        // Trigger animation vào
+                        requestAnimationFrame(() => {
+                            el.classList.remove('translate-x-full', 'opacity-0');
+                        });
+
+                        return id; // Trả về ID để manual close
+                    },
+
+                    // Hàm gọi Success
+                    success(message) {
+                        this.show(message, 'success');
+                    },
+
+                    // Hàm gọi Error
+                    error(message) {
+                        this.show(message, 'error');
+                    },
+
+                    // Hàm hiển thị chung
+                    show(message, type) {
+                        const id = 'toast-' + Date.now();
+                        const el = this.createToastElement(message, type, id);
+                        this.container.appendChild(el);
+
+                        // Animation In
+                        requestAnimationFrame(() => {
+                            el.classList.remove('translate-x-full', 'opacity-0');
+                        });
+
+                        // Auto remove sau 3s
+                        setTimeout(() => {
+                            this.remove(id);
+                        }, 3000);
+                    },
+
+                    // Hàm xóa toast
+                    remove(id) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            // Animation Out
+                            el.classList.add('translate-x-full', 'opacity-0');
+                            setTimeout(() => {
+                                if (el.parentElement)
+                                    el.remove();
+                            }, 300); // Chờ animation chạy xong mới xóa DOM
+                        }
+                    }
+                };
+            </script>
+        </div>
+
+    </body>
+</html>
