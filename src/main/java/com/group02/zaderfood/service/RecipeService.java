@@ -21,6 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.group02.zaderfood.dto.RecipeMatchDTO;
+import com.group02.zaderfood.entity.CollectionItem;
+import com.group02.zaderfood.entity.RecipeCollection;
+import com.group02.zaderfood.repository.CollectionItemRepository;
+import com.group02.zaderfood.repository.RecipeCollectionRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Set;
@@ -39,8 +43,12 @@ public class RecipeService {
     private RecipeStepRepository recipeStepRepository;
     @Autowired
     private FileStorageService fileStorageService;
+    @Autowired
+    private RecipeCollectionRepository collectionRepository;
+    @Autowired
+    private CollectionItemRepository collectionItemRepository;
 
-    @Transactional // Đảm bảo lưu tất cả hoặc không lưu gì cả nếu lỗi
+    @Transactional
     public void createFullRecipe(RecipeCreationDTO form, int userId) {
 
         // 1. RECIPES 
@@ -235,5 +243,44 @@ public class RecipeService {
         }
 
         return results;
+    }
+
+    @Transactional
+    public boolean toggleFavorite(Integer userId, Integer recipeId) {
+        String defaultCollectionName = "Recipe Favorite";
+
+        // 1. Tìm hoặc Tạo Collection "Recipe Favorite"
+        RecipeCollection collection = collectionRepository.findByUserIdAndName(userId, defaultCollectionName)
+                .orElseGet(() -> {
+                    RecipeCollection newCol = new RecipeCollection();
+                    newCol.setUserId(userId);
+                    newCol.setName(defaultCollectionName);
+                    newCol.setIsPublic(false);
+                    newCol.setCreatedAt(LocalDateTime.now());
+                    newCol.setUpdatedAt(LocalDateTime.now());
+                    newCol.setIsDeleted(false);
+                    return collectionRepository.save(newCol);
+                });
+
+        // 2. Kiểm tra món ăn đã có trong collection chưa
+        boolean exists = collectionItemRepository.existsByCollectionIdAndRecipeId(collection.getCollectionId(), recipeId);
+
+        if (exists) {
+            // (Tuỳ chọn) Nếu muốn bấm lần nữa là XÓA (Toggle) thì viết code xóa ở đây
+            // Hiện tại yêu cầu là "Thêm", nên nếu có rồi thì ta có thể trả về false hoặc true tùy ý
+            return false; // Đã tồn tại
+        } else {
+            // 3. Thêm vào CollectionItems
+            CollectionItem item = new CollectionItem();
+            item.setCollectionId(collection.getCollectionId());
+            item.setRecipeId(recipeId);
+            item.setAddedAt(LocalDateTime.now());
+            item.setCreatedAt(LocalDateTime.now());
+            item.setUpdatedAt(LocalDateTime.now());
+            item.setIsDeleted(false);
+
+            collectionItemRepository.save(item);
+            return true; // Thêm mới thành công
+        }
     }
 }

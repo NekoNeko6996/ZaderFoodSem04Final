@@ -27,6 +27,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 @Controller
 @RequestMapping("/recipes")
 public class RecipeController {
@@ -140,5 +143,22 @@ public class RecipeController {
         model.addAttribute("difficulty", difficulty);
 
         return "recipe/results";
+    }
+
+    @PostMapping("/api/favorite/{recipeId}")
+    @ResponseBody
+    public ResponseEntity<?> addToFavorite(@PathVariable Integer recipeId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body("User not logged in");
+        }
+
+        boolean added = recipeService.toggleFavorite(currentUser.getUserId(), recipeId);
+
+        if (added) {
+            return ResponseEntity.ok().body(Map.of("message", "Added to favorites", "status", "added"));
+        } else {
+            return ResponseEntity.ok().body(Map.of("message", "Already in favorites", "status", "exists"));
+        }
     }
 }

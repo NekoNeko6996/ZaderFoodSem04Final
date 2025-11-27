@@ -154,6 +154,15 @@
 
                                 <div th:each="match : ${recipeMatches}" class="flex flex-col bg-white dark:bg-dark-ink/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-shadow hover:shadow-lg group relative">
 
+                                    <button 
+                                        th:data-id="${match.recipe.recipeId}"
+                                        th:data-name="${match.recipe.name}"
+                                        onclick="toggleHeart(event, this)"
+                                        class="absolute top-3 left-3 z-20 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 hover:bg-white text-gray-400 hover:text-red-500 shadow-sm transition-colors backdrop-blur-sm"
+                                        title="Add to Favorites">
+                                        <span class="material-symbols-outlined !text-[20px]">favorite</span>
+                                    </button>
+
                                     <div th:if="${not #lists.isEmpty(selectedIngredients)}"
                                          class="absolute top-3 right-3 z-10 px-2 py-1 rounded-lg text-xs font-bold text-white shadow-sm"
                                          th:classappend="${match.matchPercentage == 100 ? 'bg-nutri-green' : (match.matchPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500')}">
@@ -214,5 +223,73 @@
                 </div>
             </main>
         </div>
+
+        <!--toast--> 
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
     </body>
+
+    <script>
+        // Hàm xử lý khi click trái tim (ĐÃ SỬA)
+        function toggleHeart(event, btnElement) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // 1. Lấy dữ liệu từ attribute
+            const recipeId = btnElement.getAttribute('data-id');
+            const recipeName = btnElement.getAttribute('data-name');
+            const icon = btnElement.querySelector('span');
+
+            // 2. GỌI TOAST LOADING
+            const loadingToastId = ZaderToast.loading(`Adding "${recipeName}" to your favorites...`);
+
+            setTimeout(() => {
+                fetch('/recipes/api/favorite/' + recipeId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                        .then(response => {
+                            if (response.status === 401) {
+                                throw new Error("UNAUTHORIZED");
+                            }
+                            if (!response.ok) {
+                                throw new Error("SERVER_ERROR");
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            ZaderToast.remove(loadingToastId);
+
+                            if (data.status === 'added' || data.status === 'exists') {
+                                // Success logic
+                                const msg = data.status === 'exists'
+                                        ? `"${recipeName}" is already in your favorites.`
+                                        : `"${recipeName}" has been added to favorites!`;
+
+                                ZaderToast.success(msg);
+
+                                // Update Icon UI
+                                icon.classList.remove('text-gray-400');
+                                icon.classList.add('text-red-500', 'fill-current');
+                                icon.style.fontVariationSettings = "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24";
+
+                                // Animation
+                                btnElement.classList.add('scale-110');
+                                setTimeout(() => btnElement.classList.remove('scale-110'), 200);
+                            }
+                        })
+                        .catch(error => {
+                            ZaderToast.remove(loadingToastId);
+
+                            if (error.message === "UNAUTHORIZED") {
+                                ZaderToast.error("Please login to save recipes!");
+                            } else {
+                                ZaderToast.error("Failed to add recipe. Please try again.");
+                            }
+                            console.error('Error:', error);
+                        });
+            }, 500);
+        }
+    </script>
 </html>
