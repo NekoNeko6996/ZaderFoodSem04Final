@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Add System Ingredient - Admin</title>
+
+        <link rel="icon" href="data:,">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "nutri-green": "#4CAF50",
+                            "card-white": "#FFFFFF",
+                            "dark-ink": "#263238",
+                            "soft-grey": "#78909C",
+                            "smart-mist": "#ECEFF1",
+                            "smart-white": "#FAFAFA",
+                            "protein-blue": "#42A5F5",
+                            "carbs-gold": "#FFCA28",
+                            "fat-red": "#EF5350",
+                            "status-success": "#66BB6A",
+                            "status-error": "#E53935",
+                            "status-warning": "#FFA726",
+                        },
+                        fontFamily: {
+                            "display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]
+                        },
+                        boxShadow: {
+                            'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        }
+                    },
+                }
+            }
+        </script>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+
+        <style>
+            body {
+                font-family: 'Plus Jakarta Sans', sans-serif;
+            }
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 text-dark-ink">
+
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="max-w-xl w-full bg-card-white rounded-xl shadow-soft overflow-hidden border border-purple-100">
+
+                <div class="bg-purple-600 p-6 text-center">
+                    <h2 class="text-2xl font-bold text-white">System Ingredient</h2>
+                    <p class="text-purple-100 text-sm mt-1">Add verified ingredients to database</p>
+                </div>
+
+                <form id="ingredientForm" th:action="@{/admin/ingredients/create}" method="POST" th:object="${newIngredient}" enctype="multipart/form-data" class="p-8 space-y-6">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-dark-ink mb-2">Name <span class="text-status-error">*</span></label>
+                            <input type="text" id="inputName" th:field="*{newName}" required 
+                                   class="w-full px-4 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-smart-white focus:bg-white transition disabled:bg-gray-100 disabled:text-gray-400"
+                                   placeholder="Ex: Salmon">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-dark-ink mb-2">Category <span class="text-status-error">*</span></label>
+                            <select id="inputCategory" th:field="*{categoryId}" required
+                                    class="w-full px-4 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-smart-white focus:bg-white disabled:bg-gray-100 disabled:text-gray-400">
+                                <option value="" disabled selected>Select category</option>
+                                <option th:each="cat : ${categories}" th:value="${cat.categoryId}" th:text="${cat.name}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-dark-ink mb-2">Base Unit</label>
+                            <input type="text" id="inputUnit" th:field="*{baseUnit}" 
+                                   class="w-full px-4 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-smart-white focus:bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                                   placeholder="e.g. g, ml">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-dark-ink mb-2">Calories <span class="text-soft-grey text-xs font-normal">(per 100g)</span></label>
+                            <input type="number" step="0.1" id="inputCalories" th:field="*{caloriesPer100g}" 
+                                   class="w-full px-4 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-smart-white focus:bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                                   placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2 p-4 bg-purple-50 rounded-lg border border-purple-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-bold text-purple-700 flex items-center gap-2">
+                                    <span class="material-symbols-outlined !text-lg">auto_awesome</span> AI Assistant (Ollama)
+                                </h4>
+                                <p class="text-xs text-purple-600">Auto-calculate macros based on name & image.</p>
+                            </div>
+                            <button type="button" onclick="analyzeWithAI()" id="btnAnalyze"
+                                    class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span>Analyze Now</span>
+                                <span id="aiLoadingIcon" class="hidden material-symbols-outlined !text-sm animate-spin">progress_activity</span>
+                            </button>
+                        </div>
+                        <p id="aiDisclaimer" class="hidden text-[10px] text-soft-grey italic mt-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined !text-[12px]">info</span>
+                            Data generated by AI, information may be misleading. Please verify.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-dark-ink mb-2">Macros <span class="text-soft-grey text-xs font-normal">(per 100g)</span></label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="relative">
+                                <input type="number" step="0.1" id="inputProtein" th:field="*{protein}" placeholder="Prot"
+                                       class="w-full pl-3 pr-8 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm bg-smart-white focus:bg-white disabled:bg-gray-100 disabled:text-gray-400">
+                                <span class="absolute right-2 top-3 text-xs font-bold text-protein-blue">P</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="0.1" id="inputCarbs" th:field="*{carbs}" placeholder="Carb"
+                                       class="w-full pl-3 pr-8 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm bg-smart-white focus:bg-white disabled:bg-gray-100 disabled:text-gray-400">
+                                <span class="absolute right-2 top-3 text-xs font-bold text-carbs-gold">C</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="0.1" id="inputFat" th:field="*{fat}" placeholder="Fat"
+                                       class="w-full pl-3 pr-8 py-3 rounded-lg border border-smart-mist focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm bg-smart-white focus:bg-white disabled:bg-gray-100 disabled:text-gray-400">
+                                <span class="absolute right-2 top-3 text-xs font-bold text-fat-red">F</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-dark-ink mb-2">Ingredient Image</label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-40 border-2 border-purple-300 border-dashed rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition overflow-hidden relative">
+
+                                <div id="upload-placeholder" class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <span class="material-symbols-outlined text-purple-500 text-3xl mb-2">cloud_upload</span>
+                                    <p class="text-sm text-purple-600"><span class="font-bold">Click to upload</span></p>
+                                </div>
+
+                                <img id="image-preview" src="#" alt="Preview" class="hidden w-full h-full object-cover absolute inset-0 z-10" />
+
+                                <button type="button" id="remove-image-btn" onclick="removeImage(event)" 
+                                        class="hidden absolute top-2 right-2 z-20 bg-white/80 hover:bg-white text-red-500 rounded-full p-1 shadow-sm">
+                                    <span class="material-symbols-outlined !text-[20px]">close</span>
+                                </button>
+
+                                <input id="dropzone-file" type="file" th:field="*{newIngredientImage}" class="hidden" accept="image/*" onchange="previewImage(this)" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <a th:href="@{/recipes/search}" class="w-1/2 py-3 px-4 text-center rounded-lg border border-smart-mist text-soft-grey font-bold hover:bg-gray-50 transition">Cancel</a>
+                        <button type="submit" class="w-1/2 py-3 px-4 rounded-lg bg-purple-600 text-white font-bold hover:bg-purple-700 shadow-soft hover:shadow-lg transition transform active:scale-95">Add to System</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+
+        <script>
+            // --- LOGIC PREVIEW ẢNH ---
+            function previewImage(input) {
+                const file = input.files[0];
+                const preview = document.getElementById('image-preview');
+                const placeholder = document.getElementById('upload-placeholder');
+                const removeBtn = document.getElementById('remove-image-btn');
+
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        preview.classList.remove('hidden');
+                        placeholder.classList.add('opacity-0'); // Ẩn placeholder đi nhưng giữ khung
+                        removeBtn.classList.remove('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            function removeImage(event) {
+                event.preventDefault(); // Ngăn click lan ra label (mở lại dialog file)
+                event.stopPropagation();
+
+                const input = document.getElementById('dropzone-file');
+                const preview = document.getElementById('image-preview');
+                const placeholder = document.getElementById('upload-placeholder');
+                const removeBtn = document.getElementById('remove-image-btn');
+
+                // Reset input file
+                input.value = "";
+
+                // Reset UI
+                preview.src = "#";
+                preview.classList.add('hidden');
+                placeholder.classList.remove('opacity-0');
+                removeBtn.classList.add('hidden');
+            }
+            // -------------------------
+
+            function toggleInputs(disabled) {
+                const inputs = document.querySelectorAll('#ingredientForm input, #ingredientForm select, #ingredientForm button, #ingredientForm textarea');
+                inputs.forEach(el => {
+                    // Không disable nút remove ảnh để user có thể xóa nếu muốn
+                    if (el.id === 'remove-image-btn')
+                        return;
+
+                    el.disabled = disabled;
+                    if (disabled) {
+                        el.classList.add('cursor-not-allowed', 'opacity-60');
+                    } else {
+                        el.classList.remove('cursor-not-allowed', 'opacity-60');
+                    }
+                });
+            }
+
+            function analyzeWithAI() {
+                const name = document.getElementById('inputName').value;
+                const categorySelect = document.getElementById('inputCategory');
+                const category = categorySelect.options[categorySelect.selectedIndex]?.text || '';
+                const baseUnit = document.getElementById('inputUnit').value || 'gram';
+                const imageFile = document.getElementById('dropzone-file').files[0];
+
+                if (!name) {
+                    ZaderToast.error("Please enter Ingredient Name first!");
+                    document.getElementById('inputName').focus();
+                    return;
+                }
+
+                const btn = document.getElementById('btnAnalyze');
+                const icon = document.getElementById('aiLoadingIcon');
+                const disclaimer = document.getElementById('aiDisclaimer');
+
+                icon.classList.remove('hidden');
+                disclaimer.classList.add('hidden');
+                toggleInputs(true);
+
+                const toastId = ZaderToast.loading(`Asking Ollama about "${name}"...`);
+
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('category', category);
+                formData.append('baseUnit', baseUnit);
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+
+                fetch('/api/admin/ingredients/analyze', {
+                    method: 'POST',
+                    body: formData
+                })
+                        .then(response => {
+                            if (!response.ok)
+                                throw new Error("API Error");
+                            return response.json();
+                        })
+                        .then(data => {
+                            ZaderToast.remove(toastId);
+
+                            if (data.calories)
+                                document.getElementById('inputCalories').value = data.calories;
+                            if (data.protein)
+                                document.getElementById('inputProtein').value = data.protein;
+                            if (data.carbs)
+                                document.getElementById('inputCarbs').value = data.carbs;
+                            if (data.fat)
+                                document.getElementById('inputFat').value = data.fat;
+
+                            disclaimer.classList.remove('hidden');
+                            ZaderToast.success("Analysis complete! Data filled.");
+
+                            btn.innerHTML = `<span class="material-symbols-outlined !text-sm">check</span> Done`;
+                            setTimeout(() => {
+                                btn.innerHTML = `<span>Analyze Now</span> <span id="aiLoadingIcon" class="hidden material-symbols-outlined !text-sm animate-spin">progress_activity</span>`;
+                            }, 3000);
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            ZaderToast.remove(toastId);
+                            ZaderToast.error("AI could not analyze. Please fill manually.");
+                        })
+                        .finally(() => {
+                            toggleInputs(false);
+                            icon.classList.add('hidden');
+                        });
+            }
+        </script>
+    </body>
+</html>

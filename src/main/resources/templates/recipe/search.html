@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <head>
         <meta charset="utf-8"/>
         <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -22,8 +23,37 @@
                 darkMode: "class",
                 theme: {
                     extend: {
-                        colors: {"primary": "#4bbe4f", "background-light": "#f6f8f6", "background-dark": "#141e15", "nutri-green": "#4CAF50", "card-white": "#FFFFFF", "dark-ink": "#263238", "text-dark": "#131613", "text-muted": "#6b806b", "smart-white": "#FAFAFA"},
-                        fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]},
+                        colors: {
+                            // 1. Màu Thương hiệu [cite: 2]
+                            "nutri-green": "#4CAF50", // [cite: 5] Primary, Navbar, Buttons
+                            "deep-forest": "#2E7D32", // [cite: 7] Hover, Gradient end
+                            "card-white": "#FFFFFF", // [cite: 9] Card Background
+
+                            // 2. Màu Nhấn [cite: 12]
+                            "chef-orange": "#FF7043", // [cite: 15] CTA, Heart Icon
+
+                            // 3. Màu Trung tính [cite: 17]
+                            "dark-ink": "#263238", // [cite: 19] Main Text
+                            "soft-grey": "#78909C", // [cite: 22] Sub Text
+                            "smart-mist": "#ECEFF1", // [cite: 24] Borders, Dividers
+                            "smart-white": "#FAFAFA", // [cite: 26] Main Background
+
+                            // 4. Trực quan hóa dữ liệu [cite: 29]
+                            "protein-blue": "#42A5F5", // [cite: 31]
+                            "carbs-gold": "#FFCA28", // [cite: 32]
+                            "fat-red": "#EF5350", // [cite: 33]
+
+                            // 5. Trạng thái [cite: 34]
+                            "status-success": "#66BB6A", // [cite: 36]
+                            "status-error": "#E53935", // [cite: 38]
+                            "status-warning": "#FFA726", // [cite: 40]
+                        },
+                        fontFamily: {
+                            "display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]
+                        },
+                        boxShadow: {
+                            'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', // Soft shadow 
+                        }
                     },
                 },
             }
@@ -75,7 +105,7 @@
                                         th:data-cat="${entry.key}"
                                         onclick="filterByCategory(this.getAttribute('data-cat'))"
                                         class="filter-btn flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg border border-smart-mist bg-card-white px-4 hover:bg-gray-100 text-dark-ink dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 transition-colors">
-                                        <p class="text-sm font-medium" th:text="${entry.key}">Category Name</p>
+                                    <p class="text-sm font-medium" th:text="${entry.key}">Category Name</p>
                                 </button>
                             </div>
 
@@ -100,20 +130,73 @@
                                 </div>
                             </div>
                         </div>
-
                         <aside class="w-full lg:w-80 lg:min-w-80">
-                            <div class="sticky top-20 flex flex-col gap-4 rounded-xl border border-smart-mist bg-card-white p-6 dark:border-gray-700 dark:bg-gray-800 shadow-sm">
-                                <h3 class="text-lg font-bold text-text-dark dark:text-white">
-                                    Your Ingredients (<span id="countDisplay">0</span>)
-                                </h3>
+                            <div class="sticky top-24 flex flex-col gap-4">
+                                <div class="flex flex-col gap-4 rounded-xl border border-smart-mist bg-card-white p-6 dark:border-gray-700 dark:bg-gray-800 shadow-soft">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-lg font-bold text-dark-ink dark:text-white">
+                                            Your Ingredients (<span id="countDisplay">0</span>)
+                                        </h3>
+                                        <button id="btnClearAll" 
+                                                onclick="clearAllIngredients()" 
+                                                class="hidden text-xs font-bold text-red-500 hover:text-red-600 hover:underline transition cursor-pointer">
+                                            Clear All
+                                        </button>
+                                    </div>
 
-                                <div id="selectedContainer" class="flex flex-wrap gap-2 min-h-[50px]">
-                                    <p id="emptyMsg" class="text-sm text-gray-400 italic">No ingredients selected.</p>
+                                    <div id="selectedContainer" class="flex flex-wrap gap-2 min-h-[50px]">
+                                        <p id="emptyMsg" class="text-sm text-soft-grey italic">No ingredients selected.</p>
+                                    </div>
+
+                                    <button onclick="submitSearch()" class="mt-4 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-nutri-green px-4 text-base font-bold text-card-white hover:bg-deep-forest transition shadow-sm hover:shadow-md">
+                                        <span class="truncate">Find Recipes</span>
+                                    </button>
                                 </div>
 
-                                <button onclick="submitSearch()" class="mt-4 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-nutri-green px-4 text-base font-bold text-card-white hover:opacity-90 transition">
-                                    <span class="truncate">Find Recipes</span>
-                                </button>
+                                <div class="flex flex-col gap-4 rounded-xl border border-blue-100 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-900/20 shadow-soft">
+
+                                    <div sec:authorize="!isAuthenticated()">
+                                        <div class="flex flex-col gap-2 text-center">
+                                            <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300">
+                                                <span class="material-symbols-outlined">help</span>
+                                            </div>
+                                            <h4 class="text-base font-bold text-dark-ink dark:text-white">Can't find your ingredient?</h4>
+                                            <p class="text-sm text-soft-grey dark:text-gray-400">Log in to contribute new ingredients to our community database.</p>
+                                            <a th:href="@{/login}" class="mt-2 flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition shadow-sm">
+                                                Log in to Request
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div sec:authorize="hasRole('USER') and !hasRole('ADMIN')">
+                                        <div class="flex flex-col gap-2 text-center">
+                                            <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-nutri-green dark:bg-green-800 dark:text-green-300">
+                                                <span class="material-symbols-outlined">add_reaction</span>
+                                            </div>
+                                            <h4 class="text-base font-bold text-dark-ink dark:text-white">Missing something?</h4>
+                                            <p class="text-sm text-soft-grey dark:text-gray-400">Request a new ingredient and we'll review it for you.</p>
+                                            <a th:href="@{/recipes/request-ingredient}" class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-nutri-green px-4 py-2 text-sm font-bold text-white hover:bg-deep-forest transition shadow-sm">
+                                                <span class="material-symbols-outlined !text-lg">add</span>
+                                                Request New Ingredient
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div sec:authorize="hasRole('ADMIN')">
+                                        <div class="flex flex-col gap-2 text-center">
+                                            <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                                <span class="material-symbols-outlined">admin_panel_settings</span>
+                                            </div>
+                                            <h4 class="text-base font-bold text-dark-ink dark:text-white">System Management</h4>
+                                            <p class="text-sm text-soft-grey dark:text-gray-400">Directly add new ingredients to the system database.</p>
+                                            <a th:href="@{/admin/ingredients/create}" class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-700 transition shadow-sm">
+                                                <span class="material-symbols-outlined !text-lg">add_circle</span>
+                                                Add System Ingredient
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                </div>
                             </div>
                         </aside>
                     </div>
@@ -121,70 +204,86 @@
             </main>
         </div>
 
+        <!--toast-->
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+
         <script>
+            // Khai báo biến toàn cục
             let selectedIds = [];
             const selectedContainer = document.getElementById('selectedContainer');
             const countDisplay = document.getElementById('countDisplay');
             const emptyMsg = document.getElementById('emptyMsg');
 
+            // --- SỰ KIỆN KHI TRANG TẢI XONG ---
             document.addEventListener("DOMContentLoaded", function () {
-                // Thymeleaf sẽ render list ID thành mảng JS: [1, 2, 3]
+
+                // 1. KHÔI PHỤC NGUYÊN LIỆU ĐÃ CHỌN TỪ URL
+                // Lưu ý: Viết trên cùng 1 dòng để Thymeleaf parse đúng mảng JS
                 const preSelectedIds = [[${preSelectedIds}]];
 
-                if (preSelectedIds && preSelectedIds.length > 0) {
+                if (preSelectedIds && Array.isArray(preSelectedIds) && preSelectedIds.length > 0) {
                     preSelectedIds.forEach(id => {
                         // Tìm nút bấm có ID tương ứng
                         const btn = document.getElementById('btn-ing-' + id);
                         if (btn) {
-                            // Giả lập hành động click để chạy logic chọn
+                            // Giả lập hành động click để chạy logic chọn (Active nút + Thêm vào sidebar)
                             toggleIngredient(btn);
                         }
                     });
                 }
+
+                // 2. HIỂN THỊ TOAST TỪ URL (nếu có success param)
+                handleToastFromUrl();
             });
 
-            // --- HÀM NÀY ĐÃ ĐƯỢC SỬA LẠI ---
+            // --- CÁC HÀM XỬ LÝ LOGIC ---
+
             function toggleIngredient(element) {
                 // Lấy dữ liệu từ data-id và data-name
-                // Lưu ý: getAttribute trả về chuỗi, cần ép kiểu ID về số nguyên
                 const id = parseInt(element.getAttribute('data-id'));
                 const name = element.getAttribute('data-name');
-
-                // Logic cũ giữ nguyên, chỉ thay đổi cách lấy btn (vì element chính là btn rồi)
                 const btn = element;
 
                 if (selectedIds.includes(id)) {
-                    // REMOVE
+                    // REMOVE: Nếu đã có thì bỏ chọn
                     selectedIds = selectedIds.filter(item => item !== id);
                     btn.classList.remove('selected-ing');
+                    // Xóa style active (dựa theo Tailwind config của bạn)
+                    btn.classList.remove('!bg-nutri-green', '!text-card-white', '!border-nutri-green');
+
                     removeTag(id);
                 } else {
-                    // ADD
+                    // ADD: Nếu chưa có thì chọn
                     selectedIds.push(id);
-                    btn.classList.add('selected-ing');
-                    addTag(id, name, btn.id); // Truyền thêm btn.id để tag biết nút nào để toggle lại
+                    btn.classList.add('selected-ing'); // Class CSS cũ (nếu dùng)
+                    // Thêm style active của Tailwind để đảm bảo hiển thị đúng màu
+                    btn.classList.add('!bg-nutri-green', '!text-card-white', '!border-nutri-green');
+
+                    addTag(id, name, btn.id);
                 }
                 updateUI();
             }
 
-            // --- SỬA LẠI HÀM addTag ĐỂ XỬ LÝ NÚT CLOSE ---
             function addTag(id, name, btnId) {
                 const tag = document.createElement('div');
                 tag.id = 'tag-' + id;
-                tag.className = 'flex h-8 items-center justify-center gap-x-1.5 rounded-full bg-nutri-green pl-3 pr-2 text-card-white animate-fade-in';
+                tag.className = 'flex h-8 items-center justify-center gap-x-1.5 rounded-full bg-nutri-green pl-3 pr-2 text-card-white animate-fade-in shadow-sm';
 
-                // Nút tắt trên Tag cần gọi lại toggleIngredient bằng cách trỏ tới nút gốc
-                // Hoặc đơn giản hơn là viết hàm remove riêng, nhưng để đơn giản ta giả lập click lại nút gốc
                 tag.innerHTML = `
             <p class="text-sm font-medium">${name}</p>
-            <button onclick="document.getElementById('${btnId}').click()" class="text-card-white/70 hover:text-card-white">
-                <span class="!text-base material-symbols-outlined">close</span>
+            <button onclick="triggerRemove('${btnId}')" class="text-card-white/70 hover:text-card-white transition">
+                <span class="material-symbols-outlined !text-[18px]">close</span>
             </button>
         `;
                 selectedContainer.appendChild(tag);
             }
 
-            // ... Các hàm removeTag, updateUI, filterIngredients, submitSearch GIỮ NGUYÊN ...
+            // Hàm phụ trợ để gọi click vào nút gốc khi bấm X trên tag
+            function triggerRemove(btnId) {
+                const btn = document.getElementById(btnId);
+                if (btn)
+                    btn.click();
+            }
 
             function removeTag(id) {
                 const tag = document.getElementById('tag-' + id);
@@ -193,11 +292,24 @@
             }
 
             function updateUI() {
-                countDisplay.innerText = selectedIds.length;
-                if (selectedIds.length > 0) {
+                const count = selectedIds.length;
+                const countDisplay = document.getElementById('countDisplay');
+                const emptyMsg = document.getElementById('emptyMsg');
+                const btnClearAll = document.getElementById('btnClearAll');
+
+                // Cập nhật số lượng
+                countDisplay.innerText = count;
+
+                if (count > 0) {
                     emptyMsg.style.display = 'none';
+                    // Hiện nút Clear All
+                    if (btnClearAll)
+                        btnClearAll.classList.remove('hidden');
                 } else {
                     emptyMsg.style.display = 'block';
+                    // Ẩn nút Clear All
+                    if (btnClearAll)
+                        btnClearAll.classList.add('hidden');
                 }
             }
 
@@ -208,7 +320,9 @@
 
                 for (let i = 0; i < buttons.length; i++) {
                     const txtValue = buttons[i].textContent || buttons[i].innerText;
+                    // Tìm kiếm không phân biệt hoa thường
                     if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        buttons[i].parentElement.style.display = ""; // Hiển thị wrapper cha (nếu có grid)
                         buttons[i].style.display = "";
                     } else {
                         buttons[i].style.display = "none";
@@ -218,20 +332,22 @@
 
             function submitSearch() {
                 if (selectedIds.length === 0) {
-                    alert("Please select at least one ingredient!");
+                    // Dùng Toast thay vì alert mặc định cho đẹp
+                    if (typeof ZaderToast !== 'undefined') {
+                        ZaderToast.show("Please select at least one ingredient!", "error");
+                    } else {
+                        alert("Please select at least one ingredient!");
+                    }
                     return;
                 }
                 window.location.href = '/recipes/suggestions?ids=' + selectedIds.join(',');
             }
 
             function filterByCategory(categoryName) {
-                // 1. Ẩn/Hiện các section tương ứng
+                // 1. Ẩn/Hiện các section
                 const sections = document.querySelectorAll('.category-section');
-
                 sections.forEach(section => {
-                    // Lấy tên category của section đó
                     const sectionCat = section.getAttribute('data-category');
-
                     if (categoryName === 'all' || sectionCat === categoryName) {
                         section.style.display = 'block';
                     } else {
@@ -239,31 +355,26 @@
                     }
                 });
 
-                // 2. Cập nhật màu sắc nút bấm (Active state)
+                // 2. Cập nhật nút Active
                 updateFilterButtonStyles(categoryName);
             }
 
             function updateFilterButtonStyles(activeCategoryName) {
                 const allButtons = document.querySelectorAll('.filter-btn');
 
-                // Style cho nút Active (Xanh lá, chữ trắng)
+                // Style Active & Inactive (Tailwind classes)
                 const activeClass = ['bg-nutri-green', 'text-card-white', 'border-none'];
-                // Style cho nút Inactive (Trắng, viền xám)
                 const inactiveClass = ['bg-card-white', 'border', 'border-smart-mist', 'text-dark-ink', 'hover:bg-gray-100', 'dark:bg-gray-800', 'dark:border-gray-600', 'dark:text-white'];
 
                 allButtons.forEach(btn => {
-                    // Reset về Inactive trước
                     btn.classList.remove(...activeClass);
                     btn.classList.add(...inactiveClass);
 
-                    // Kiểm tra xem nút này có phải nút đang bấm không
-                    // Logic: Nếu bấm 'all' thì check id 'btn-cat-all'
-                    // Nếu bấm category cụ thể thì so sánh onclick hoặc id
-
                     let isMatch = false;
+                    // Kiểm tra nút All hoặc nút Category cụ thể
                     if (activeCategoryName === 'all' && btn.id === 'btn-cat-all') {
                         isMatch = true;
-                    } else if (btn.id === 'btn-cat-' + activeCategoryName) {
+                    } else if (btn.getAttribute('data-cat') === activeCategoryName) {
                         isMatch = true;
                     }
 
@@ -272,6 +383,46 @@
                         btn.classList.add(...activeClass);
                     }
                 });
+            }
+
+            function handleToastFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const successType = urlParams.get('success');
+
+                if (successType && typeof ZaderToast !== 'undefined') {
+                    if (successType === 'request_submitted') {
+                        ZaderToast.success("Request submitted! Waiting for admin approval.");
+                    } else if (successType === 'admin_added') {
+                        ZaderToast.success("New ingredient added to system successfully!");
+                    }
+                    // Xóa param trên URL để không hiện lại khi F5
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                }
+            }
+
+            // --- THÊM HÀM XÓA TẤT CẢ ---
+            function clearAllIngredients() {
+                // Duyệt qua mảng ID để bỏ chọn các nút bên trái
+                selectedIds.forEach(id => {
+                    const btn = document.getElementById('btn-ing-' + id);
+                    if (btn) {
+                        // Reset style về mặc định
+                        btn.classList.remove('selected-ing');
+                        // Xóa style active của Tailwind
+                        btn.classList.remove('!bg-nutri-green', '!text-card-white', '!border-nutri-green');
+                    }
+                    // Xóa tag bên phải
+                    const tag = document.getElementById('tag-' + id);
+                    if (tag)
+                        tag.remove();
+                });
+
+                // Reset mảng dữ liệu
+                selectedIds = [];
+
+                // Cập nhật giao diện
+                updateUI();
             }
         </script>
     </body>

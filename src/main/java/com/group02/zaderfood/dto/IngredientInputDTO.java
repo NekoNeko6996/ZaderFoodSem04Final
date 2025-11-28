@@ -7,19 +7,22 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class IngredientInputDTO {
-    private BigDecimal quantity;
-    private String unit;
-    private String note;
-
-    private Boolean isNewIngredient = false;
+    
+    private String newName;
+    private Integer categoryId;
 
     private Integer existingIngredientId;
-
-    private String newName;
+    private Boolean isNewIngredient = false;
+    
     private BigDecimal caloriesPer100g;
     private BigDecimal protein;
     private BigDecimal carbs;
     private BigDecimal fat;
-    private Integer categoryId;
+    private String baseUnit;
+    
     private MultipartFile newIngredientImage;
+    
+    private BigDecimal quantity;
+    private String unit;
+    private String note;
 }
