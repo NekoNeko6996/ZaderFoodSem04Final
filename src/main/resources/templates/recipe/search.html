@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <head>
         <meta charset="utf-8"/>
         <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -22,8 +23,37 @@
                 darkMode: "class",
                 theme: {
                     extend: {
-                        colors: {"primary": "#4bbe4f", "background-light": "#f6f8f6", "background-dark": "#141e15", "nutri-green": "#4CAF50", "card-white": "#FFFFFF", "dark-ink": "#263238", "text-dark": "#131613", "text-muted": "#6b806b", "smart-white": "#FAFAFA"},
-                        fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]},
+                        colors: {
+                            // 1. Màu Thương hiệu [cite: 2]
+                            "nutri-green": "#4CAF50", // [cite: 5] Primary, Navbar, Buttons
+                            "deep-forest": "#2E7D32", // [cite: 7] Hover, Gradient end
+                            "card-white": "#FFFFFF", // [cite: 9] Card Background
+
+                            // 2. Màu Nhấn [cite: 12]
+                            "chef-orange": "#FF7043", // [cite: 15] CTA, Heart Icon
+
+                            // 3. Màu Trung tính [cite: 17]
+                            "dark-ink": "#263238", // [cite: 19] Main Text
+                            "soft-grey": "#78909C", // [cite: 22] Sub Text
+                            "smart-mist": "#ECEFF1", // [cite: 24] Borders, Dividers
+                            "smart-white": "#FAFAFA", // [cite: 26] Main Background
+
+                            // 4. Trực quan hóa dữ liệu [cite: 29]
+                            "protein-blue": "#42A5F5", // [cite: 31]
+                            "carbs-gold": "#FFCA28", // [cite: 32]
+                            "fat-red": "#EF5350", // [cite: 33]
+
+                            // 5. Trạng thái [cite: 34]
+                            "status-success": "#66BB6A", // [cite: 36]
+                            "status-error": "#E53935", // [cite: 38]
+                            "status-warning": "#FFA726", // [cite: 40]
+                        },
+                        fontFamily: {
+                            "display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]
+                        },
+                        boxShadow: {
+                            'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', // Soft shadow 
+                        }
                     },
                 },
             }
@@ -75,7 +105,7 @@
                                         th:data-cat="${entry.key}"
                                         onclick="filterByCategory(this.getAttribute('data-cat'))"
                                         class="filter-btn flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg border border-smart-mist bg-card-white px-4 hover:bg-gray-100 text-dark-ink dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700 transition-colors">
-                                        <p class="text-sm font-medium" th:text="${entry.key}">Category Name</p>
+                                    <p class="text-sm font-medium" th:text="${entry.key}">Category Name</p>
                                 </button>
                             </div>
 
@@ -114,6 +144,51 @@
                                 <button onclick="submitSearch()" class="mt-4 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-nutri-green px-4 text-base font-bold text-card-white hover:opacity-90 transition">
                                     <span class="truncate">Find Recipes</span>
                                 </button>
+                            </div>
+
+                            <div class="sticky top-[380px] flex flex-col gap-4 rounded-xl border border-blue-100 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-900/20 shadow-sm mt-4">
+
+                                <div sec:authorize="!isAuthenticated()">
+                                    <div class="flex flex-col gap-2 text-center">
+                                        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300">
+                                            <span class="material-symbols-outlined">help</span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-dark-ink dark:text-white">Can't find your ingredient?</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Log in to contribute new ingredients to our community database.</p>
+                                        <a th:href="@{/login}" class="mt-2 flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition">
+                                            Log in to Request
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div sec:authorize="hasRole('USER') and !hasRole('ADMIN')">
+                                    <div class="flex flex-col gap-2 text-center">
+                                        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300">
+                                            <span class="material-symbols-outlined">add_reaction</span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-dark-ink dark:text-white">Missing something?</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Request a new ingredient and we'll review it for you.</p>
+                                        <a th:href="@{/recipes/request-ingredient}" class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-nutri-green px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition">
+                                            <span class="material-symbols-outlined !text-lg">add</span>
+                                            Request New Ingredient
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div sec:authorize="hasRole('ADMIN')">
+                                    <div class="flex flex-col gap-2 text-center">
+                                        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
+                                            <span class="material-symbols-outlined">admin_panel_settings</span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-dark-ink dark:text-white">System Management</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Directly add new ingredients to the system database.</p>
+                                        <a th:href="@{/admin/ingredients/create}" class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-700 transition">
+                                            <span class="material-symbols-outlined !text-lg">add_circle</span>
+                                            Add System Ingredient
+                                        </a>
+                                    </div>
+                                </div>
+
                             </div>
                         </aside>
                     </div>

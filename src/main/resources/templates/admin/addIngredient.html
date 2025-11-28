@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title>Add System Ingredient - Admin</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+        <style>body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }</style>
+    </head>
+    <body class="bg-gray-100 text-[#263238]">
+
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="max-w-xl w-full bg-white rounded-xl shadow-lg overflow-hidden border border-purple-100">
+                <div class="bg-purple-600 p-6 text-center">
+                    <h2 class="text-2xl font-bold text-white">System Ingredient</h2>
+                    <p class="text-purple-100 text-sm mt-1">Add verified ingredients to database</p>
+                </div>
+
+                <form th:action="@{/admin/ingredients/create}" method="POST" th:object="${newIngredient}" enctype="multipart/form-data" class="p-8 space-y-6">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Name <span class="text-red-500">*</span></label>
+                            <input type="text" th:field="*{newName}" required 
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                                   placeholder="Ex: Salmon">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Category <span class="text-red-500">*</span></label>
+                            <select th:field="*{categoryId}" required
+                                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white">
+                                <option value="" disabled selected>Select category</option>
+                                <option th:each="cat : ${categories}" th:value="${cat.categoryId}" th:text="${cat.name}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Base Unit</label>
+                            <input type="text" th:field="*{baseUnit}" 
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                                   placeholder="e.g. g, ml">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Calories <span class="text-gray-400 text-xs">(per 100g)</span></label>
+                            <input type="number" step="0.1" th:field="*{caloriesPer100g}" 
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                                   placeholder="0">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Macros <span class="text-gray-400 text-xs">(per 100g)</span></label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="relative">
+                                <input type="number" step="0.1" th:field="*{protein}" placeholder="Prot"
+                                       class="w-full pl-3 pr-8 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                                <span class="absolute right-2 top-3 text-xs font-bold text-blue-500">P</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="0.1" th:field="*{carbs}" placeholder="Carb"
+                                       class="w-full pl-3 pr-8 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm">
+                                <span class="absolute right-2 top-3 text-xs font-bold text-yellow-600">C</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="0.1" th:field="*{fat}" placeholder="Fat"
+                                       class="w-full pl-3 pr-8 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm">
+                                <span class="absolute right-2 top-3 text-xs font-bold text-red-500">F</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Ingredient Image</label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-purple-300 border-dashed rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-8 h-8 mb-4 text-purple-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                    </svg>
+                                    <p class="text-sm text-purple-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p class="text-xs text-purple-400">SVG, PNG, JPG or GIF</p>
+                                </div>
+                                <input id="dropzone-file" type="file" th:field="*{newIngredientImage}" class="hidden" accept="image/*" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <a th:href="@{/recipes/search}" class="w-1/2 py-3 px-4 text-center rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition">
+                            Cancel
+                        </a>
+                        <button type="submit" class="w-1/2 py-3 px-4 rounded-lg bg-purple-600 text-white font-bold hover:bg-purple-700 shadow-md hover:shadow-lg transition transform active:scale-95">
+                            Add to System
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>

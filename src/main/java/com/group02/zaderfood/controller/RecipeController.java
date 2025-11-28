@@ -161,4 +161,31 @@ public class RecipeController {
             return ResponseEntity.ok().body(Map.of("message", "Already in favorites", "status", "exists"));
         }
     }
+
+    @GetMapping("/request-ingredient")
+    public String requestIngredientPage(Model model) {
+        // Lấy danh sách category để user chọn
+        model.addAttribute("categories", ingredientService.findAllCategories());
+
+        // Dùng lại DTO IngredientInputDTO hoặc tạo DTO mới tùy bạn
+        model.addAttribute("newIngredient", new IngredientInputDTO());
+
+        return "recipe/requestIngredient"; // Trả về file HTML form
+    }
+
+    // 2. Xử lý khi user nhấn Submit Form
+    @PostMapping("/request-ingredient")
+    public String submitIngredientRequest(@ModelAttribute IngredientInputDTO form,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+
+        // Gọi Service để lưu nguyên liệu mới (Trạng thái chờ duyệt)
+        ingredientService.requestNewIngredient(form, currentUser.getUserId());
+
+        // Quay lại trang Search và báo thành công
+        return "redirect:/recipes/search?success=request_submitted";
+    }
 }
