@@ -1,89 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
     <head>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-        <title>AI Calorie Estimator - Zader Food</title>
-        <link href="https://fonts.googleapis.com" rel="preconnect"/>
-        <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet"/>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title>AI Calorie Estimator - Zader Food</title>
 
-        <style>
-            .material-symbols-outlined {
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
-            }
+    <style>
+        /* Tinh chỉnh thanh cuộn cho danh sách kết quả */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #e2e8f0;
+            border-radius: 20px;
+        }
+        .custom-scroll:hover::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+        }
 
-            /* Tinh chỉnh thanh cuộn cho đẹp và mảnh hơn */
-            .custom-scroll::-webkit-scrollbar {
-                width: 6px;
+        /* Animation riêng */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
             }
-            .custom-scroll::-webkit-scrollbar-track {
-                background: transparent;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
-            .custom-scroll::-webkit-scrollbar-thumb {
-                background-color: #e2e8f0;
-                border-radius: 20px;
-            }
-            .custom-scroll:hover::-webkit-scrollbar-thumb {
-                background-color: #cbd5e1;
-            }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light text-dark-ink">
 
-            /* Hiệu ứng fade-in mượt mà */
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            .animate-fade-in {
-                animation: fadeIn 0.5s ease-out forwards;
-            }
-        </style>
+    <div class="relative flex min-h-screen w-full flex-col">
 
-        <script id="tailwind-config">
-            tailwind.config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        colors: {
-                            "nutri-green": "#4CAF50",
-                            "deep-forest": "#388E3C",
-                            "dark-ink": "#1e293b",
-                            "soft-grey": "#64748b",
-                            "smart-mist": "#f1f5f9",
-                            "smart-white": "#f8fafc",
-                            "card-white": "#FFFFFF",
-                            "protein-blue": "#3b82f6",
-                            "carbs-gold": "#eab308",
-                            "fat-red": "#ef4444",
-                        },
-                        fontFamily: {"display": ["Manrope", "sans-serif"]},
-                    },
-                },
-            }
-        </script>
-    </head>
-    <body class="font-display bg-smart-white text-dark-ink">
-
-        <header class="bg-card-white shadow-sm sticky top-0 z-50">
-            <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-                <div class="flex items-center gap-2">
-                    <div class="h-8 w-8 bg-nutri-green rounded-full flex items-center justify-center text-white font-bold">Z</div>
-                    <span class="text-xl font-bold tracking-tight">Zader Food</span>
-                </div>
-                <nav class="hidden md:flex gap-6 font-medium text-sm text-soft-grey">
-                    <a href="#" class="hover:text-nutri-green">Home</a>
-                    <a href="#" class="hover:text-nutri-green">Recipes</a>
-                    <a href="#" class="text-nutri-green">AI Tools</a>
-                </nav>
-            </div>
-        </header>
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
 
         <main class="flex flex-1 justify-center py-12 px-4 sm:px-6">
             <div class="flex flex-col w-full max-w-5xl gap-10">
@@ -93,13 +52,13 @@
                         AI <span class="text-nutri-green">Calorie Estimator</span>
                     </h1>
                     <p class="text-soft-grey text-lg max-w-2xl mx-auto">
-                        Snap a photo or describe your meal. Let AI analyze your food.
+                        Snap a photo or describe your meal. Let AI analyze your food nutrition instantly.
                     </p>
                 </div>
 
                 <div class="bg-card-white rounded-2xl shadow-xl shadow-gray-100/50 p-8 flex flex-col gap-8 border border-white">
 
-                    <div id="drop-zone" class="group border-2 border-dashed border-smart-mist hover:border-nutri-green hover:bg-nutri-green/5 transition-all duration-300 rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer bg-smart-white/50 relative overflow-hidden">
+                    <div id="drop-zone" class="group border-2 border-dashed border-border-color hover:border-nutri-green hover:bg-nutri-green/5 transition-all duration-300 rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer bg-background-light relative overflow-hidden">
                         <input type="file" id="imageInput" accept="image/png, image/jpeg, .jpg" class="hidden">
 
                         <div id="upload-placeholder" class="flex flex-col items-center">
@@ -110,7 +69,8 @@
                             <p class="text-soft-grey text-sm mt-1">or drag and drop here (JPG, PNG)</p>
                         </div>
 
-                        <img id="preview-image" class="hidden h-64 w-auto object-contain rounded-lg shadow-md z-10" />
+                        <img id="preview-image" class="hidden h-64 w-auto object-contain rounded-lg shadow-md z-10" alt="Preview" />
+
                         <button id="remove-img-btn" class="hidden absolute top-4 right-4 bg-white/90 p-2 rounded-full hover:bg-red-50 text-soft-grey hover:text-red-500 shadow-sm z-20 transition-colors" title="Remove image">
                             <span class="material-symbols-outlined text-xl">close</span>
                         </button>
@@ -118,7 +78,7 @@
 
                     <div class="flex flex-col sm:flex-row gap-4">
                         <div class="relative flex-1">
-                            <input id="textInput" class="w-full rounded-xl bg-smart-mist/30 border-transparent focus:border-nutri-green focus:bg-white focus:ring-0 text-dark-ink h-14 pl-5 pr-12 text-lg transition-all placeholder:text-gray-400" placeholder="E.g., Grilled salmon with asparagus..." />
+                            <input id="textInput" class="w-full rounded-xl bg-background-light border-transparent focus:border-nutri-green focus:bg-white focus:ring-0 text-dark-ink h-14 pl-5 pr-12 text-lg transition-all placeholder:text-gray-400" placeholder="E.g., Grilled salmon with asparagus..." />
                             <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">edit</span>
                         </div>
 
@@ -205,216 +165,195 @@
 
             </div>
         </main>
+    </div>
 
-        <script>
-            // --- 1. Variables & Elements ---
-            const dropZone = document.getElementById('drop-zone');
-            const imageInput = document.getElementById('imageInput');
-            const previewImage = document.getElementById('preview-image');
-            const uploadPlaceholder = document.getElementById('upload-placeholder');
-            const removeImgBtn = document.getElementById('remove-img-btn');
-            const textInput = document.getElementById('textInput');
-            const analyzeBtn = document.getElementById('analyzeBtn');
-            const btnText = document.getElementById('btnText');
-            const btnLoader = document.getElementById('btnLoader');
-            const resultsSection = document.getElementById('resultsSection');
+    <script>
+        // --- 1. Variables & Elements ---
+        const dropZone = document.getElementById('drop-zone');
+        const imageInput = document.getElementById('imageInput');
+        const previewImage = document.getElementById('preview-image');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const removeImgBtn = document.getElementById('remove-img-btn');
+        const textInput = document.getElementById('textInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const resultsSection = document.getElementById('resultsSection');
 
-            // --- 2. Image Handling ---
-            dropZone.addEventListener('click', (e) => {
-                if (e.target !== removeImgBtn && !removeImgBtn.contains(e.target))
-                    imageInput.click();
-            });
+        // --- 2. Image Handling Logic ---
+        dropZone.addEventListener('click', (e) => {
+            if (e.target !== removeImgBtn && !removeImgBtn.contains(e.target))
+                imageInput.click();
+        });
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-nutri-green', 'bg-nutri-green/5');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-nutri-green', 'bg-nutri-green/5');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-nutri-green', 'bg-nutri-green/5');
+            if (e.dataTransfer.files.length)
+                handleFile(e.dataTransfer.files[0]);
+        });
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length)
+                handleFile(e.target.files[0]);
+        });
+        removeImgBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetImage();
+        });
 
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('border-nutri-green', 'bg-nutri-green/5');
-            });
+        function handleFile(file) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                if (typeof Swal !== 'undefined')
+                    Swal.fire('Error', 'Invalid file type! Please upload PNG or JPG.', 'error');
+                else
+                    alert("Invalid file type!");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.classList.remove('hidden');
+                removeImgBtn.classList.remove('hidden');
+                uploadPlaceholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
 
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('border-nutri-green', 'bg-nutri-green/5');
-            });
+        function resetImage() {
+            imageInput.value = '';
+            previewImage.src = '';
+            previewImage.classList.add('hidden');
+            removeImgBtn.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+        }
 
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('border-nutri-green', 'bg-nutri-green/5');
-                if (e.dataTransfer.files.length)
-                    handleFile(e.dataTransfer.files[0]);
-            });
+        // --- 3. API Call ---
+        async function analyzeFood() {
+            const userText = textInput.value.trim();
+            const fileInput = document.getElementById('imageInput');
 
-            imageInput.addEventListener('change', (e) => {
-                if (e.target.files.length)
-                    handleFile(e.target.files[0]);
-            });
-
-            removeImgBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                resetImage();
-            });
-
-            function handleFile(file) {
-                // --- THÊM ĐOẠN KIỂM TRA NÀY ---
-                const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-                if (!validTypes.includes(file.type)) {
-                    alert("Invalid file type! Please upload only PNG or JPG images.");
-                    return; // Dừng lại, không xử lý tiếp
-                }
-                // -------------------------------
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewImage.src = e.target.result;
-                    previewImage.classList.remove('hidden');
-                    removeImgBtn.classList.remove('hidden');
-                    uploadPlaceholder.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
+            if (!userText && (!fileInput.files || fileInput.files.length === 0)) {
+                if (typeof Swal !== 'undefined')
+                    Swal.fire('Warning', 'Please enter food name or upload an image.', 'warning');
+                else
+                    alert("Please enter food name or upload an image.");
+                return;
             }
 
-            function resetImage() {
-                imageInput.value = '';
-                previewImage.src = '';
-                previewImage.classList.add('hidden');
-                removeImgBtn.classList.add('hidden');
-                uploadPlaceholder.classList.remove('hidden');
-            }
+            setLoading(true);
+            resultsSection.classList.add('hidden');
 
-            // --- 3. API Call ---
-            async function analyzeFood() {
-                const userText = textInput.value.trim();
-                const fileInput = document.getElementById('imageInput');
+            const formData = new FormData();
+            if (userText)
+                formData.append("text", userText);
+            if (fileInput.files.length > 0)
+                formData.append("image", fileInput.files[0]);
 
-                if (!userText && (!fileInput.files || fileInput.files.length === 0)) {
-                    alert("Please enter a food name or upload an image.");
-                    return;
-                }
+            try {
+                // Đảm bảo bạn có endpoint này trong Controller
+                const response = await fetch('/api/ai/analyze', {method: 'POST', body: formData});
+                if (!response.ok)
+                    throw new Error("Server error");
 
-                setLoading(true);
-                resultsSection.classList.add('hidden');
-
-                const formData = new FormData();
-                if (userText)
-                    formData.append("text", userText);
-                if (fileInput.files.length > 0)
-                    formData.append("image", fileInput.files[0]);
-
-                try {
-                    const response = await fetch('/api/ai/analyze', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok)
-                        throw new Error("Server error");
-                    const resultData = await response.json();
-
-                    if (resultData.error) {
-                        alert(resultData.error);
-                    } else {
-                        renderResults(resultData);
-                        saveToHistory(resultData);
-                    }
-
-                } catch (error) {
-                    console.error(error);
-                    alert("Could not analyze. Please try again.");
-                } finally {
-                    setLoading(false);
-                }
-            }
-
-            function setLoading(isLoading) {
-                analyzeBtn.disabled = isLoading;
-                if (isLoading) {
-                    btnText.textContent = "Analyzing...";
-                    btnLoader.classList.remove('hidden');
-                    analyzeBtn.classList.add('opacity-80', 'cursor-not-allowed');
+                const resultData = await response.json();
+                if (resultData.error) {
+                    alert(resultData.error);
                 } else {
-                    btnText.textContent = "Analyze Meal";
-                    btnLoader.classList.add('hidden');
-                    analyzeBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                    renderResults(resultData);
+                    saveToHistory(resultData);
                 }
+            } catch (error) {
+                console.error(error);
+                if (typeof Swal !== 'undefined')
+                    Swal.fire('Error', 'Could not analyze. Please try again.', 'error');
+                else
+                    alert("Could not analyze.");
+            } finally {
+                setLoading(false);
             }
+        }
 
-            // --- 4. Render Results (Improved) ---
-            function renderResults(data) {
-                document.getElementById('resDishName').textContent = data.dishName || "Unknown Dish";
-                document.getElementById('resTime').textContent = data.time || "-- mins";
-                document.getElementById('resCalories').textContent = data.calories || 0;
-                document.getElementById('resProtein').textContent = data.protein || "0g";
-                document.getElementById('resCarbs').textContent = data.carbs || "0g";
-                document.getElementById('resFat').textContent = data.fat || "0g";
-
-                // Render Ingredients with nice bullets
-                const ingList = document.getElementById('resIngredients');
-                ingList.innerHTML = (data.ingredients || []).map(i => `
-                    <li class="flex items-start gap-3 group">
-                        <span class="mt-2 h-2 w-2 rounded-full bg-nutri-green flex-shrink-0 group-hover:scale-125 transition-transform"></span>
-                        <span class="text-base text-gray-700 leading-relaxed">${i}</span>
-                    </li>
-                `).join('');
-
-                // Render Instructions with numbers
-                const instList = document.getElementById('resInstructions');
-                instList.innerHTML = (data.instructions || []).map((step, index) => `
-                    <li class="flex gap-4">
-                        <span class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold text-sm">
-                            ${index + 1}
-                        </span>
-                        <span class="text-base text-gray-700 leading-loose flex-1 pt-1">${step}</span>
-                    </li>
-                `).join('');
-
-                resultsSection.classList.remove('hidden');
-                // Scroll nhẹ xuống kết quả
-                setTimeout(() => {
-                    resultsSection.scrollIntoView({behavior: 'smooth', block: 'start'});
-                }, 100);
+        function setLoading(isLoading) {
+            analyzeBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.textContent = "Analyzing...";
+                btnLoader.classList.remove('hidden');
+                analyzeBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            } else {
+                btnText.textContent = "Analyze Meal";
+                btnLoader.classList.add('hidden');
+                analyzeBtn.classList.remove('opacity-80', 'cursor-not-allowed');
             }
+        }
 
-            // --- 5. History (Styled) ---
-            function saveToHistory(data) {
-                let history = JSON.parse(localStorage.getItem('zaderFoodHistory') || '[]');
-                const newEntry = {
-                    name: data.dishName,
-                    cals: data.calories,
-                    date: new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})
-                };
+        // --- 4. Render Results ---
+        function renderResults(data) {
+            document.getElementById('resDishName').textContent = data.dishName || "Unknown Dish";
+            document.getElementById('resTime').textContent = data.time || "-- mins";
+            document.getElementById('resCalories').textContent = data.calories || 0;
+            document.getElementById('resProtein').textContent = data.protein || "0g";
+            document.getElementById('resCarbs').textContent = data.carbs || "0g";
+            document.getElementById('resFat').textContent = data.fat || "0g";
 
-                // Remove duplicate if same name exists at top
-                if (history.length > 0 && history[0].name === newEntry.name)
-                    return;
+            document.getElementById('resIngredients').innerHTML = (data.ingredients || []).map(i => `
+                <li class="flex items-start gap-3 group">
+                    <span class="mt-2 h-2 w-2 rounded-full bg-nutri-green flex-shrink-0 group-hover:scale-125 transition-transform"></span>
+                    <span class="text-base text-gray-700 leading-relaxed">${i}</span>
+                </li>`).join('');
 
-                history.unshift(newEntry);
-                if (history.length > 6)
-                    history.pop();
-                localStorage.setItem('zaderFoodHistory', JSON.stringify(history));
-                loadHistory();
+            document.getElementById('resInstructions').innerHTML = (data.instructions || []).map((step, index) => `
+                <li class="flex gap-4">
+                    <span class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold text-sm">${index + 1}</span>
+                    <span class="text-base text-gray-700 leading-loose flex-1 pt-1">${step}</span>
+                </li>`).join('');
+
+            resultsSection.classList.remove('hidden');
+            setTimeout(() => {
+                resultsSection.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }, 100);
+        }
+
+        // --- 5. History ---
+        function saveToHistory(data) {
+            let history = JSON.parse(localStorage.getItem('zaderFoodHistory') || '[]');
+            const newEntry = {name: data.dishName, cals: data.calories, date: new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})};
+            if (history.length > 0 && history[0].name === newEntry.name)
+                return;
+            history.unshift(newEntry);
+            if (history.length > 6)
+                history.pop();
+            localStorage.setItem('zaderFoodHistory', JSON.stringify(history));
+            loadHistory();
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('zaderFoodHistory') || '[]');
+            const listContainer = document.getElementById('historyList');
+            if (history.length === 0) {
+                listContainer.innerHTML = `<p class="text-soft-grey col-span-3 text-center py-4">No scans yet. Try analyzing a meal!</p>`;
+                return;
             }
-
-            function loadHistory() {
-                const history = JSON.parse(localStorage.getItem('zaderFoodHistory') || '[]');
-                const listContainer = document.getElementById('historyList');
-
-                if (history.length === 0) {
-                    listContainer.innerHTML = `<p class="text-soft-grey col-span-3 text-center py-4">No scans yet. Try analyzing a meal!</p>`;
-                    return;
-                }
-
-                listContainer.innerHTML = history.map(item => `
-                    <div class="bg-white p-5 rounded-xl border border-smart-mist shadow-sm hover:shadow-md transition-shadow flex justify-between items-center group cursor-pointer">
-                        <div>
-                            <h4 class="font-bold text-dark-ink group-hover:text-nutri-green transition-colors line-clamp-1">${item.name}</h4>
-                            <p class="text-xs text-soft-grey mt-1">${item.date}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="block font-black text-nutri-green text-lg">${item.cals}</span>
-                            <span class="text-xs text-soft-grey">kcal</span>
-                        </div>
+            listContainer.innerHTML = history.map(item => `
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center cursor-pointer">
+                    <div>
+                        <h4 class="font-bold text-dark-ink line-clamp-1">${item.name}</h4>
+                        <p class="text-xs text-soft-grey mt-1">${item.date}</p>
                     </div>
-                `).join('');
-            }
+                    <div class="text-right">
+                        <span class="block font-black text-nutri-green text-lg">${item.cals}</span>
+                        <span class="text-xs text-soft-grey">kcal</span>
+                    </div>
+                </div>`).join('');
+        }
 
-            window.onload = loadHistory;
-        </script>
-    </body>
+        window.onload = loadHistory;
+    </script>
+</body>
 </html>

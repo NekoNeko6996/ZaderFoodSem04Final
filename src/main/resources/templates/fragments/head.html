@@ -1,61 +1,111 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:fragment="common-head">
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Zader Food - Smart Meal Planner</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!--user define css-->
-    <link rel="stylesheet" th:href="@{/css/header.css}">
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        // main, ...
-                        "primary-gradient-start": "#4A56E2",
-                        "primary-gradient-end": "#8A4AEE",
-                        "primary-cta": "#18D2B4",
-                        "secondary-accent": "#4A56E2",
-                        "background": "#F9F9FB",
-                        "container": "#FFFFFF",
-                        "text-primary": "#2C2C4E",
-                        "text-secondary": "#8A94A6",
-                        "status-success": "#2ECC71",
-                        "status-error": "#E74C3C",
-                        
-                        // alert, ...
-                        "primary": "#17d3b4",
-                        "background-light": "#f6f8f8",
-                        "background-dark": "#11211e",    /* Alert cần màu này */
-                        "zader-text-primary": "#2C2C4E",  /* Alert cần màu này */
-                        
-                        /* BỘ MÀU ALERT */
-                        "zader-success": "#2ECC71",  /* Xanh lá */
-                        "zader-error": "#E74C3C",    /* Đỏ */
-                        "zader-warning": "#F39C12",  /* Cam vàng */
-                        "zader-info": "#3498DB"      /* Xanh dương */
-                    },
-                    fontFamily: {
-                        "display": ["Plus Jakarta Sans", "sans-serif"]
-                    },
-                    borderRadius: {
-                        DEFAULT: "8px",
-                        lg: "12px",
-                        xl: "16px",
-                        full: "9999px"
-                    }
+    <head th:fragment="common-head">
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Zader Food - Smart Meal Planner</title>
+
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+        <link href="https://fonts.googleapis.com" rel="preconnect"/>
+        <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <style>
+            /* Setup Icon chuẩn Google */
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+
+            /* Animation cho Mobile Menu & Toast */
+            @keyframes fadeInDown {
+                from {
+                    opacity: 0;
+                    transform: translate3d(0, -10%, 0);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
                 }
             }
-        };
-    </script>
-</head>
-<body></body>
+            .animate-fade-in-down {
+                animation: fadeInDown 0.3s ease-in-out;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.3s ease-in-out;
+            }
+
+            /* CSS phụ trợ nếu cần */
+            body {
+                font-family: 'Plus Jakarta Sans', sans-serif;
+            }
+        </style>
+
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            // --- NHÓM 1: Dùng cho NAVBAR & AddRecipe (Quan trọng nhất) ---
+                            "primary": "#4cae4f", // Màu xanh chính (Logo, Nút chính)
+                            "primary-dark": "#3d8b40", // Hover của nút chính
+                            "background-light": "#f6f7f6", // Nền sáng
+                            "background-dark": "#151d15", // Nền tối
+                            "dark-ink": "#263238", // Chữ đen (Header text)
+                            "soft-grey": "#78909c", // Chữ xám phụ
+                            "card-white": "#FFFFFF", // Nền thẻ trắng
+                            "border-color": "#dee3de", // Đường viền (Navbar border)
+
+                            // --- NHÓM 2: Dùng cho SEARCH & RESULTS (Từ file search.html) ---
+                            "nutri-green": "#4CAF50", // Tương đương primary, dùng trong search tag
+                            "deep-forest": "#2E7D32", // Hover search
+                            "chef-orange": "#FF7043", // Màu cam nhấn (Nút Favorite/Heart)
+                            "smart-mist": "#ECEFF1", // Viền input search
+                            "smart-white": "#FAFAFA", // Nền phụ
+
+                            // --- NHÓM 3: Dinh dưỡng & Trạng thái ---
+                            "protein-blue": "#42A5F5",
+                            "carbs-gold": "#FFCA28",
+                            "fat-red": "#EF5350",
+
+                            "status-success": "#2ECC71",
+                            "status-error": "#E74C3C",
+                            "status-warning": "#F39C12",
+
+                            // --- NHÓM 4: Gradient cũ (Giữ lại để tương thích ngược) ---
+                            "primary-gradient-start": "#4A56E2",
+                            "primary-gradient-end": "#8A4AEE",
+                            "zader-info": "#3498DB"
+                        },
+                        fontFamily: {
+                            "display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]
+                        },
+                        borderRadius: {
+                            DEFAULT: "8px",
+                            lg: "12px",
+                            xl: "16px",
+                            full: "9999px"
+                        },
+                        boxShadow: {
+                            'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        }
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body></body>
 </html>

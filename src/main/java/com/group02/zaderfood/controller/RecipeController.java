@@ -81,13 +81,6 @@ public class RecipeController {
         return "redirect:/recipes/my-recipes";
     }
 
-    @GetMapping("/list")
-    public String listRecipes(Model model) {
-        List<Recipe> recipes = recipeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
-        model.addAttribute("recipes", recipes);
-        return "recipe/recipeList";
-    }
-
     @GetMapping("/detail/{id}")
     public String viewRecipeDetail(@PathVariable Integer id, Model model) {
         Recipe recipe = recipeRepository.findById(id)
@@ -99,7 +92,7 @@ public class RecipeController {
 
     @GetMapping("/search")
     public String searchPage(@RequestParam(name = "ids", required = false) List<Integer> ids, Model model) {
-        List<Ingredient> allIngredients = ingredientRepository.findAll();
+        List<Ingredient> allIngredients = ingredientRepository.findByIsActiveTrue();
 
         Map<String, List<Ingredient>> ingredientsByCategory = allIngredients.stream()
                 .collect(Collectors.groupingBy(ing -> {

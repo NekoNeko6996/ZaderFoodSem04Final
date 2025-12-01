@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.HashSet;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class RecipeService {
@@ -151,7 +154,7 @@ public class RecipeService {
         if (ingredientIds != null && !ingredientIds.isEmpty()) {
             recipes = recipeRepository.findRecipesByIngredientIds(ingredientIds);
         } else {
-            recipes = recipeRepository.findAll(); // Lấy tất cả nếu không chọn nguyên liệu
+            recipes = recipeRepository.findAllActiveRecipes();
         }
 
         // 2. Lọc bằng Java Stream (Đơn giản và hiệu quả với dữ liệu vừa phải)
@@ -174,8 +177,7 @@ public class RecipeService {
     public List<RecipeMatchDTO> findRecipesWithMissingIngredients(List<Integer> userIngredientIds, String keyword, Integer maxCalories, Integer maxTime, String difficulty) {
         List<RecipeMatchDTO> results = new ArrayList<>();
 
-        // Lấy tất cả recipe từ DB
-        List<Recipe> allRecipes = recipeRepository.findAll();
+        List<Recipe> allRecipes = recipeRepository.findAllActiveRecipes();
 
         // Set chứa ID nguyên liệu của user (để tra cứu nhanh)
         Set<Integer> userOwnedIds = (userIngredientIds == null) ? new HashSet<>() : new HashSet<>(userIngredientIds);
@@ -282,5 +284,10 @@ public class RecipeService {
             collectionItemRepository.save(item);
             return true; // Thêm mới thành công
         }
+    }
+
+    public List<Recipe> getLatestRecipes(int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return recipeRepository.findByStatus(RecipeStatus.ACTIVE, pageable);
     }
 }
