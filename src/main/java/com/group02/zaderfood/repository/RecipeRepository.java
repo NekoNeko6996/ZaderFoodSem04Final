@@ -23,10 +23,13 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
     // 2. Tìm tất cả Active
     @Query("SELECT r FROM Recipe r WHERE (r.isDeleted IS NULL OR r.isDeleted = false) AND r.status = com.group02.zaderfood.entity.enums.RecipeStatus.ACTIVE")
     List<Recipe> findAllActiveRecipes();
-    
+
     List<Recipe> findByStatus(RecipeStatus status, Pageable pageable);
 
     // 3. Tìm theo tên
     @Query("SELECT r FROM Recipe r WHERE r.name LIKE %:keyword% AND (r.isDeleted IS NULL OR r.isDeleted = false) AND r.status = com.group02.zaderfood.entity.enums.RecipeStatus.ACTIVE")
     List<Recipe> findByNameContainingAndActive(@Param("keyword") String keyword);
+
+    @Query("SELECT r FROM Recipe r WHERE r.status = :status AND (r.isDeleted IS NULL OR r.isDeleted = false)")
+    List<Recipe> findByStatusAndIsDeletedFalse(@Param("status") RecipeStatus status);
 }

@@ -86,6 +86,7 @@ public class RecipeController {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Recipe ID: " + id));
 
+        recipeService.calculateRecipeMacros(recipe);
         model.addAttribute("recipe", recipe);
         return "recipe/recipeDetail";
     }

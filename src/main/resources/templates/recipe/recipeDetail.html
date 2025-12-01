@@ -25,18 +25,56 @@
                                     <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em]"
                                         th:text="${recipe.name}">Recipe Name</h1>
 
-                                    <p class="text-soft-grey text-base font-normal leading-normal">
-                                        <span th:text="${recipe.totalCalories != null ? recipe.totalCalories : 0} + ' Calories'"></span> |
-                                        <span th:text="${recipe.cookTimeMin != null ? recipe.cookTimeMin : 0} + ' min Cook Time'"></span> |
-                                        <span th:text="'Serves ' + ${recipe.servings != null ? recipe.servings : 1}"></span>
+                                    <p class="text-soft-grey text-base font-normal leading-normal flex items-center gap-2">
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined !text-lg">schedule</span> <span th:text="${recipe.cookTimeMin} + ' min'"></span></span>
+                                        <span>|</span>
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined !text-lg">group</span> <span th:text="${recipe.servings} + ' servings'"></span></span>
                                         <span th:if="${recipe.difficulty != null}" th:text="' | ' + ${recipe.difficulty}"></span>
                                     </p>
-                                    <p class="text-dark-ink/80 text-sm mt-1" th:text="${recipe.description}"></p>
+
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <div class="h-6 w-6 rounded-full bg-smart-mist flex items-center justify-center text-soft-grey">
+                                            <span class="material-symbols-outlined !text-sm">person</span>
+                                        </div>
+                                        <p class="text-sm text-soft-grey">
+                                            Recipe by <span class="font-bold text-dark-ink" 
+                                                            th:text="${recipe.user != null ? recipe.user.fullName : 'Zader Chef'}">Chef Name</span>
+                                        </p>
+                                    </div>
+
+                                    <p class="text-dark-ink/80 text-sm mt-2" th:text="${recipe.description}"></p>
+
+                                    <div class="mt-4 p-4 rounded-xl bg-background-light border border-border-color grid grid-cols-4 gap-2 text-center max-w-lg">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Calories</span>
+                                            <span class="text-xl font-black text-dark-ink" th:text="${recipe.totalCalories}">0</span>
+                                            <span class="text-[10px] text-soft-grey">kcal</span>
+                                        </div>
+                                        <div class="flex flex-col border-l border-border-color">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Protein</span>
+                                            <span class="text-xl font-black text-protein-blue" th:text="${recipe.protein != null ? recipe.protein : 0}">0</span>
+                                            <span class="text-[10px] text-soft-grey">g</span>
+                                        </div>
+                                        <div class="flex flex-col border-l border-border-color">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Carbs</span>
+                                            <span class="text-xl font-black text-carbs-gold" th:text="${recipe.carbs != null ? recipe.carbs : 0}">0</span>
+                                            <span class="text-[10px] text-soft-grey">g</span>
+                                        </div>
+                                        <div class="flex flex-col border-l border-border-color">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Fat</span>
+                                            <span class="text-xl font-black text-fat-red" th:text="${recipe.fat != null ? recipe.fat : 0}">0</span>
+                                            <span class="text-[10px] text-soft-grey">g</span>
+                                        </div>
+                                    </div>
+
                                 </div>
 
                                 <div class="flex flex-wrap gap-3 items-start">
                                     <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-chef-orange text-white text-base font-bold w-full sm:w-auto hover:bg-opacity-90 transition">
                                         Add to Meal Plan
+                                    </button>
+                                    <button class="flex items-center justify-center w-12 h-12 rounded-lg border border-border-color text-soft-grey hover:text-chef-orange hover:border-chef-orange transition">
+                                        <span class="material-symbols-outlined">favorite</span>
                                     </button>
                                 </div>
                             </div>
