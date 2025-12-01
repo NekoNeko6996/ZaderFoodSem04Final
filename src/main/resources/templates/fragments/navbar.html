@@ -7,13 +7,13 @@
         <header th:fragment="header_nav" 
                 class="flex flex-col border-b border-solid border-border-color bg-card-white dark:bg-background-dark dark:border-dark-ink/20 sticky top-0 z-50">
 
-            <div class="flex items-center justify-between px-6 sm:px-10 lg:px-20 py-3">
+            <div class="flex items-center px-6 sm:px-10 lg:px-20 py-3">
 
-                <a href="/" class="flex items-center gap-4 text-dark-ink dark:text-background-light hover:opacity-80 transition-opacity">
+                <a href="/" class="flex items-center gap-4 text-dark-ink dark:text-background-light hover:opacity-80 transition-opacity shrink-0">
                     <h2 class="text-dark-ink dark:text-background-light text-xl font-bold leading-tight tracking-[-0.015em]">Zader Food</h2>
                 </a>
 
-                <nav class="hidden md:flex flex-1 justify-center gap-6 lg:gap-8 items-center">
+                <nav class="hidden md:flex gap-6 lg:gap-8 items-center ml-8 lg:ml-12">
                     <a th:href="@{/}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Home</a>
                     <a th:href="@{/recipes/suggestions}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Recipes</a>
                     <a th:href="@{/recipes/search}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Ingredients</a>
@@ -31,7 +31,7 @@
                     </div>
                 </nav>
 
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 ml-auto">
 
                     <div sec:authorize="!isAuthenticated()" class="hidden md:flex gap-3">
                         <a th:href="@{/login}" class="flex items-center justify-center rounded-lg h-10 px-4 text-sm font-bold text-dark-ink hover:bg-gray-100 transition-colors">
@@ -42,24 +42,35 @@
                         </a>
                     </div>
 
-                    <div sec:authorize="isAuthenticated()" class="flex items-center gap-4">
+                    <div sec:authorize="isAuthenticated()" class="flex items-center gap-3 pl-4"> 
                         <a th:href="@{/recipes/create}" class="hidden md:flex items-center gap-2 rounded-lg h-10 bg-primary/10 text-primary px-4 text-sm font-bold hover:bg-primary/20 transition-colors">
                             <span class="material-symbols-outlined text-lg">add</span>
                             <span class="hidden lg:inline">New Recipe</span>
                         </a>
 
-                        <div class="relative" id="userMenuDropdown">
+                        <div class="relative flex items-center gap-3" id="userMenuDropdown">
+
+                            <div class="hidden lg:flex flex-col items-end cursor-pointer" onclick="toggleUserMenu()">
+                                <span class="text-sm font-bold text-dark-ink dark:text-white leading-tight"
+                                      sec:authentication="principal.fullName">User Name</span>
+
+                                <span class="text-[10px] font-bold text-primary uppercase tracking-wider">
+                                    <th:block th:each="auth : ${#authentication.authorities}">
+                                        <span th:if="${auth.authority.startsWith('ROLE_')}" 
+                                              th:text="${auth.authority.replace('ROLE_', '')}">ADMIN</span>
+                                    </th:block>
+                                </span>
+                            </div>
+
                             <button onclick="toggleUserMenu()" class="flex items-center justify-center overflow-hidden rounded-full h-10 w-10 border border-border-color hover:ring-2 hover:ring-primary/50 transition-all focus:outline-none">
-                                <img src="https://ui-avatars.com/api/?name=User&background=random" 
-                                     th:src="'https://ui-avatars.com/api/?name=' + ${#authentication.name} + '&background=4cae4f&color=fff'"
+                                <img th:src="'https://ui-avatars.com/api/?name=' + ${#authentication.principal.fullName} + '&background=4cae4f&color=fff'"
                                      alt="User" class="h-full w-full object-cover">
                             </button>
 
-                            <div id="userDropdownContent" class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-background-dark border border-border-color rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
+                            <div id="userDropdownContent" class="hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-background-dark border border-border-color rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
                                 <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">Signed in as</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Signed in as</p>
                                     <p class="text-sm font-bold text-dark-ink dark:text-white truncate" sec:authentication="name">user@email.com</p>
-                                    <p class="text-xs text-primary mt-1" sec:authentication="authorities">ROLE</p>
                                 </div>
 
                                 <a th:href="@{/user/settings}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -88,6 +99,21 @@
 
             <div id="mobileMenu" class="hidden md:hidden border-t border-border-color bg-card-white dark:bg-background-dark animate-fade-in-down">
                 <div class="flex flex-col p-4 gap-2">
+
+                    <div sec:authorize="isAuthenticated()" class="mb-2 pb-3 border-b border-border-color flex items-center gap-3">
+                        <img th:src="'https://ui-avatars.com/api/?name=' + ${#authentication.principal.fullName} + '&background=4cae4f&color=fff'"
+                             alt="User" class="h-10 w-10 rounded-full object-cover">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-dark-ink dark:text-white" sec:authentication="principal.fullName">User Name</span>
+                            <span class="text-[10px] font-bold text-primary uppercase tracking-wider">
+                                <th:block th:each="auth : ${#authentication.authorities}">
+                                    <span th:if="${auth.authority.startsWith('ROLE_')}" 
+                                          th:text="${auth.authority.replace('ROLE_', '')}">Role</span>
+                                </th:block>
+                            </span>
+                        </div>
+                    </div>
+
                     <a th:href="@{/}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Home</a>
                     <a th:href="@{/recipes/suggestions}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Recipes</a>
                     <a th:href="@{/recipes/search}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Find by Ingredients</a>
@@ -102,6 +128,14 @@
                         <a th:href="@{/recipes/create}" class="flex items-center gap-2 p-3 text-primary font-bold">
                             <span class="material-symbols-outlined">add_circle</span> Add Recipe
                         </a>
+                        <a th:href="@{/user/settings}" class="flex items-center gap-2 p-3 text-dark-ink dark:text-white font-medium">
+                            <span class="material-symbols-outlined">settings</span> Settings
+                        </a>
+                        <form th:action="@{/logout}" method="post" class="block w-full">
+                            <button type="submit" class="flex items-center gap-2 p-3 w-full text-red-600 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg">
+                                <span class="material-symbols-outlined">logout</span> Sign out
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
