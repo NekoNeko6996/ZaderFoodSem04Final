@@ -25,10 +25,15 @@ import com.group02.zaderfood.entity.CollectionItem;
 import com.group02.zaderfood.entity.RecipeCollection;
 import com.group02.zaderfood.repository.CollectionItemRepository;
 import com.group02.zaderfood.repository.RecipeCollectionRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.HashSet;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class RecipeService {
@@ -151,7 +156,7 @@ public class RecipeService {
         if (ingredientIds != null && !ingredientIds.isEmpty()) {
             recipes = recipeRepository.findRecipesByIngredientIds(ingredientIds);
         } else {
-            recipes = recipeRepository.findAll(); // Lấy tất cả nếu không chọn nguyên liệu
+            recipes = recipeRepository.findAllActiveRecipes();
         }
 
         // 2. Lọc bằng Java Stream (Đơn giản và hiệu quả với dữ liệu vừa phải)
@@ -174,8 +179,7 @@ public class RecipeService {
     public List<RecipeMatchDTO> findRecipesWithMissingIngredients(List<Integer> userIngredientIds, String keyword, Integer maxCalories, Integer maxTime, String difficulty) {
         List<RecipeMatchDTO> results = new ArrayList<>();
 
-        // Lấy tất cả recipe từ DB
-        List<Recipe> allRecipes = recipeRepository.findAll();
+        List<Recipe> allRecipes = recipeRepository.findAllActiveRecipes();
 
         // Set chứa ID nguyên liệu của user (để tra cứu nhanh)
         Set<Integer> userOwnedIds = (userIngredientIds == null) ? new HashSet<>() : new HashSet<>(userIngredientIds);
@@ -281,6 +285,60 @@ public class RecipeService {
 
             collectionItemRepository.save(item);
             return true; // Thêm mới thành công
+        }
+    }
+
+    public List<Recipe> getLatestRecipes(int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return recipeRepository.findByStatus(RecipeStatus.ACTIVE, pageable);
+    }
+
+    public void calculateRecipeMacros(Recipe recipe) {
+        BigDecimal totalProtein = BigDecimal.ZERO;
+        BigDecimal totalCarbs = BigDecimal.ZERO;
+        BigDecimal totalFat = BigDecimal.ZERO;
+
+        // 1. Thêm biến tổng Calo tính toán
+        BigDecimal calculatedCalories = BigDecimal.ZERO;
+
+        if (recipe.getRecipeIngredients() != null) {
+            for (RecipeIngredient ri : recipe.getRecipeIngredients()) {
+                Ingredient ing = ri.getIngredient();
+
+                if (ing != null) {
+                    BigDecimal quantity = ri.getQuantity() != null ? ri.getQuantity() : BigDecimal.ZERO;
+                    // Tỉ lệ = Số lượng / 100 (Ví dụ: 200g / 100 = 2)
+                    BigDecimal ratio = quantity.divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+
+                    // Tính Protein
+                    if (ing.getProtein() != null) {
+                        totalProtein = totalProtein.add(ing.getProtein().multiply(ratio));
+                    }
+                    // Tính Carbs
+                    if (ing.getCarbs() != null) {
+                        totalCarbs = totalCarbs.add(ing.getCarbs().multiply(ratio));
+                    }
+                    // Tính Fat
+                    if (ing.getFat() != null) {
+                        totalFat = totalFat.add(ing.getFat().multiply(ratio));
+                    }
+
+                    // 2. Tính Calo từ nguyên liệu
+                    if (ing.getCaloriesPer100g() != null) {
+                        calculatedCalories = calculatedCalories.add(ing.getCaloriesPer100g().multiply(ratio));
+                    }
+                }
+            }
+        }
+
+        // Set các chỉ số Macro (Transient)
+        recipe.setProtein(totalProtein.setScale(1, RoundingMode.HALF_UP));
+        recipe.setCarbs(totalCarbs.setScale(1, RoundingMode.HALF_UP));
+        recipe.setFat(totalFat.setScale(1, RoundingMode.HALF_UP));
+
+        // 3. Logic: Nếu Calo trong DB bị null hoặc bằng 0 thì lấy giá trị vừa tính được
+        if (recipe.getTotalCalories() == null || recipe.getTotalCalories().compareTo(BigDecimal.ZERO) == 0) {
+            recipe.setTotalCalories(calculatedCalories.setScale(0, RoundingMode.HALF_UP));
         }
     }
 }

@@ -25,4 +25,6 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Integer>
             @Param("categoryId") Integer categoryId,
             @Param("isActive") Boolean isActive,
             Pageable pageable);
+    
+    List<Ingredient> findByIsActiveTrue();
 }

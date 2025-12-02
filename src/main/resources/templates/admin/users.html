@@ -1,40 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      class="light" lang="en">
     <head>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-        <title>Admin: User Management - Zader Food</title>
-
-        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-        <script>
-            tailwind.config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        colors: {"primary": "#FF7043", "nutri-green": "#4CAF50", "error": "#E53935"},
-                        fontFamily: {"display": ["Plus Jakarta Sans", "sans-serif"]}
-                    },
-                },
-            }
-        </script>
-        <style>
-            .material-symbols-outlined {
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            }
-        </style>
-    </head>
-    <body class="font-display bg-gray-50 text-slate-900">
-
-    <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title>Admin: User Management - Zader Food</title>
+</head>
+<body class="font-display bg-background-light text-dark-ink">
 
     <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-        <header class="sticky top-0 z-50 bg-white shadow-sm h-20 flex items-center px-4">
-            <div class="font-bold text-2xl text-slate-800">Zader Food Admin</div>
-        </header>
+
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
 
         <main class="flex h-full grow flex-col py-10">
             <div class="container mx-auto px-4">
@@ -46,7 +22,7 @@
                             <p class="text-gray-500">Manage all registered users.</p>
                         </div>
                         <button onclick="document.getElementById('addUserModal').showModal()" 
-                                class="flex items-center justify-center rounded-lg h-12 px-5 bg-primary text-white font-bold gap-2 hover:bg-orange-600 transition-colors">
+                                class="flex items-center justify-center rounded-lg h-12 px-5 bg-primary text-white font-bold gap-2 hover:bg-primary-dark transition-colors shadow-sm">
                             <span class="material-symbols-outlined">add</span>
                             <span>Add New User</span>
                         </button>
@@ -73,7 +49,7 @@
                         </div>
                     </form>
 
-                    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
                         <table class="w-full text-left">
                             <thead class="border-b border-gray-200 bg-gray-50">
                                 <tr>
@@ -114,7 +90,7 @@
                                                   th:action="@{/admin/users/toggle-status/{id}(id=${user.userId})}" method="post"
                                                   onsubmit="ZaderToast.loading('Updating user status...');">
                                                 <button type="submit" 
-                                                        th:classappend="${user.status.name() == 'BLOCKED'} ? 'bg-nutri-green hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600'"
+                                                        th:classappend="${user.status.name() == 'BLOCKED'} ? 'bg-primary hover:bg-primary-dark' : 'bg-yellow-500 hover:bg-yellow-600'"
                                                         class="rounded-lg h-10 px-4 text-white text-sm font-bold transition-colors">
                                                     <span th:text="${user.status.name() == 'BLOCKED'} ? 'Unlock' : 'Lock'">Lock</span>
                                                 </button>
@@ -127,7 +103,7 @@
                                                         th:data-id="${user.userId}"
                                                         th:data-name="${user.fullName}"
                                                         onclick="confirmBan(this.getAttribute('data-id'), this.getAttribute('data-name'))"
-                                                        class="rounded-lg h-10 px-4 bg-black text-white text-sm font-bold hover:bg-gray-800 transition-colors">
+                                                        class="rounded-lg h-10 px-4 bg-dark-ink text-white text-sm font-bold hover:bg-black transition-colors">
                                                     Ban
                                                 </button>
                                             </form>
@@ -174,14 +150,15 @@
                 </div>
                 <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
                     <button type="button" onclick="document.getElementById('addUserModal').close()" class="px-4 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-200">Cancel</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-orange-600">Create User</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark">Create User</button>
                 </div>
             </form>
         </dialog>
     </div>
 
+    <div th:replace="~{fragments/toast :: toast-system}"></div>
+
     <script th:inline="javascript">
-        // Xử lý thông báo từ Server (Flash Attributes)
         /*<![CDATA[*/
         const serverMessage = /*[[${message}]]*/ null;
         const serverMessageType = /*[[${messageType}]]*/ null;
@@ -197,7 +174,6 @@
         }
         /*]]>*/
 
-        // Xử lý SweetAlert cho nút Ban
         function confirmBan(userId, userName) {
             Swal.fire({
                 title: 'Ban user ' + userName + '?',
@@ -211,10 +187,7 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Gọi ZaderToast Loading trước khi submit
                     ZaderToast.loading('Processing ban request...');
-
-                    // Submit form sau 500ms (để user kịp nhìn thấy toast loading nếu mạng quá nhanh)
                     setTimeout(() => {
                         document.getElementById('banForm-' + userId).submit();
                     }, 300);
