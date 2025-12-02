@@ -1,67 +1,146 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
     <head>
-        <title>Danh sách duyệt công thức</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-gray-100 font-sans">
-        <div class="container mx-auto px-4 py-8">
-            <div class="mb-6 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-clipboard-check mr-2 text-green-600"></i>Công thức chờ duyệt
-                </h1>
-                <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-3 py-1 rounded-full">
-                    Số lượng: <span th:text="${recipes.size()}">0</span>
-                </span>
-            </div>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title>Pending Recipes - Zader Food Admin</title>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3bbf41",
+                        "primary-dark": "#2ea633",
+                        "background-light": "#FAFAFA",
+                        "background-dark": "#141e14",
+                        "dark-ink": "#263238",
+                        "soft-grey": "#78909C"
+                    },
+                    fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]}
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-display bg-background-light text-dark-ink">
 
-            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Món ăn</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Người tạo</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Độ khó</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <!-- Thymeleaf Loop -->
-                        <tr th:each="recipe : ${recipes}">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" th:text="'#' + ${recipe.recipeId}"></td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <img class="h-10 w-10 rounded-full object-cover mr-3" 
-                                         th:src="${recipe.imageUrl != null ? recipe.imageUrl : 'https://placehold.co/100'}" alt="">
-                                    <div class="text-sm font-medium text-gray-900" th:text="${recipe.name}"></div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" th:text="${recipe.createdByUserId}"></td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                      th:classappend="${recipe.difficulty.name() == 'EASY' ? 'bg-green-100 text-green-800' : 
-                                      (recipe.difficulty.name() == 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}"
-                                      th:text="${recipe.difficulty}">
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a th:href="@{/admin/recipes/{id}(id=${recipe.recipeId})}" 
-                                   class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded">
-                                    Xem chi tiết
-                                </a>
-                            </td>
-                        </tr>
-                        <!-- Empty State -->
-                        <tr th:if="${recipes.empty}">
-                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                                Hiện không có công thức nào chờ duyệt.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+    <div class="relative flex min-h-screen w-full flex-col">
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
+
+        <main class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col w-full max-w-6xl gap-8">
+
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl font-black tracking-tight text-dark-ink">Review Queue</h1>
+                        <p class="text-soft-grey text-sm mt-1">Manage and approve community submitted recipes.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-600">
+                            <span class="material-symbols-outlined">hourglass_top</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-soft-grey uppercase">Pending</span>
+                            <span class="text-xl font-black text-dark-ink" th:text="${recipes.size()}">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100">
+                            <thead>
+                                <tr class="bg-gray-50/50">
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-soft-grey uppercase tracking-wider">ID</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-soft-grey uppercase tracking-wider">Recipe Info</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-soft-grey uppercase tracking-wider">Author ID</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-soft-grey uppercase tracking-wider">Difficulty</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-soft-grey uppercase tracking-wider">Submitted</th>
+                                    <th scope="col" class="relative px-6 py-4">
+                                        <span class="sr-only">Action</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                <tr th:each="recipe : ${recipes}" class="group hover:bg-gray-50 transition-colors duration-200">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-soft-grey font-medium" th:text="'#' + ${recipe.recipeId}">
+                                        #1
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-12 w-12 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+                                                <img class="h-full w-full object-cover" 
+                                                     th:src="${recipe.imageUrl != null ? recipe.imageUrl : 'https://placehold.co/100x100?text=No+Img'}" 
+                                                     alt="">
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-bold text-dark-ink group-hover:text-primary transition-colors" th:text="${recipe.name}">Recipe Name</div>
+                                                <div class="text-xs text-soft-grey flex items-center gap-1 mt-0.5">
+                                                    <span class="material-symbols-outlined text-[14px]">restaurant</span>
+                                                    <span th:text="${recipe.servings} + ' servings'">2 servings</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2">
+                                            <div class="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                                <span class="material-symbols-outlined text-[14px]">person</span>
+                                            </div>
+                                            <span class="text-sm text-dark-ink font-medium" th:text="'User ' + ${recipe.createdByUserId}">User 1</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-1 inline-flex text-xs leading-4 font-bold rounded-md uppercase tracking-wide border"
+                                              th:classappend="${recipe.difficulty.name() == 'EASY' ? 'bg-green-50 text-green-700 border-green-100' : 
+                                              (recipe.difficulty.name() == 'MEDIUM' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' : 'bg-red-50 text-red-700 border-red-100')}"
+                                              th:text="${recipe.difficulty}">
+                                            EASY
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-soft-grey">
+                                        <span th:text="${#temporals.format(recipe.createdAt, 'dd/MM/yyyy')}">20/11/2024</span>
+                                        <br>
+                                        <span class="text-xs" th:text="${#temporals.format(recipe.createdAt, 'HH:mm')}">14:30</span>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <a th:href="@{/admin/recipes/{id}(id=${recipe.recipeId})}" 
+                                           class="inline-flex items-center gap-1.5 bg-white border border-gray-300 hover:border-primary hover:text-primary text-dark-ink px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm hover:shadow-md">
+                                            Review
+                                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <tr th:if="${recipes.empty}">
+                                    <td colspan="6" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <div class="h-16 w-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                                                <span class="material-symbols-outlined text-3xl text-primary">check_circle</span>
+                                            </div>
+                                            <h3 class="text-lg font-bold text-dark-ink">All caught up!</h3>
+                                            <p class="text-soft-grey text-sm mt-1">There are no pending recipes to review at the moment.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between" th:if="${not recipes.empty}">
+                        <p class="text-xs text-soft-grey">Showing <span class="font-bold text-dark-ink" th:text="${recipes.size()}">10</span> items</p>
+                    </div>
+                </div>
+
             </div>
-        </div>
-    </body>
+        </main>
+    </div>
+</body>
 </html>

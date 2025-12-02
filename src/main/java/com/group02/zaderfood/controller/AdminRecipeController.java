@@ -2,7 +2,10 @@ package com.group02.zaderfood.controller;
 
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.service.AdminRecipeService;
+import com.group02.zaderfood.service.RecipeService;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +16,9 @@ public class AdminRecipeController {
 
     @Autowired
     private AdminRecipeService adminRecipeService;
+    
+    @Autowired
+    private RecipeService recipeService;
 
     // 1. GET: Hiển thị trang danh sách chờ duyệt
     // Trả về file: templates/admin/recipe-pending-list.html
@@ -28,6 +34,7 @@ public class AdminRecipeController {
     @GetMapping("/{id}")
     public String viewRecipeDetail(@PathVariable Integer id, Model model) {
         Recipe recipe = adminRecipeService.getRecipeDetail(id);
+        recipeService.calculateRecipeMacros(recipe);
         model.addAttribute("recipe", recipe); // Đẩy đối tượng "recipe" sang View để hiển thị form
         return "admin/recipe-detail";
     }
@@ -52,5 +59,30 @@ public class AdminRecipeController {
     public String rejectRecipe(@PathVariable Integer id) {
         adminRecipeService.rejectRecipe(id);
         return "redirect:/admin/recipes/pending"; // Xóa xong quay về danh sách
+    }
+
+    // 6
+    @PostMapping("/api/steps/update")
+    @ResponseBody // Quan trọng: Trả về JSON, không phải HTML view
+    public ResponseEntity<?> updateSingleStep(@RequestParam Integer stepId,
+            @RequestParam String instruction) {
+        try {
+            adminRecipeService.updateStepInstruction(stepId, instruction);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Step updated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{id}/api/update-general")
+    @ResponseBody // Trả về JSON
+    public ResponseEntity<?> updateRecipeGeneralApi(@PathVariable Integer id, @ModelAttribute Recipe recipe) {
+        try {
+            // Sử dụng lại service cũ để update nội dung
+            adminRecipeService.updateRecipeContent(id, recipe);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Recipe information saved successfully!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Error: " + e.getMessage()));
+        }
     }
 }

@@ -5,7 +5,7 @@
     </head>
     <body>
         <header th:fragment="header_nav" 
-                class="flex flex-col border-b border-solid border-border-color bg-card-white dark:bg-background-dark dark:border-dark-ink/20 sticky top-0 z-50">
+                class="flex flex-col border-b border-solid border-border-color bg-white dark:bg-background-dark dark:border-dark-ink/20 sticky top-0 z-50">
 
             <div class="flex items-center px-6 sm:px-10 lg:px-20 py-3">
 
@@ -27,6 +27,7 @@
                         <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                             <a th:href="@{/admin/users}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Manage Users</a>
                             <a th:href="@{/admin/ingredients/create}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">System Ingredients</a>
+                            <a th:href="@{/admin/recipes/pending}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Peding Recipes</a>
                         </div>
                     </div>
                 </nav>
@@ -73,6 +74,10 @@
                                     <p class="text-sm font-bold text-dark-ink dark:text-white truncate" sec:authentication="name">user@email.com</p>
                                 </div>
 
+                                <a th:href="@{/user/favorites}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                    <span class="material-symbols-outlined text-lg">favorite</span> My Favorites
+                                </a>
+                                
                                 <a th:href="@{/user/settings}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">settings</span> Settings
                                 </a>

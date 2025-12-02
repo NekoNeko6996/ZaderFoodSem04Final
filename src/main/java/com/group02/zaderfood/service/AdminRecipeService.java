@@ -122,4 +122,14 @@ public class AdminRecipeService {
         // 3. Xóa công thức chính
         recipeRepository.delete(recipe);
     }
+
+    public void updateStepInstruction(Integer stepId, String newInstruction) {
+        RecipeStep step = recipeStepRepository.findById(stepId)
+                .orElseThrow(() -> new RuntimeException("Step not found"));
+
+        step.setInstruction(newInstruction);
+        step.setUpdatedAt(LocalDateTime.now());
+
+        recipeStepRepository.save(step);
+    }
 }
