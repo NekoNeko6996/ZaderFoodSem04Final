@@ -1,182 +1,138 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" 
+      lang="en">
     <head>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-        <title th:text="${recipe.name + ' - Smart Meal Planner'}">Recipe Detail - Smart Meal Planner</title>
-        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
-        <style>
-            .material-symbols-outlined {
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
-            }
-        </style>
-        <script>
-            tailwind.config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        colors: {"primary": "#ff6e42", "background-light": "#f8f6f5", "background-dark": "#23140f"},
-                        fontFamily: {"display": ["Plus Jakarta Sans", "sans-serif"]},
-                        borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-                    },
-                },
-            }
-        </script>
-    </head>
-    <body class="bg-[#FAFAFA] font-display">
-        <div class="relative flex min-h-screen w-full flex-col group/design-root" style='font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;'>
-            <div class="layout-container flex h-full grow flex-col">
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title th:text="${recipe.name + ' - Smart Meal Planner'}">Recipe Detail</title>
+</head>
+<body class="bg-background-light font-display text-dark-ink">
+    <div class="relative flex min-h-screen w-full flex-col group/design-root">
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
 
-                <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-4 sm:px-10 py-3 bg-white text-[#263238]">
-                    <div class="flex items-center gap-4">
-                        <a th:href="@{/}" class="text-2xl font-bold tracking-tight cursor-pointer">Zader Food</a>
+        <main class="flex flex-1 justify-center px-4 py-8 sm:px-8 sm:py-12">
+            <div class="w-full max-w-5xl">
+                <div class="bg-card-white rounded-xl shadow-soft overflow-hidden border border-border-color">
+
+                    <div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end min-h-[320px] md:min-h-[400px]"
+                         th:style="|background-image: url('${recipe.imageUrl != null ? recipe.imageUrl : 'https://via.placeholder.com/800x400'}');|">
                     </div>
-                    <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-8">
-                        <a class="text-sm font-medium leading-normal" th:href="@{/}">Home</a>
-                        <a class="text-sm font-medium leading-normal" th:href="@{/recipes}">Recipes</a>
-                        <a class="text-sm font-medium leading-normal" href="#">Meal Plan</a>
-                    </nav>
-                    <div class="flex items-center gap-2">
-                        <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#4CAF50] text-white text-sm font-bold leading-normal">
-                            <span class="truncate">Login</span>
-                        </button>
-                    </div>
-                </header>
 
-                <main class="flex flex-1 justify-center px-4 py-8 sm:px-8 sm:py-12">
-                    <div class="w-full max-w-5xl">
-                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6 md:p-10">
+                        <div class="flex flex-col gap-4 md:gap-6">
+                            <div class="flex flex-wrap justify-between gap-4">
+                                <div class="flex min-w-72 flex-col gap-2">
+                                    <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em]"
+                                        th:text="${recipe.name}">Recipe Name</h1>
 
-                            <div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end min-h-[320px] md:min-h-[400px]"
-                                 th:style="'background-image: url(' + ${recipe.imageUrl != null ? recipe.imageUrl : 'https://via.placeholder.com/800x400'} + ');'">
-                            </div>
+                                    <p class="text-soft-grey text-base font-normal leading-normal flex items-center gap-2">
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined !text-lg">schedule</span> <span th:text="${recipe.cookTimeMin} + ' min'"></span></span>
+                                        <span>|</span>
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined !text-lg">group</span> <span th:text="${recipe.servings} + ' servings'"></span></span>
+                                        <span th:if="${recipe.difficulty != null}" th:text="' | ' + ${recipe.difficulty}"></span>
+                                    </p>
 
-                            <div class="p-6 md:p-10">
-                                <div class="flex flex-col gap-4 md:gap-6">
-                                    <div class="flex flex-wrap justify-between gap-4">
-                                        <div class="flex min-w-72 flex-col gap-2">
-                                            <h1 class="text-[#263238] text-4xl font-black leading-tight tracking-[-0.033em]"
-                                                th:text="${recipe.name}">
-                                                Recipe Name
-                                            </h1>
-
-                                            <p class="text-[#78909C] text-base font-normal leading-normal">
-                                                <span th:text="${recipe.totalCalories != null ? recipe.totalCalories : 0} + ' Calories'"></span> |
-                                                <span th:text="${recipe.cookTimeMin != null ? recipe.cookTimeMin : 0} + ' min Cook Time'"></span> |
-                                                <span th:text="'Serves ' + ${recipe.servings != null ? recipe.servings : 1}"></span>
-                                                <span th:if="${recipe.difficulty != null}" th:text="' | ' + ${recipe.difficulty}"></span>
-                                            </p>
-                                            <p class="text-gray-600 text-sm mt-1" th:text="${recipe.description}"></p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <div class="h-6 w-6 rounded-full bg-smart-mist flex items-center justify-center text-soft-grey">
+                                            <span class="material-symbols-outlined !text-sm">person</span>
                                         </div>
-
-                                        <div class="flex flex-wrap gap-3 items-start">
-                                            <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#FF7043] text-white text-base font-bold w-full sm:w-auto hover:bg-[#e64a19] transition">
-                                                Add to Meal Plan
-                                            </button>
-                                        </div>
+                                        <p class="text-sm text-soft-grey">
+                                            Recipe by <span class="font-bold text-dark-ink" 
+                                                            th:text="${recipe.user != null ? recipe.user.fullName : 'Zader Chef'}">Chef Name</span>
+                                        </p>
                                     </div>
 
-                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-12 pt-6">
+                                    <p class="text-dark-ink/80 text-sm mt-2" th:text="${recipe.description}"></p>
 
-                                        <div class="md:col-span-2">
-                                            <h2 class="text-[#263238] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">Ingredients</h2>
-                                            <div class="flex flex-col gap-4">
-
-                                                <label th:each="ri : ${recipe.recipeIngredients}" class="flex items-center gap-3 text-base text-[#263238] cursor-pointer group hover:bg-gray-50 p-2 rounded transition">
-                                                    <input class="h-5 w-5 rounded border-gray-300 text-[#FF7043] focus:ring-[#FF7043]/50" type="checkbox"/>
-                                                    <div class="flex flex-wrap gap-1">
-                                                        <span class="font-bold text-[#FF7043]" 
-                                                              th:text="${ri.quantity != null ? #numbers.formatDecimal(ri.quantity, 0, 'COMMA', 2, 'POINT').replace('.00', '') : ''}">
-                                                        </span>
-
-                                                        <span class="font-medium text-[#FF7043]" 
-                                                              th:text="${ri.unit}">
-                                                        </span>
-
-                                                        <span class="text-[#263238]" 
-                                                              th:text="${ri.ingredient != null ? ri.ingredient.name : 'Unknown Ingredient'}">
-                                                        </span>
-
-                                                        <span th:if="${ri.note != null && !ri.note.isEmpty()}" 
-                                                              class="text-[#78909C] italic" 
-                                                              th:text="'(' + ${ri.note} + ')'">
-                                                        </span>
-                                                    </div>
-                                                </label>
-
-                                                <p th:if="${#lists.isEmpty(recipe.recipeIngredients)}" class="text-gray-500 italic">No ingredients listed.</p>
-                                            </div>
+                                    <div class="mt-4 p-4 rounded-xl bg-background-light border border-border-color grid grid-cols-4 gap-2 text-center max-w-lg">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Calories</span>
+                                            <span class="text-xl font-black text-dark-ink" th:text="${recipe.totalCalories}">0</span>
+                                            <span class="text-[10px] text-soft-grey">kcal</span>
                                         </div>
-
-                                        <div class="md:col-span-3">
-                                            <h2 class="text-[#263238] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">Instructions</h2>
-                                            <div class="prose prose-base text-[#263238] max-w-none">
-                                                <ol class="list-decimal pl-5 space-y-4">
-
-                                                    <li th:each="step : ${recipe.recipeSteps}" class="pl-2">
-                                                        <span th:text="${step.instruction}"></span>
-                                                        <div th:if="${step.mediaUrl != null && !step.mediaUrl.isEmpty()}" class="mt-2">
-                                                            <img th:src="${step.mediaUrl}" class="rounded-lg h-40 object-cover" alt="Step image">
-                                                        </div>
-                                                    </li>
-                                                </ol>
-                                                <p th:if="${#lists.isEmpty(recipe.recipeSteps)}" class="text-gray-500 italic">No instructions available.</p>
-                                            </div>
+                                        <div class="flex flex-col border-l border-border-color">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Protein</span>
+                                            <span class="text-xl font-black text-protein-blue" th:text="${recipe.protein != null ? recipe.protein : 0}">0</span>
+                                            <span class="text-[10px] text-soft-grey">g</span>
                                         </div>
-                                    </div>
-
-                                    <div class="border-t border-gray-200 pt-8 mt-8">
-                                        <h2 class="text-[#263238] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">Ask AI about Nutrition</h2>
-                                        <div class="space-y-6">
-                                            <div class="flex flex-col items-start gap-2">
-                                                <div class="bg-gray-50 rounded-lg p-3 max-w-[80%]">
-                                                    <p class="text-[#78909C] text-sm">Do you have any questions about the nutrition of 
-                                                        <strong th:text="${recipe.name}"></strong>? I can help calculate macros or suggest ingredient substitutions.
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div class="relative mt-4">
-                                                <input type="hidden" id="recipeId" th:value="${recipe.recipeId}" />
-
-                                                <input id="aiQuestionInput" class="w-full h-12 px-4 pr-12 text-[#263238] bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 focus:border-[#FF7043] placeholder:text-[#78909C]" 
-                                                       placeholder="Example: How much protein is in this dish?" type="text"/>
-
-                                                <button onclick="handleAskAI()" class="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-[#FF7043] hover:text-[#263238]">
-                                                    <span class="material-symbols-outlined">send</span>
-                                                </button>
-                                            </div>
+                                        <div class="flex flex-col border-l border-border-color">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Carbs</span>
+                                            <span class="text-xl font-black text-carbs-gold" th:text="${recipe.carbs != null ? recipe.carbs : 0}">0</span>
+                                            <span class="text-[10px] text-soft-grey">g</span>
+                                        </div>
+                                        <div class="flex flex-col border-l border-border-color">
+                                            <span class="text-xs text-soft-grey font-bold uppercase">Fat</span>
+                                            <span class="text-xl font-black text-fat-red" th:text="${recipe.fat != null ? recipe.fat : 0}">0</span>
+                                            <span class="text-[10px] text-soft-grey">g</span>
                                         </div>
                                     </div>
 
                                 </div>
+
+                                <div class="flex flex-wrap gap-3 items-start">
+                                    <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-chef-orange text-white text-base font-bold w-full sm:w-auto hover:bg-opacity-90 transition">
+                                        Add to Meal Plan
+                                    </button>
+                                    <button class="flex items-center justify-center w-12 h-12 rounded-lg border border-border-color text-soft-grey hover:text-chef-orange hover:border-chef-orange transition">
+                                        <span class="material-symbols-outlined">favorite</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-12 pt-6">
+                                <div class="md:col-span-2">
+                                    <h2 class="text-dark-ink text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">Ingredients</h2>
+                                    <div class="flex flex-col gap-4">
+                                        <label th:each="ri : ${recipe.recipeIngredients}" class="flex items-center gap-3 text-base text-dark-ink cursor-pointer group hover:bg-gray-50 p-2 rounded transition">
+                                            <input class="h-5 w-5 rounded border-gray-300 text-chef-orange focus:ring-chef-orange/50" type="checkbox"/>
+                                            <div class="flex flex-wrap gap-1">
+                                                <span class="font-bold text-chef-orange" th:text="${ri.quantity}"></span>
+                                                <span class="font-medium text-chef-orange" th:text="${ri.unit}"></span>
+                                                <span class="text-dark-ink" th:text="${ri.ingredient != null ? ri.ingredient.name : 'Unknown'}"></span>
+                                            </div>
+                                        </label>
+                                        <p th:if="${#lists.isEmpty(recipe.recipeIngredients)}" class="text-soft-grey italic">No ingredients listed.</p>
+                                    </div>
+                                </div>
+
+                                <div class="md:col-span-3">
+                                    <h2 class="text-dark-ink text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">Instructions</h2>
+                                    <div class="prose prose-base text-dark-ink max-w-none">
+                                        <ol class="list-decimal pl-5 space-y-4">
+                                            <li th:each="step : ${recipe.recipeSteps}" class="pl-2">
+                                                <span th:text="${step.instruction}"></span>
+                                                <div th:if="${step.mediaUrl != null}" class="mt-2">
+                                                    <img th:src="${step.mediaUrl}" class="rounded-lg h-40 object-cover" alt="Step image">
+                                                </div>
+                                            </li>
+                                        </ol>
+                                        <p th:if="${#lists.isEmpty(recipe.recipeSteps)}" class="text-soft-grey italic">No instructions available.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-border-color pt-8 mt-8">
+                                <h2 class="text-dark-ink text-[22px] font-bold leading-tight pb-4">Ask AI about Nutrition</h2>
+                                <div class="relative mt-2">
+                                    <input type="hidden" id="recipeId" th:value="${recipe.recipeId}" />
+                                    <input id="aiQuestionInput" class="w-full h-12 px-4 pr-12 text-dark-ink bg-white border border-border-color rounded-lg focus:ring-2 focus:ring-chef-orange/50 focus:border-chef-orange placeholder:text-soft-grey" placeholder="Example: How much protein is in this dish?" type="text"/>
+                                    <button onclick="handleAskAI()" class="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-chef-orange hover:text-dark-ink">
+                                        <span class="material-symbols-outlined">send</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
-        </div>
+        </main>
+    </div>
 
-        <script>
-            function handleAskAI() {
-                const question = document.getElementById('aiQuestionInput').value;
-                const recipeId = document.getElementById('recipeId').value;
-
-                if (!question) {
-                    alert("Please enter a question!");
-                    return;
-                }
-
-                console.log("Sending question to AI for Recipe ID: " + recipeId);
-                console.log("Question: " + question);
-
-                // TODO: Implement Fetch API to Spring Boot Controller
-                // fetch('/api/ai/chat', { ... })
-
-                alert("AI feature is under development! (Check console for data)");
-            }
-        </script>
-    </body>
+    <script>
+        function handleAskAI() {
+            const question = document.getElementById('aiQuestionInput').value;
+            alert("AI Feature: " + question + " (Coming Soon)");
+        }
+    </script>
+</body>
 </html>

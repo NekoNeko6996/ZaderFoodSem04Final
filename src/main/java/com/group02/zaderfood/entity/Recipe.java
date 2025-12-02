@@ -25,7 +25,7 @@ public class Recipe implements Serializable {
     @Column(name = "Name")
     private String name;
 
-    @Column(name = "Description")
+    @Column(name = "Description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Column(name = "Difficulty")
@@ -65,6 +65,16 @@ public class Recipe implements Serializable {
 
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
+    
+    //
+    @Transient
+    private BigDecimal protein;
+
+    @Transient
+    private BigDecimal carbs;
+
+    @Transient
+    private BigDecimal fat;
 
     // JOIN
     @OneToMany(mappedBy = "recipe")
@@ -72,4 +82,8 @@ public class Recipe implements Serializable {
 
     @OneToMany(mappedBy = "recipe")
     private List<RecipeStep> recipeSteps;
+
+    @ManyToOne
+    @JoinColumn(name = "CreatedByUserId", insertable = false, updatable = false)
+    private User user;
 }

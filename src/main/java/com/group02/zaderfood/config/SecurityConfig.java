@@ -36,7 +36,11 @@ public class SecurityConfig {
                         "/images/**",
                         "/icons/**",
                         "/default/**",
-                        "/uploads/**"
+                        "/uploads/**",
+                        "/recipes/suggestions",
+                        "/recipes/search",
+                        "/ai-tools/calorie-estimator",
+                        "/collections/view/**"
                 ).permitAll()
                 .requestMatchers("/ai-tools/**").authenticated()
                 .requestMatchers("/recipes/create", "/recipes/save").authenticated()

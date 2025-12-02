@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title>Review Recipe - Zader Food Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3bbf41",
+                        "primary-dark": "#2ea633",
+                        "background-light": "#FAFAFA",
+                        "background-dark": "#141e14",
+                        "dark-ink": "#263238",
+                        "soft-grey": "#78909C",
+                        "nutri-green": "#4CAF50",
+                        // Màu Macro từ recipeDetail.html
+                        "protein-blue": "#3b82f6",
+                        "carbs-gold": "#eab308",
+                        "fat-red": "#ef4444"
+                    },
+                    fontFamily: {"display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]}
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-display bg-background-light text-dark-ink">
+
+    <div class="relative flex min-h-screen w-full flex-col">
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
+
+        <main class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col w-full max-w-6xl gap-6">
+
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 
+                     bg-white border border-gray-200/60 shadow-sm 
+                     p-4 rounded-xl sticky top-[70px] z-30 transition-all duration-300">
+
+                    <div class="flex flex-col">
+                        <a th:href="@{/admin/recipes/pending}" class="flex items-center text-sm text-soft-grey hover:text-primary transition gap-1 mb-1">
+                            <span class="material-symbols-outlined text-lg">arrow_back</span> Back to Pending List
+                        </a>
+                        <h1 class="text-xl font-black text-dark-ink">Review Recipe <span class="text-soft-grey font-medium text-lg" th:text="'#' + ${recipe.recipeId}">#12</span></h1>
+                    </div>
+
+                    <div class="flex gap-3 w-full md:w-auto">
+                        <form id="rejectForm" th:action="@{/admin/recipes/{id}/reject(id=${recipe.recipeId})}" method="post" class="w-full md:w-auto">
+                            <button type="button" onclick="confirmReject()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50/80 hover:bg-red-100 text-red-600 rounded-lg font-bold border border-red-100 transition backdrop-blur-sm">
+                                <span class="material-symbols-outlined">close</span> Reject
+                            </button>
+                        </form>
+
+                        <form id="approveForm" th:action="@{/admin/recipes/{id}/approve(id=${recipe.recipeId})}" method="post" class="w-full md:w-auto">
+                            <button type="button" onclick="confirmApprove()" class="w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-primary/90 hover:bg-primary text-white rounded-lg font-bold shadow-md hover:shadow-lg transition backdrop-blur-sm">
+                                <span class="material-symbols-outlined">check</span> Approve & Publish
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <div class="lg:col-span-2">
+                        <form th:action="@{/admin/recipes/{id}/update(id=${recipe.recipeId})}" th:object="${recipe}" method="post" id="mainForm" class="flex flex-col gap-6">
+
+                            <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                                <div class="flex justify-between items-center pb-4 border-b border-gray-100 mb-4">
+                                    <p class="text-base font-bold flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-soft-grey">edit_note</span>
+                                        General Information
+                                    </p>
+
+                                    <button type="button" onclick="saveGeneralInfo()" class="text-sm font-bold text-white bg-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition flex items-center gap-2 shadow-sm">
+                                        <span class="material-symbols-outlined text-base">save</span> Save All Changes
+                                    </button>
+                                </div>
+
+                                <div class="flex flex-col gap-4">
+                                    <label class="flex flex-col w-full">
+                                        <span class="text-sm font-medium pb-1 text-soft-grey">Recipe Name</span>
+                                        <input type="text" th:field="*{name}" class="form-input w-full rounded-lg border-gray-200 bg-gray-50 focus:bg-white focus:border-primary h-12 px-4 font-semibold text-dark-ink" />
+                                    </label>
+
+                                    <label class="flex flex-col w-full">
+                                        <span class="text-sm font-medium pb-1 text-soft-grey">Description</span>
+                                        <textarea th:field="*{description}" class="form-textarea w-full rounded-lg border-gray-200 bg-gray-50 focus:bg-white focus:border-primary min-h-[100px] p-4 text-sm"></textarea>
+                                    </label>
+
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <label class="flex flex-col">
+                                            <span class="text-sm font-medium pb-1 text-soft-grey">Prep (min)</span>
+                                            <input type="number" th:field="*{prepTimeMin}" class="form-input w-full rounded-lg border-gray-200 bg-gray-50 h-12 text-sm text-center" />
+                                        </label>
+                                        <label class="flex flex-col">
+                                            <span class="text-sm font-medium pb-1 text-soft-grey">Cook (min)</span>
+                                            <input type="number" th:field="*{cookTimeMin}" class="form-input w-full rounded-lg border-gray-200 bg-gray-50 h-12 text-sm text-center" />
+                                        </label>
+                                        <label class="flex flex-col">
+                                            <span class="text-sm font-medium pb-1 text-soft-grey">Servings</span>
+                                            <input type="number" th:field="*{servings}" class="form-input w-full rounded-lg border-gray-200 bg-gray-50 h-12 text-sm text-center" />
+                                        </label>
+                                    </div>
+
+                                    <div class="flex flex-col gap-2 mt-2">
+                                        <span class="text-sm font-medium text-soft-grey">Nutrition Estimates (Calculated from Ingredients)</span>
+
+                                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200 grid grid-cols-4 gap-2 text-center">
+                                            <div class="flex flex-col">
+                                                <span class="text-[10px] text-soft-grey font-bold uppercase tracking-wide">Calories</span>
+                                                <input type="number" step="1" th:field="*{totalCalories}" class="bg-transparent text-center text-xl font-black text-dark-ink focus:outline-none w-full p-0 border-none outline-none" readonly="true"/>
+                                                <span class="text-[10px] text-soft-grey">kcal</span>
+                                            </div>
+
+                                            <div class="flex flex-col border-l border-gray-200">
+                                                <span class="text-[10px] text-soft-grey font-bold uppercase tracking-wide">Protein</span>
+                                                <span class="text-xl font-black text-protein-blue" th:text="${recipe.protein != null ? recipe.protein : 0}">0</span>
+                                                <span class="text-[10px] text-soft-grey">g</span>
+                                            </div>
+
+                                            <div class="flex flex-col border-l border-gray-200">
+                                                <span class="text-[10px] text-soft-grey font-bold uppercase tracking-wide">Carbs</span>
+                                                <span class="text-xl font-black text-carbs-gold" th:text="${recipe.carbs != null ? recipe.carbs : 0}">0</span>
+                                                <span class="text-[10px] text-soft-grey">g</span>
+                                            </div>
+
+                                            <div class="flex flex-col border-l border-gray-200">
+                                                <span class="text-[10px] text-soft-grey font-bold uppercase tracking-wide">Fat</span>
+                                                <span class="text-xl font-black text-fat-red" th:text="${recipe.fat != null ? recipe.fat : 0}">0</span>
+                                                <span class="text-[10px] text-soft-grey">g</span>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-soft-grey italic text-center mt-1">* Macros are estimated based on ingredients list.</p>
+                                    </div>
+
+                                    <label class="flex flex-col mt-2">
+                                        <span class="text-sm font-medium pb-1 text-soft-grey">Difficulty</span>
+                                        <select th:field="*{difficulty}" class="form-select w-full rounded-lg border-gray-200 bg-gray-50 h-12 text-sm">
+                                            <option value="EASY">Easy</option>
+                                            <option value="MEDIUM">Medium</option>
+                                            <option value="HARD">Hard</option>
+                                            <option value="CHEF_LEVEL">Chef Level</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                                <p class="text-base font-bold pb-4 border-b border-gray-100 mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-soft-grey">list_alt</span> Instructions
+                                </p>
+                                <div class="flex flex-col gap-4">
+                                    <div th:each="step, iter : *{recipeSteps}" class="step-item flex gap-4 items-start group relative transition-colors hover:bg-gray-50/50 rounded-lg p-2 -mx-2">
+
+                                        <div class="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0 mt-0.5"
+                                             th:text="${step.stepNumber}">1</div>
+
+                                        <div class="flex-1">
+                                            <p class="step-text text-sm text-dark-ink leading-relaxed p-2 border border-transparent rounded-lg"
+                                               th:text="${step.instruction}"></p>
+
+                                            <textarea th:data-id="${step.stepId}"
+                                                      class="step-input hidden w-full form-textarea rounded-lg border-primary bg-white text-sm shadow-sm focus:ring focus:ring-primary/20 p-2 min-h-[80px]"
+                                                      th:text="${step.instruction}"></textarea>
+
+                                            <div th:if="${step.mediaUrl}" class="mt-2 ml-2">
+                                                <span class="text-xs text-blue-500 flex items-center gap-1"><span class="material-symbols-outlined text-sm">image</span> Has Media</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity" id="action-group">
+                                            <button type="button" onclick="toggleStepEdit(this)" class="btn-edit p-1.5 text-soft-grey hover:text-primary hover:bg-primary/10 rounded-lg transition" title="Edit Step">
+                                                <span class="material-symbols-outlined text-lg">edit</span>
+                                            </button>
+                                            <button type="button" onclick="saveSingleStep(this)" class="btn-save hidden p-1.5 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition shadow-sm" title="Save Changes">
+                                                <span class="material-symbols-outlined text-lg">check</span>
+                                            </button>
+                                            <button type="button" onclick="cancelStepEdit(this)" class="btn-cancel hidden p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Cancel">
+                                                <span class="material-symbols-outlined text-lg">close</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="flex flex-col gap-6">
+                        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                            <h3 class="text-sm font-bold text-soft-grey mb-3 uppercase tracking-wider">Cover Image</h3>
+                            <div class="aspect-video w-full rounded-lg overflow-hidden bg-gray-100 border border-gray-200 relative group">
+                                <img th:src="${recipe.imageUrl != null ? recipe.imageUrl : 'https://placehold.co/600x400?text=No+Image'}" 
+                                     class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="Recipe Cover">
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col h-full relative">
+                            <h3 class="text-base font-bold text-dark-ink mb-4 flex items-center justify-between">
+                                <span>Ingredients</span>
+                                <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md" th:text="${recipe.recipeIngredients.size() + ' items'}">0 items</span>
+                            </h3>
+
+                            <div class="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div th:each="ri : ${recipe.recipeIngredients}" 
+                                     class="ingredient-row flex items-center p-3 rounded-lg border border-gray-100 bg-gray-50 relative overflow-hidden hover:border-primary/50 hover:shadow-md transition cursor-help group/ing"
+                                     th:data-name="${ri.ingredient.name}"
+                                     th:data-cal="${ri.ingredient.caloriesPer100g}"
+                                     th:data-pro="${ri.ingredient.protein}"
+                                     th:data-fat="${ri.ingredient.fat}"
+                                     th:data-carbs="${ri.ingredient.carbs}"
+                                     th:classappend="${!ri.ingredient.isActive} ? 'border-orange-200 bg-orange-50/50' : ''">
+
+                                    <div th:if="${!ri.ingredient.isActive}" class="absolute top-0 right-0">
+                                        <span class="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg">NEW</span>
+                                    </div>
+                                    <img th:src="${ri.ingredient.imageUrl != null ? ri.ingredient.imageUrl : 'https://placehold.co/48x48?text=Ing'}" 
+                                         class="w-10 h-10 rounded object-cover border border-gray-200 bg-white mr-3 shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-dark-ink truncate group-hover/ing:text-primary transition-colors" th:text="${ri.ingredient.name}">Ingredient Name</p>
+                                        <p class="text-xs text-soft-grey"><span th:text="${ri.quantity}">100</span> <span th:text="${ri.unit}">g</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+
+        <div id="nutrition-tooltip" class="fixed z-50 hidden w-64 bg-white/95 backdrop-blur rounded-xl shadow-xl border border-gray-100 p-4 pointer-events-none transition-opacity duration-200 opacity-0">
+            <div class="flex items-center gap-2 border-b border-gray-100 pb-2 mb-2">
+                <span class="material-symbols-outlined text-primary text-xl">nutrition</span>
+                <h4 id="tooltip-title" class="font-bold text-dark-ink text-sm">Ingredient Name</h4>
+            </div>
+            <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div class="flex justify-between"><span class="text-soft-grey">Calories:</span><span id="tooltip-cal" class="font-bold text-dark-ink">0</span></div>
+                <div class="flex justify-between"><span class="text-soft-grey">Protein:</span><span id="tooltip-pro" class="font-bold text-green-600">0g</span></div>
+                <div class="flex justify-between"><span class="text-soft-grey">Fat:</span><span id="tooltip-fat" class="font-bold text-yellow-600">0g</span></div>
+                <div class="flex justify-between"><span class="text-soft-grey">Carbs:</span><span id="tooltip-carbs" class="font-bold text-blue-600">0g</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script th:inline="javascript">
+        // --- 1. SWEET ALERT CONFIRMATION ---
+
+        // Confirm Approve
+        function confirmApprove() {
+            Swal.fire({
+                title: 'Approve Recipe?',
+                text: "This recipe and all new ingredients will be public.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3bbf41', // Primary Green
+                cancelButtonColor: '#78909C',
+                confirmButtonText: 'Yes, Approve it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show Loading Toast
+                    if (typeof ZaderToast !== 'undefined')
+                        ZaderToast.loading("Processing approval...");
+                    document.getElementById('approveForm').submit();
+                }
+            });
+        }
+
+        // Confirm Reject
+        function confirmReject() {
+            Swal.fire({
+                title: 'Reject & Delete?',
+                text: "This action cannot be undone. The recipe will be permanently deleted.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444', // Red
+                cancelButtonColor: '#78909C',
+                confirmButtonText: 'Yes, Reject it!',
+                cancelButtonText: 'No, keep it'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (typeof ZaderToast !== 'undefined')
+                        ZaderToast.loading("Deleting recipe...");
+                    document.getElementById('rejectForm').submit();
+                }
+            });
+        }
+
+        // Confirm Save Main Form (General Info)
+        function submitMainForm() {
+            if (typeof ZaderToast !== 'undefined')
+                ZaderToast.loading("Saving changes...");
+            document.getElementById('mainForm').submit();
+        }
+
+        // --- 2. EDIT STEPS LOGIC (Updated with Toast) ---
+
+        function toggleStepEdit(btn) {
+            const container = btn.closest('.step-item');
+            const textP = container.querySelector('.step-text');
+            const inputArea = container.querySelector('.step-input');
+            const btnSave = container.querySelector('.btn-save');
+            const btnCancel = container.querySelector('.btn-cancel');
+
+            inputArea.value = textP.innerText.trim();
+            textP.classList.add('hidden');
+            inputArea.classList.remove('hidden');
+            inputArea.focus();
+
+            btn.classList.add('hidden');
+            btnSave.classList.remove('hidden');
+            btnCancel.classList.remove('hidden');
+
+            container.querySelector('#action-group').classList.remove('opacity-0', 'group-hover:opacity-100');
+            container.querySelector('#action-group').classList.add('opacity-100');
+        }
+
+        function cancelStepEdit(btn) {
+            const container = btn.closest('.step-item');
+            const textP = container.querySelector('.step-text');
+            const inputArea = container.querySelector('.step-input');
+            const btnEdit = container.querySelector('.btn-edit');
+            const btnSave = container.querySelector('.btn-save');
+
+            inputArea.value = textP.innerText;
+            textP.classList.remove('hidden');
+            inputArea.classList.add('hidden');
+
+            btnEdit.classList.remove('hidden');
+            btnSave.classList.add('hidden');
+            btn.classList.add('hidden');
+
+            container.querySelector('#action-group').classList.add('opacity-0', 'group-hover:opacity-100');
+            container.querySelector('#action-group').classList.remove('opacity-100');
+        }
+
+        function saveSingleStep(btn) {
+            const container = btn.closest('.step-item');
+            const inputArea = container.querySelector('.step-input');
+            const textP = container.querySelector('.step-text');
+
+            const stepId = inputArea.getAttribute('data-id');
+            const newContent = inputArea.value;
+
+            // UI Loading state
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = `<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>`;
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('stepId', stepId);
+            formData.append('instruction', newContent);
+
+            fetch('/admin/recipes/api/steps/update', {
+                method: 'POST',
+                body: formData
+            })
+                    .then(response => {
+                        if (!response.ok)
+                            throw new Error('Failed to update');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Success
+                        textP.innerText = newContent;
+                        cancelStepEdit(container.querySelector('.btn-cancel'));
+
+                        // USE TOAST SYSTEM
+                        if (typeof ZaderToast !== 'undefined') {
+                            ZaderToast.success("Instruction updated successfully!");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        if (typeof ZaderToast !== 'undefined') {
+                            ZaderToast.error("Failed to update. Please try again.");
+                        } else {
+                            Swal.fire('Error', 'Failed to update step.', 'error');
+                        }
+                    })
+                    .finally(() => {
+                        btn.innerHTML = originalIcon;
+                        btn.disabled = false;
+                    });
+        }
+
+        // --- 3. INGREDIENT TOOLTIP (Giữ nguyên) ---
+        const tooltip = document.getElementById('nutrition-tooltip');
+        const rows = document.querySelectorAll('.ingredient-row');
+
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', (e) => {
+                const name = row.getAttribute('data-name');
+                document.getElementById('tooltip-title').innerText = name;
+                document.getElementById('tooltip-cal').innerText = row.getAttribute('data-cal') || '0';
+                document.getElementById('tooltip-pro').innerText = (row.getAttribute('data-pro') || '0') + 'g';
+                document.getElementById('tooltip-fat').innerText = (row.getAttribute('data-fat') || '0') + 'g';
+                document.getElementById('tooltip-carbs').innerText = (row.getAttribute('data-carbs') || '0') + 'g';
+
+                tooltip.classList.remove('hidden');
+                setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
+            });
+            row.addEventListener('mousemove', (e) => {
+                let left = e.clientX + 20;
+                let top = e.clientY + 20;
+                if (left + tooltip.offsetWidth > window.innerWidth)
+                    left = e.clientX - tooltip.offsetWidth - 20;
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            });
+            row.addEventListener('mouseleave', () => {
+                tooltip.classList.add('opacity-0');
+                setTimeout(() => tooltip.classList.add('hidden'), 200);
+            });
+        });
+
+
+        // --- 4. AJAX SAVE GENERAL INFO (Không reload trang) ---
+        function saveGeneralInfo() {
+            const form = document.getElementById('mainForm');
+            // Lấy ID từ URL hoặc từ hidden field trong form (đảm bảo form có action đúng chứa ID)
+            // Cách an toàn nhất: Lấy từ thymeleaf action attribute đã render
+            const actionUrl = form.getAttribute('action');
+
+            // Chuyển đổi URL từ view update sang api update
+            // URL cũ: /admin/recipes/{id}/update
+            // URL mới: /admin/recipes/{id}/api/update-general
+            const apiUrl = actionUrl.replace('/update', '/api/update-general');
+
+            // Hiệu ứng Loading
+            let loadingId;
+            if (typeof ZaderToast !== 'undefined') {
+                loadingId = ZaderToast.loading("Saving general information...");
+            }
+
+            const formData = new FormData(form);
+
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData
+            })
+                    .then(response => {
+                        if (!response.ok)
+                            throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Xóa loading toast
+                        if (loadingId)
+                            ZaderToast.remove(loadingId);
+
+                        if (data.success) {
+                            if (typeof ZaderToast !== 'undefined') {
+                                ZaderToast.success(data.message);
+                            }
+
+                            // (Tùy chọn) Highlight nút save một chút để báo hiệu xong
+                            const saveBtn = document.querySelector('button[onclick="saveGeneralInfo()"]');
+                            saveBtn.classList.add('ring', 'ring-green-300');
+                            setTimeout(() => saveBtn.classList.remove('ring', 'ring-green-300'), 500);
+                        } else {
+                            if (typeof ZaderToast !== 'undefined')
+                                ZaderToast.error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        if (loadingId)
+                            ZaderToast.remove(loadingId);
+                        console.error('Error:', error);
+                        if (typeof ZaderToast !== 'undefined') {
+                            ZaderToast.error("Failed to save. Please check your connection.");
+                        }
+                    });
+        }
+    </script>
+</body>
+</html>
