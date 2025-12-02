@@ -24,7 +24,7 @@
                             <a th:href="@{/user/favorites(view='recipes')}"
                                class="flex flex-col items-center justify-center border-b-[3px] pb-[13px] pt-4 cursor-pointer transition-colors"
                                th:classappend="${activeTab == 'recipes'} ? 'border-b-nutri-green text-nutri-green' : 'border-b-transparent text-soft-grey hover:text-dark-ink'">
-                                <p class="text-sm font-bold leading-normal">Recipe Favorite</p>
+                                <p class="text-sm font-bold leading-normal">Favorite Recipes</p>
                             </a>
 
                             <a th:href="@{/user/favorites(view='collections')}"
@@ -57,7 +57,6 @@
                                         </div>
                                         <input name="keyword" th:value="${keyword}"
                                                class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-dark-ink focus:outline-0 focus:ring-2 focus:ring-nutri-green/50 border border-border-light bg-card-white h-full px-4 rounded-l-none border-l-0 pl-2 text-base"
-                                               style="border-color: #e5e7eb"
                                                placeholder="Search my favorite recipes..." />
                                     </div>
                                 </label>
@@ -74,9 +73,11 @@
                         </form>
 
                         <div class="p-4">
-                            <div th:if="${not #lists.isEmpty(favoriteRecipes)}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <div th:if="${not #lists.isEmpty(favoriteRecipes)}" 
+                                 id="recipe-container"
+                                 class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
-                                <div th:each="recipe : ${favoriteRecipes}" class="flex flex-col rounded-xl bg-card-white shadow-soft overflow-hidden group transition-all hover:shadow-lg hover:-translate-y-1">
+                                <div th:each="recipe : ${favoriteRecipes}" class="recipe-item flex flex-col rounded-xl bg-card-white shadow-soft overflow-hidden group transition-all hover:shadow-lg hover:-translate-y-1">
 
                                     <div class="bg-cover bg-center h-48 relative"
                                          th:style="|background-image: url('${recipe.imageUrl != null ? recipe.imageUrl : '/images/default-food.jpg'}')|">
@@ -87,7 +88,7 @@
                                     </div>
 
                                     <div class="p-4 flex flex-col flex-grow">
-                                        <h3 class="font-bold text-lg text-dark-ink mb-1 truncate" th:text="${recipe.name}">Recipe Name</h3>
+                                        <h3 class="font-bold text-lg text-dark-ink mb-1 truncate" th:text="${recipe.name}">Name</h3>
 
                                         <div class="mt-auto text-xs text-soft-grey flex flex-wrap gap-2 items-center mb-3">
                                             <span class="font-bold text-dark-ink" th:text="|${recipe.totalCalories} Kcal|"></span>
@@ -113,10 +114,11 @@
                                 </div>
                             </div>
 
+                            <div id="pagination-controls" class="mt-8 flex justify-center gap-2"></div>
+
                             <div th:if="${#lists.isEmpty(favoriteRecipes)}" class="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-border-light rounded-xl bg-card-white/50 min-h-[300px]">
                                 <span class="material-symbols-outlined text-5xl text-soft-grey mb-4">bookmark_remove</span>
                                 <p class="text-lg font-bold text-dark-ink">No recipes found.</p>
-                                <p class="text-soft-grey mb-6">Try searching differently or add some recipes!</p>
                                 <a href="/recipes/suggestions" class="text-white bg-nutri-green px-6 py-2 rounded-lg font-bold">Discover Recipes</a>
                             </div>
                         </div>
@@ -128,7 +130,6 @@
                             <form th:action="@{/user/favorites/collections/create}" method="post" class="flex gap-3">
                                 <input type="text" name="name" required
                                        class="flex-1 rounded-lg border-border-light focus:ring-nutri-green focus:border-nutri-green" 
-                                       style="border-color: #e5e7eb"
                                        placeholder="e.g. Weekend Brunch...">
                                 <button type="submit" class="bg-primary text-white font-bold px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
                                     <span class="material-symbols-outlined">add</span> Create
@@ -165,9 +166,7 @@
 
                                     <form th:if="${dto.collection.name != 'Recipe Favorite'}" 
                                           th:action="@{/user/favorites/collections/delete}" method="post">
-
                                         <input type="hidden" name="collectionId" th:value="${dto.collection.collectionId}"/>
-
                                         <button type="button" onclick="confirmDelete(this)" 
                                                 class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Delete Collection">
@@ -196,7 +195,6 @@
 
                                     <div class="p-4 flex flex-col flex-grow">
                                         <h3 class="font-bold text-lg text-dark-ink mb-1 truncate" th:text="${recipe.name}">Name</h3>
-
                                         <div class="mt-auto text-xs text-soft-grey flex flex-wrap gap-2 items-center mb-3">
                                             <span class="font-bold text-dark-ink" th:text="|${recipe.totalCalories} Kcal|"></span>
                                             <span>•</span>
@@ -234,18 +232,12 @@
             </main>
 
             <script th:inline="javascript">
-                // 1. Check Flash Attributes từ Controller để hiện Toast
                 document.addEventListener('DOMContentLoaded', () => {
                 const successMsg = [[${successMessage}]];
                 const errorMsg = [[${errorMessage}]];
-                if (successMsg) {
-                ZaderToast.success(successMsg);
-                }
-                if (errorMsg) {
-                ZaderToast.error(errorMsg);
-                }
+                if (successMsg && typeof ZaderToast !== 'undefined') ZaderToast.success(successMsg);
+                if (errorMsg && typeof ZaderToast !== 'undefined') ZaderToast.error(errorMsg);
                 });
-                // 2. SweetAlert Confirm Delete
                 function confirmDelete(btn) {
                 Swal.fire({
                 title: 'Are you sure?',
@@ -257,35 +249,24 @@
                         confirmButtonText: 'Yes, remove it!'
                 }).then((result) => {
                 if (result.isConfirmed) {
-                // Tìm form cha và submit
                 btn.closest('form').submit();
                 }
                 })
                 }
             </script>
+
             <script>
-                // Hàm Share Collection
                 function shareCollection(collectionId) {
-                // 1. Gọi API để bật Public và lấy Link
                 fetch(`/user/favorites/collections/share?collectionId=${collectionId}`, {
-                method: 'POST',
-                        headers: {
-                        // Thêm CSRF Token nếu Spring Security yêu cầu (thường cần thẻ meta _csrf)
-                        // 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
-                        }
+                method: 'POST'
                 })
                         .then(response => {
-                        if (response.ok) {
-                        return response.text();
-                        }
+                        if (response.ok) return response.text();
                         throw new Error('Share failed');
                         })
                         .then(relativePath => {
-                        // 2. Tạo link đầy đủ
                         const fullUrl = window.location.origin + relativePath;
-                        // 3. Copy vào Clipboard
                         navigator.clipboard.writeText(fullUrl).then(() => {
-                        // 4. Thông báo thành công
                         if (typeof ZaderToast !== 'undefined') {
                         ZaderToast.success("Link copied to clipboard!");
                         } else {
@@ -295,12 +276,83 @@
                         })
                         .catch(error => {
                         console.error(error);
-                        if (typeof ZaderToast !== 'undefined') {
-                        ZaderToast.error("Failed to share collection.");
-                        }
+                        if (typeof ZaderToast !== 'undefined') ZaderToast.error("Failed to share.");
                         });
                 }
             </script>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                const itemsPerPage = 8;
+                const container = document.getElementById('recipe-container');
+                // Chỉ chạy nếu đang ở Tab Recipes và có dữ liệu
+                if (!container) return;
+                const items = container.querySelectorAll('.recipe-item');
+                const paginationContainer = document.getElementById('pagination-controls');
+                if (items.length === 0) return;
+                const totalPages = Math.ceil(items.length / itemsPerPage);
+                let currentPage = 1;
+                function showPage(page) {
+                if (page < 1 || page > totalPages) return;
+                currentPage = page;
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                items.forEach((item, index) => {
+                item.style.display = (index >= start && index < end) ? 'flex' : 'none';
+                });
+                renderPaginationButtons();
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+
+                function renderPaginationButtons() {
+                paginationContainer.innerHTML = '';
+                // Prev
+                const prevBtn = createButton('chevron_left', () => showPage(currentPage - 1));
+                if (currentPage === 1) prevBtn.classList.add('opacity-50', 'pointer-events-none');
+                paginationContainer.appendChild(prevBtn);
+                // Pages
+                for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i;
+                pageBtn.className = `flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-bold transition-colors ${
+                        i === currentPage
+                        ? 'bg-nutri-green text-white border-nutri-green'
+                        : 'bg-white text-dark-ink border-border-light hover:bg-gray-50'
+                        }`;
+                pageBtn.onclick = () => showPage(i);
+                paginationContainer.appendChild(pageBtn);
+                } else if ((i === currentPage - 2 && currentPage > 3) || (i === currentPage + 2 && currentPage < totalPages - 2)) {
+                const dots = document.createElement('span');
+                dots.className = "flex h-10 w-10 items-center justify-center text-soft-grey";
+                dots.textContent = "...";
+                paginationContainer.appendChild(dots);
+                }
+                }
+
+                // Next
+                const nextBtn = createButton('chevron_right', () => showPage(currentPage + 1));
+                if (currentPage === totalPages) nextBtn.classList.add('opacity-50', 'pointer-events-none');
+                paginationContainer.appendChild(nextBtn);
+                }
+
+                function createButton(iconName, onClick) {
+                const btn = document.createElement('button');
+                btn.className = "flex h-10 w-10 items-center justify-center rounded-lg border border-border-light bg-white text-dark-ink hover:bg-gray-50 transition-colors";
+                btn.innerHTML = `<span class="material-symbols-outlined text-sm">${iconName}</span>`;
+                btn.onclick = onClick;
+                return btn;
+                }
+
+                if (totalPages > 1) {
+                showPage(1);
+                } else {
+                items.forEach(item => item.style.display = 'flex');
+                paginationContainer.style.display = 'none';
+                }
+                });
+            </script>
+
         </div>
     </body>
 </html>
