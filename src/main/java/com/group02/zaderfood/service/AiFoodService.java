@@ -19,8 +19,19 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.client.RestClientException;
 
+import com.group02.zaderfood.dto.WeeklyPlanDTO;
+import com.group02.zaderfood.entity.Recipe;
+import com.group02.zaderfood.repository.RecipeRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
 @Service
 public class AiFoodService {
+
+    @Autowired
+    private RecipeRepository recipeRepository;
 
     @Value("${ollama.host.url}") // Lấy từ application.properties
     private String ollamaUrl;
@@ -116,5 +127,110 @@ public class AiFoodService {
         AiFoodResponse response = new AiFoodResponse();
         response.setError(errorMsg);
         return response;
+    }
+
+    // Config RestTemplate Timeout
+    private RestTemplate getRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(60000);
+        factory.setReadTimeout(300000);
+        return new RestTemplate(factory);
+    }
+
+    public WeeklyPlanDTO generateWeeklyPlan(int calories, String dietType, String goal) {
+        try {
+            // 1. Lấy dữ liệu: Giới hạn 40 món để giảm tải và tránh AI bị "ngáo" vì quá nhiều text
+            List<Recipe> candidates = recipeRepository.findRandomRecipes();
+            if (candidates.size() > 40) {
+                candidates = candidates.subList(0, 40);
+            }
+
+            if (candidates.isEmpty()) {
+                return null;
+            }
+
+            // 2. Format dữ liệu
+            String recipeContext = candidates.stream()
+                    .map(r -> String.format("{ID:%d, Name:'%s', Cal:%s}",
+                    r.getRecipeId(),
+                    r.getName().replace("'", ""), // Xóa dấu nháy đơn để tránh lỗi JSON
+                    r.getTotalCalories()))
+                    .collect(Collectors.joining(", "));
+
+            // 3. PROMPT (Đã cập nhật Strict Mode)
+            String promptText = String.format(
+                    "Role: Nutritionist API. \n"
+                    + "Context: I have these recipes: [%s].\n"
+                    + "Task: Create a 7-day meal plan (Monday to Sunday) using ONLY the provided recipes.\n"
+                    + "Constraints: \n"
+                    + "1. User Diet: '%s'. Target: %d kcal/day. Goal: %s.\n"
+                    + "2. OUTPUT FULL JSON ONLY. Do NOT use markdown. Do NOT use '...'. Do NOT truncate.\n"
+                    + "3. Ensure the JSON structure is exactly:\n"
+                    + "{ \"days\": [ \n"
+                    + "  { \"dayName\": \"Monday\", \"totalCalories\": 0, \"meals\": [ \n"
+                    + "    { \"type\": \"Breakfast\", \"recipeId\": 123, \"recipeName\": \"Exact Name From List\", \"calories\": 0 }, \n"
+                    + "    { \"type\": \"Lunch\", \"recipeId\": 456, \"recipeName\": \"...\", \"calories\": 0 }, \n"
+                    + "    { \"type\": \"Dinner\", \"recipeId\": 789, \"recipeName\": \"...\", \"calories\": 0 } \n"
+                    + "  ] },\n"
+                    + "  ... (Repeat for all 7 days) ... \n"
+                    + "] }",
+                    recipeContext, dietType, calories, goal
+            );
+
+            // 4. Payload
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", "llama3"); // Đảm bảo bạn đang dùng model text (llama3)
+            requestBody.put("prompt", promptText);
+            requestBody.put("stream", false);
+            requestBody.put("options", Map.of("num_ctx", 8192, "temperature", 0.6)); // Giảm nhiệt độ để AI bớt sáng tạo linh tinh
+
+            // 5. Gửi Request
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            System.out.println("--- SENDING PROMPT TO AI ---");
+            String rawResponse = getRestTemplate().postForObject(ollamaUrl, entity, String.class);
+
+            return parseWeeklyPlanResponse(rawResponse);
+
+        } catch (Exception e) {
+            System.err.println("AI SERVICE ERROR: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private WeeklyPlanDTO parseWeeklyPlanResponse(String jsonResponse) {
+        try {
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            if (root.has("response")) {
+                String aiText = root.get("response").asText();
+
+                // --- DEBUG: IN RA CONSOLE ĐỂ XEM LỖI ---
+                System.out.println("--- RAW AI RESPONSE ---");
+                System.out.println(aiText);
+                System.out.println("-----------------------");
+
+                // CLEAN UP JSON
+                String cleanJson = aiText.replaceAll("```json", "")
+                        .replaceAll("```", "")
+                        .replaceAll("//.*", "") // Xóa comment //
+                        .trim();
+
+                // Tìm điểm bắt đầu và kết thúc JSON hợp lệ
+                int jsonStart = cleanJson.indexOf("{");
+                int jsonEnd = cleanJson.lastIndexOf("}");
+
+                if (jsonStart != -1 && jsonEnd != -1) {
+                    cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
+                    return objectMapper.readValue(cleanJson, WeeklyPlanDTO.class);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("PARSE ERROR. Check RAW AI RESPONSE above.");
+            e.printStackTrace();
+        }
+        return null;
     }
 }

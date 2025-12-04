@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}">
+        <title>Customize Meal Plan</title>
+    </head>
+    <body class="flex flex-col min-h-screen bg-smart-white dark:bg-background-dark font-display">
+
+    <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
+    <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
+
+    <main class="flex-grow px-4 sm:px-6 lg:px-10 py-8">
+        <div class="mx-auto flex max-w-7xl flex-col gap-8">
+
+            <div class="flex flex-wrap justify-between gap-3 p-4">
+                <div class="flex min-w-72 flex-col gap-2">
+                    <h1 class="text-dark-ink dark:text-white text-4xl font-black leading-tight">Your Weekly Plan</h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-base">
+                        Review and customize your AI-generated schedule.
+                    </p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="/meal-plan/generate" class="flex items-center justify-center gap-2 h-10 px-6 rounded-lg bg-gray-200 hover:bg-gray-300 text-dark-ink text-sm font-bold transition-colors">
+                        <span class="material-symbols-outlined text-base">refresh</span> Regenerate
+                    </a>
+                    <button onclick="savePlan()" class="flex items-center justify-center h-10 px-8 rounded-lg bg-chef-orange text-white text-sm font-bold shadow-lg shadow-chef-orange/20 hover:bg-chef-orange/90 transition-all">
+                        Save to Account
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+                <div class="lg:col-span-1 flex flex-col gap-4 bg-white dark:bg-background-dark rounded-xl shadow-soft p-6 h-fit">
+                    <h2 class="text-dark-ink dark:text-white text-xl font-bold">Plan Summary</h2>
+                    <div class="flex flex-col gap-4 mt-2">
+                        <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                            <span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase">Total Days</span>
+                            <p class="text-2xl font-black text-dark-ink dark:text-white" th:text="${#lists.size(weeklyPlan.days)}">7</p>
+                        </div>
+                        <p class="text-sm text-gray-500">
+                            You can drag and drop recipes (feature coming soon) or click regenerate to get a new variety.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+                    <th:block th:each="day : ${weeklyPlan.days}">
+                        <div class="flex flex-col gap-4 bg-white dark:bg-[#1e1e1e] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+                                <h3 class="font-bold text-lg text-primary" th:text="${day.dayName}">Monday</h3>
+                                <span class="text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-dark-ink dark:text-white"
+                                      th:text="${day.totalCalories + ' kcal'}">2000 kcal</span>
+                            </div>
+
+                            <div class="flex flex-col gap-3">
+                                <div th:each="meal : ${day.meals}" 
+                                     class="flex flex-col justify-center min-h-[80px] bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-3 hover:border-primary transition-colors cursor-pointer group">
+                                    <div class="flex justify-between items-start">
+                                        <p class="text-xs font-bold text-soft-grey uppercase" th:text="${meal.type}">Breakfast</p>
+                                        <span class="text-[10px] text-gray-400" th:text="${meal.calories + ' kcal'}"></span>
+                                    </div>
+                                    <p class="text-sm font-bold text-dark-ink dark:text-white mt-1 group-hover:text-primary transition-colors line-clamp-2" 
+                                       th:text="${meal.recipeName}">Recipe Name</p>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            // Lấy thông báo từ Controller (Generate thành công)
+            const msgSuccess = /*[[${success}]]*/ null;
+            const swalData = /*[[${swal}]]*/ null;
+
+            if (msgSuccess && typeof ZaderToast !== 'undefined') {
+                ZaderToast.success(msgSuccess);
+            }
+
+            if (swalData) {
+                Swal.fire({
+                    title: swalData.title,
+                    text: swalData.text,
+                    icon: swalData.icon,
+                    confirmButtonColor: '#4cae4f'
+                });
+            }
+        });
+
+        function savePlan() {
+            Swal.fire({
+                title: 'Save this plan?',
+                text: "This will be saved to your account history.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#FF7043', // Chef Orange
+                confirmButtonText: 'Yes, save it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    ZaderToast.success("Plan saved successfully!");
+                    // Ở đây bạn sẽ gọi AJAX hoặc redirect đến controller save
+                }
+            })
+        }
+    </script>
+</body>
+</html>

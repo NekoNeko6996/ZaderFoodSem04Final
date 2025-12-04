@@ -17,6 +17,8 @@ public class UserProfileDTO {
     //  UserProfiles
     private BigDecimal weightKg;
     private BigDecimal heightCm;    
+    private BigDecimal bmr;
+    private BigDecimal tdee;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}">
+        <title>Generate Weekly Plan</title>
+    </head>
+    <body class="font-display bg-[#f8f6f5] dark:bg-[#23140f] flex flex-col min-h-screen">
+
+    <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
+    <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
+
+    <main class="px-4 sm:px-10 lg:px-20 xl:px-40 flex flex-1 justify-center py-10">
+        <div class="flex flex-col w-full max-w-5xl flex-1 gap-8">
+
+            <div class="flex flex-col gap-4">
+                <div class="flex min-w-72 flex-col gap-3">
+                    <h1 class="text-[#181210] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+                        Generate Your Weekly Meal Plan
+                    </h1>
+                    <p class="text-[#8d6a5e] dark:text-white/60 text-base font-normal leading-normal">
+                        Get a personalized 7-day meal plan with one click, tailored to your nutritional needs and preferences.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm p-6 md:p-8">
+                <form th:action="@{/meal-plan/generate}" method="post" id="generateForm">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                        <div class="md:col-span-2 flex flex-col gap-6">
+
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium leading-normal pb-2">Target Daily Calories</p>
+                                <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                    <input name="calories" type="number" 
+                                           th:value="${currentCalories}"
+                                           class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#181210] dark:text-white focus:outline-0 focus:ring-2 focus:ring-[#ff7142]/50 border border-[#e7ddda] dark:border-white/20 bg-white dark:bg-[#23140f] h-14 placeholder:text-[#8d6a5e] p-[15px] rounded-r-none border-r-0 pr-2 text-base font-normal leading-normal" 
+                                           placeholder="e.g. 2000" />
+                                    <div class="text-[#8d6a5e] dark:text-white/60 flex border border-[#e7ddda] dark:border-white/20 bg-white dark:bg-[#23140f] items-center justify-center pr-[15px] rounded-r-lg border-l-0">
+                                        <span class="text-sm font-bold">kcal</span>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium leading-normal pb-2">Dietary Preference</p>
+                                <div class="relative">
+                                    <select name="dietType" class="form-select w-full rounded-lg border border-[#e7ddda] dark:border-white/20 bg-white dark:bg-[#23140f] text-[#181210] dark:text-white h-14 px-4 focus:ring-[#ff7142] focus:border-[#ff7142] appearance-none">
+                                        <option value="Balanced" th:selected="${currentDiet == 'Balanced'}">Balanced (Recommended)</option>
+                                        <option value="Low Carb" th:selected="${currentDiet == 'Low Carb'}">Low Carb</option>
+                                        <option value="Vegetarian" th:selected="${currentDiet == 'Vegetarian'}">Vegetarian</option>
+                                        <option value="Vegan" th:selected="${currentDiet == 'Vegan'}">Vegan</option>
+                                        <option value="Keto" th:selected="${currentDiet == 'Keto'}">Keto</option>
+                                    </select>
+                                </div>
+                            </label>
+
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium leading-normal pb-2">Current Goal</p>
+                                <div class="relative">
+                                    <select name="goal" class="form-select w-full rounded-lg border border-[#e7ddda] dark:border-white/20 bg-white dark:bg-[#23140f] text-[#181210] dark:text-white h-14 px-4 focus:ring-[#ff7142] focus:border-[#ff7142] appearance-none">
+                                        <option value="Maintenance">Weight Maintenance</option>
+                                        <option value="Weight Loss">Weight Loss</option>
+                                        <option value="Muscle Gain">Muscle Gain</option>
+                                    </select>
+                                </div>
+                            </label>
+
+                            <button type="submit" onclick="startLoading()"
+                                    class="flex w-full md:w-auto md:max-w-xs cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#ff7142] text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-[#e6663b] transition-colors shadow-lg shadow-orange-200 dark:shadow-none">
+                                <span class="material-symbols-outlined mr-2">restaurant_menu</span>
+                                Generate Weekly Plan
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col gap-2 border-t md:border-t-0 md:border-l border-dashed border-[#e7ddda] dark:border-white/20 pt-6 md:pt-0 md:pl-8">
+                            <p class="text-base font-semibold text-[#181210] dark:text-white pb-2">Your Profile Summary</p>
+
+                            <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-4">
+                                <div class="col-span-2 grid grid-cols-subgrid items-center">
+                                    <p class="text-[#8d6a5e] dark:text-white/60 text-sm font-normal">Daily Calorie Target:</p>
+                                    <p class="text-[#181210] dark:text-white text-sm font-medium text-right">
+                                        <span th:text="${currentCalories}">2000</span> kcal
+                                    </p>
+                                </div>
+                                <div class="col-span-2 grid grid-cols-subgrid items-center">
+                                    <p class="text-[#8d6a5e] dark:text-white/60 text-sm font-normal">Dietary Preference:</p>
+                                    <p class="text-[#181210] dark:text-white text-sm font-medium text-right" 
+                                       th:text="${currentDiet}">Balanced</p>
+                                </div>
+                            </div>
+
+                            <div th:if="${missingData}" class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex flex-col gap-2">
+                                <div class="flex items-center gap-2 text-yellow-800 font-bold text-sm">
+                                    <span class="material-symbols-outlined text-lg">warning</span>
+                                    Missing Profile Data
+                                </div>
+                                <p class="text-xs text-yellow-700">
+                                    You haven't calculated your needs yet. We are using a default of 2000 kcal.
+                                </p>
+                                <a href="/nutrition/calculator" class="text-xs font-bold text-[#ff7142] hover:underline">
+                                    Go to Calculator &rarr;
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="flex flex-col items-center justify-center text-center p-12 bg-white dark:bg-[#1a0e0a] rounded-xl border border-dashed border-[#e7ddda] dark:border-white/20">
+                <span class="material-symbols-outlined text-[#ff7142] text-5xl mb-4">auto_awesome</span>
+                <p class="text-lg font-bold text-[#181210] dark:text-white">AI-Powered Nutrition</p>
+                <p class="text-[#8d6a5e] dark:text-white/60 max-w-sm">
+                    Click 'Generate' to let our AI build a perfect schedule based on the stats above.
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+
+    <script th:inline="javascript">
+        function startLoading() {
+            if (typeof ZaderToast !== 'undefined') {
+                ZaderToast.show("Connecting to AI Chef...", "loading");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. Check Missing Data Flag -> Show SweetAlert
+            const isMissingData = /*[[${missingData}]]*/ false;
+
+            if (isMissingData) {
+                Swal.fire({
+                    title: 'Profile Incomplete!',
+                    text: "We noticed you haven't calculated your daily calorie needs. Using 2000kcal as default.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ff7142', // Màu cam
+                    cancelButtonColor: '#78909c',
+                    confirmButtonText: 'Calculate Now',
+                    cancelButtonText: 'Use Default'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/nutrition/calculator'; // Redirect tới trang tính TDEE
+                    }
+                });
+            }
+
+            // 2. Error Toast
+            const msgError = /*[[${error}]]*/ null;
+            if (msgError && typeof ZaderToast !== 'undefined') {
+                ZaderToast.error(msgError);
+            }
+        });
+    </script>
+</body>
+</html>

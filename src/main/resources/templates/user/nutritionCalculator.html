@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="light" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Nutritional Needs Calculator - Zader Food</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4cae4f",
+                        "background-light": "#f6f7f6",
+                        "background-dark": "#151d15",
+                        "smart-white": "#FAFAFA",
+                        "card-white": "#FFFFFF",
+                        "dark-ink": "#131613",
+                        "soft-grey": "#78909C",
+                        "nutri-green": "#4CAF50",
+                        "chef-orange": "#FF7043",
+                        "smart-mist": "#dee3de",
+                        "protein-blue": "#2196F3",
+                        "carbs-gold": "#FFC107",
+                        "fat-red": "#F44336"
+                    },
+                    fontFamily: {
+                        "display": ["Be Vietnam Pro", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-display bg-smart-white dark:bg-background-dark text-dark-ink">
+<div class="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+    
+    <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-smart-mist bg-card-white px-10 py-3 sticky top-0 z-10">
+        <div class="flex items-center gap-4 text-dark-ink">
+             <a class="flex items-center gap-2" href="/">
+                <span class="material-symbols-outlined text-4xl text-dark-ink">restaurant_menu</span>
+                <span class="text-2xl font-bold text-dark-ink">Zader Food</span>
+            </a>
+        </div>
+        <nav class="hidden lg:flex flex-1 justify-center items-center gap-9">
+            <a class="text-dark-ink text-sm font-medium leading-normal hover:text-primary" href="/">Home</a>
+            <a class="text-dark-ink text-sm font-medium leading-normal hover:text-primary" href="#">Recipes</a>
+        </nav>
+        <div class="flex items-center gap-4">
+             <a href="/user/settings" class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#f1f3f1] text-dark-ink gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                <span class="material-symbols-outlined text-dark-ink text-xl">person</span> Profile
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-10">
+        <div class="mx-auto max-w-4xl space-y-8">
+            <div class="text-center">
+                <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em]">Calculate Your Nutritional Needs</h1>
+                <p class="text-soft-grey text-base font-normal leading-normal mt-2">Enter your details below to calculate your daily calorie and macronutrient recommendations.</p>
+            </div>
+
+            <form th:action="@{/nutrition/calculate}" th:object="${calculatorDTO}" method="post">
+                <div class="bg-card-white rounded-xl shadow-sm p-6 md:p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <label class="flex flex-col">
+                            <p class="text-dark-ink text-base font-medium leading-normal pb-2">Height (cm)</p>
+                            <input th:field="*{heightCm}" required type="number" step="0.1" class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-smart-mist bg-card-white focus:border-primary h-14 p-[15px] text-base" placeholder="e.g., 175" />
+                        </label>
+                        <label class="flex flex-col">
+                            <p class="text-dark-ink text-base font-medium leading-normal pb-2">Weight (kg)</p>
+                            <input th:field="*{weightKg}" required type="number" step="0.1" class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-smart-mist bg-card-white focus:border-primary h-14 p-[15px] text-base" placeholder="e.g., 70" />
+                        </label>
+                        <label class="flex flex-col">
+                            <p class="text-dark-ink text-base font-medium leading-normal pb-2">Age</p>
+                            <input th:field="*{age}" required type="number" class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-smart-mist bg-card-white focus:border-primary h-14 p-[15px] text-base" placeholder="Enter your age" />
+                        </label>
+                        
+                        <div class="flex flex-col">
+                            <p class="text-dark-ink text-base font-medium leading-normal pb-2">Gender</p>
+                            <div class="flex flex-wrap gap-3 items-center h-14">
+                                <label class="text-sm font-medium leading-normal flex items-center justify-center rounded-lg border border-smart-mist px-4 h-11 text-dark-ink has-[:checked]:border-[2px] has-[:checked]:px-[15px] has-[:checked]:border-nutri-green has-[:checked]:bg-nutri-green/10 relative cursor-pointer">
+                                    Female
+                                    <input th:field="*{gender}" value="FEMALE" class="invisible absolute" type="radio"/>
+                                </label>
+                                <label class="text-sm font-medium leading-normal flex items-center justify-center rounded-lg border border-smart-mist px-4 h-11 text-dark-ink has-[:checked]:border-[2px] has-[:checked]:px-[15px] has-[:checked]:border-nutri-green has-[:checked]:bg-nutri-green/10 relative cursor-pointer">
+                                    Male
+                                    <input th:field="*{gender}" value="MALE" class="invisible absolute" type="radio"/>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:col-span-2">
+                            <p class="text-dark-ink text-base font-medium leading-normal pb-2">Activity Level</p>
+                            <select th:field="*{activityLevel}" class="form-select flex w-full min-w-0 flex-1 rounded-lg text-dark-ink focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-smart-mist bg-card-white focus:border-primary h-14 p-[15px] text-base">
+                                <option value="SEDENTARY">Sedentary (little or no exercise)</option>
+                                <option value="LIGHTLY_ACTIVE">Lightly Active (light exercise/sports 1-3 days/week)</option>
+                                <option value="MODERATELY_ACTIVE">Moderately Active (moderate exercise/sports 3-5 days/week)</option>
+                                <option value="VERY_ACTIVE">Very Active (hard exercise/sports 6-7 days a week)</option>
+                                <option value="EXTRA_ACTIVE">Extra Active (very hard exercise/sports & physical job)</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col md:col-span-2">
+                            <p class="text-dark-ink text-base font-medium leading-normal pb-2">Goal</p>
+                            <div class="flex flex-wrap gap-3 items-center">
+                                <label class="text-sm font-medium leading-normal flex items-center justify-center rounded-lg border border-smart-mist px-4 h-11 text-dark-ink has-[:checked]:border-[2px] has-[:checked]:px-[15px] has-[:checked]:border-nutri-green has-[:checked]:bg-nutri-green/10 relative cursor-pointer">
+                                    Lose Weight (-500 kcal)
+                                    <input th:field="*{goal}" value="LOSE" class="invisible absolute" type="radio"/>
+                                </label>
+                                <label class="text-sm font-medium leading-normal flex items-center justify-center rounded-lg border border-smart-mist px-4 h-11 text-dark-ink has-[:checked]:border-[2px] has-[:checked]:px-[15px] has-[:checked]:border-nutri-green has-[:checked]:bg-nutri-green/10 relative cursor-pointer">
+                                    Maintain Weight
+                                    <input th:field="*{goal}" value="MAINTAIN" class="invisible absolute" type="radio"/>
+                                </label>
+                                <label class="text-sm font-medium leading-normal flex items-center justify-center rounded-lg border border-smart-mist px-4 h-11 text-dark-ink has-[:checked]:border-[2px] has-[:checked]:px-[15px] has-[:checked]:border-nutri-green has-[:checked]:bg-nutri-green/10 relative cursor-pointer">
+                                    Gain Muscle (+500 kcal)
+                                    <input th:field="*{goal}" value="GAIN" class="invisible absolute" type="radio"/>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-end">
+                        <button type="submit" class="flex items-center justify-center rounded-lg h-12 bg-nutri-green text-white gap-2 text-base font-bold leading-normal px-6 hover:bg-opacity-90 transition-colors">
+                            Calculate
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div th:if="${calculated}" class="bg-card-white rounded-xl shadow-sm p-6 md:p-8 animate-fade-in">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-dark-ink">Your Personalized Recommendations</h2>
+                    
+                    <div class="mt-6 border-t border-smart-mist pt-6">
+                        <p class="text-base text-soft-grey">Estimated Daily Calories (Goal)</p>
+                        <p class="text-5xl font-black text-dark-ink mt-2">
+                            <span th:text="${calculatorDTO.dailyCalorieTarget}">2,450</span> 
+                            <span class="text-2xl font-bold text-soft-grey">kcal/day</span>
+                        </p>
+                        <p class="text-sm text-soft-grey mt-1">
+                            BMR: <span th:text="${calculatorDTO.bmr}"></span> | TDEE: <span th:text="${calculatorDTO.tdee}"></span>
+                        </p>
+                    </div>
+
+                    <div class="mt-8">
+                        <p class="text-lg font-bold text-dark-ink">Macronutrient Recommendations (30P / 45C / 25F)</p>
+                        <div class="mt-4 flex w-full h-4 rounded-full overflow-hidden bg-gray-200">
+                            <div class="h-full bg-protein-blue" style="width: 30%"></div>
+                            <div class="h-full bg-carbs-gold" style="width: 45%"></div>
+                            <div class="h-full bg-fat-red" style="width: 25%"></div>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                            <div class="flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-protein-blue"></span>
+                                <div>
+                                    <p class="font-bold text-dark-ink">Protein</p>
+                                    <p class="text-soft-grey text-sm"><span th:text="${calculatorDTO.proteinGrams}">184</span>g</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-carbs-gold"></span>
+                                <div>
+                                    <p class="font-bold text-dark-ink">Carbs</p>
+                                    <p class="text-soft-grey text-sm"><span th:text="${calculatorDTO.carbsGrams}">276</span>g</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="w-3 h-3 rounded-full bg-fat-red"></span>
+                                <div>
+                                    <p class="font-bold text-dark-ink">Fats</p>
+                                    <p class="text-soft-grey text-sm"><span th:text="${calculatorDTO.fatGrams}">68</span>g</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-smart-mist flex justify-center">
+                        <form th:action="@{/nutrition/save}" th:object="${calculatorDTO}" method="post">
+                            <input type="hidden" th:field="*{heightCm}" />
+                            <input type="hidden" th:field="*{weightKg}" />
+                            <input type="hidden" th:field="*{age}" />
+                            <input type="hidden" th:field="*{gender}" />
+                            <input type="hidden" th:field="*{activityLevel}" />
+                            <input type="hidden" th:field="*{goal}" />
+                            <input type="hidden" th:field="*{bmr}" />
+                            <input type="hidden" th:field="*{tdee}" />
+                            <input type="hidden" th:field="*{dailyCalorieTarget}" />
+                            
+                            <button type="submit" class="flex items-center justify-center rounded-lg h-12 bg-chef-orange text-white gap-2 text-base font-bold leading-normal px-6 hover:bg-opacity-90 transition-colors">
+                                Save to Profile
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+</body>
+</html>
