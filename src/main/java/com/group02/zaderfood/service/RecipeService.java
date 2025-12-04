@@ -134,7 +134,6 @@ public class RecipeService {
                     step.setInstruction(instruction);
                     // step.setMediaUrl(...) // Nếu có upload ảnh bước
                     step.setCreatedAt(LocalDateTime.now());
-                    step.setUpdatedAt(LocalDateTime.now());
 
                     recipeStepRepository.save(step);
                 }

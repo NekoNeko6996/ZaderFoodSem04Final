@@ -32,15 +32,6 @@ public class RecipeStep implements Serializable {
 
     @Column(name = "CreatedAt")
     private LocalDateTime createdAt;
-
-    @Column(name = "UpdatedAt")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "IsDeleted")
-    private Boolean isDeleted;
-
-    @Column(name = "DeletedAt")
-    private LocalDateTime deletedAt;
     
     // JOIN
     @ManyToOne

@@ -12,12 +12,18 @@ import org.springframework.stereotype.Service;
 
 // profile
 import com.group02.zaderfood.dto.UserProfileDTO;
+import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
+import com.group02.zaderfood.entity.enums.DietType;
+import com.group02.zaderfood.repository.UserDietaryPreferenceRepository;
 import com.group02.zaderfood.repository.UserProfileRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -30,7 +36,10 @@ public class UserService {
 
     @Autowired
     private UserProfileRepository userProfileRepository;
-    
+
+    @Autowired
+    private UserDietaryPreferenceRepository dietRepo;
+
     public boolean isEmailExists(String email) {
         return userRepository.findByEmail(email).isPresent();
     }
@@ -78,6 +87,11 @@ public class UserService {
         dto.setEmail(user.getEmail());
         dto.setFullName(user.getFullName());
 
+        List<UserDietaryPreference> dietList = dietRepo.findByUserId(userId);
+        List<DietType> dietTypes = dietList.stream()
+                .map(UserDietaryPreference::getDietType)
+                .collect(Collectors.toList());
+
         // Map dữ liệu từ UserProfile Entity
         dto.setWeightKg(profile.getWeightKg());
         dto.setHeightCm(profile.getHeightCm());
@@ -85,7 +99,7 @@ public class UserService {
         dto.setGender(profile.getGender());
         dto.setActivityLevel(profile.getActivityLevel());
         dto.setCalorieGoalPerDay(profile.getCalorieGoalPerDay());
-        dto.setDietaryPreference(profile.getDietaryPreference());
+        dto.setDietaryPreferences(dietTypes);
         dto.setAllergies(profile.getAllergies());
 
         return dto;
@@ -123,14 +137,26 @@ public class UserService {
         profile.setGender(dto.getGender());
         profile.setActivityLevel(dto.getActivityLevel());
         profile.setCalorieGoalPerDay(dto.getCalorieGoalPerDay());
-        profile.setDietaryPreference(dto.getDietaryPreference());
         profile.setAllergies(dto.getAllergies());
         profile.setUpdatedAt(LocalDateTime.now());
 
-        // Lưu
         userProfileRepository.save(profile);
+        dietRepo.deleteByUserId(userId);
+
+        if (dto.getDietaryPreferences() != null && !dto.getDietaryPreferences().isEmpty()) {
+            List<UserDietaryPreference> newDiets = new ArrayList<>();
+            for (DietType type : dto.getDietaryPreferences()) {
+                UserDietaryPreference newDiet = UserDietaryPreference.builder()
+                        .userId(userId)
+                        .dietType(type)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                newDiets.add(newDiet);
+            }
+            dietRepo.saveAll(newDiets);
+        }
     }
-    
+
     @Transactional
     public void changePassword(Integer userId, ChangePasswordDTO dto) throws Exception {
         User user = userRepository.findById(userId)
@@ -149,7 +175,7 @@ public class UserService {
         // 3. Cập nhật mật khẩu mới (đã mã hóa)
         user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
         user.setUpdatedAt(LocalDateTime.now());
-        
+
         userRepository.save(user);
     }
 }

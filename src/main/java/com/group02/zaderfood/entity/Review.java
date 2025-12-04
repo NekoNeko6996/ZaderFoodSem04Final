@@ -30,9 +30,6 @@ public class Review implements Serializable {
     @Column(name = "Comment")
     private String comment;
 
-    @Column(name = "ImageUrl")
-    private String imageUrl;
-
     @Column(name = "CreatedAt")
     private LocalDateTime createdAt;
 

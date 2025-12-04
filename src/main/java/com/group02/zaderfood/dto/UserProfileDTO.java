@@ -6,6 +6,7 @@ import com.group02.zaderfood.entity.enums.Gender;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
@@ -22,6 +23,6 @@ public class UserProfileDTO {
     private Gender gender;
     private ActivityLevel activityLevel;
     private Integer calorieGoalPerDay;
-    private DietType dietaryPreference;
+    private List<DietType> dietaryPreferences;
     private String allergies;
 }

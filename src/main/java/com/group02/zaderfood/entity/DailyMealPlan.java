@@ -34,7 +34,16 @@ public class DailyMealPlan implements Serializable {
     private Boolean isGeneratedByAI;
 
     @Column(name = "Notes")
-    private String notes;
+    private String notes;   
+    
+    @Column(name = "TotalProtein")
+    private BigDecimal totalProtein;
+
+    @Column(name = "TotalCarbs")
+    private BigDecimal totalCarbs;
+
+    @Column(name = "TotalFat")
+    private BigDecimal totalFat;
 
     @Column(name = "Status")
     @Enumerated(EnumType.STRING)
