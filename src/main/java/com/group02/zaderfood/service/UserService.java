@@ -155,7 +155,7 @@ public class UserService {
             }
             dietRepo.saveAll(newDiets);
         }
-    }
+    }   
 
     @Transactional
     public void changePassword(Integer userId, ChangePasswordDTO dto) throws Exception {

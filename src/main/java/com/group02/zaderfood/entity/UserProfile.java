@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -31,10 +32,12 @@ public class UserProfile implements Serializable {
     private LocalDate birthDate;
 
     @Column(name = "Gender")
+    @Nationalized
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
     @Column(name = "ActivityLevel")
+    @Nationalized
     @Enumerated(EnumType.STRING)
     private ActivityLevel activityLevel;
 
@@ -51,6 +54,7 @@ public class UserProfile implements Serializable {
 
     // [DELETED] Đã xóa dietaryPreference vì chuyển sang bảng UserDietaryPreferences
     @Column(name = "Allergies")
+    @Nationalized
     private String allergies;
 
     @Column(name = "CreatedAt")

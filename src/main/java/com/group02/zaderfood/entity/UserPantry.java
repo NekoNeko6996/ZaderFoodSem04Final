@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -30,6 +31,7 @@ public class UserPantry implements Serializable {
     private BigDecimal quantity;
 
     @Column(name = "Unit")
+    @Nationalized
     private String unit;
 
     @Column(name = "ExpiryDate")

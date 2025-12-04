@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -22,6 +23,7 @@ public class RecipeCollection implements Serializable {
     private Integer userId;
 
     @Column(name = "Name")
+    @Nationalized
     private String name;
 
     @Column(name = "IsPublic")

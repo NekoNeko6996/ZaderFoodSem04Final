@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -25,12 +26,14 @@ public class ShoppingListItem implements Serializable {
     private Integer ingredientId; // Có thể null nếu là món custom
 
     @Column(name = "CustomItemName")
+    @Nationalized
     private String customItemName;
 
     @Column(name = "Quantity")
     private BigDecimal quantity;
 
     @Column(name = "Unit")
+    @Nationalized
     private String unit;
 
     @Column(name = "IsBought")

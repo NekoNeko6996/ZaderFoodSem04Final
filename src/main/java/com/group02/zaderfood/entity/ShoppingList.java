@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -23,6 +24,7 @@ public class ShoppingList implements Serializable {
     private Integer userId;
 
     @Column(name = "Name")
+    @Nationalized
     private String name; // Ví dụ: "Đi chợ tuần 4 tháng 12"
 
     @Column(name = "FromDate")

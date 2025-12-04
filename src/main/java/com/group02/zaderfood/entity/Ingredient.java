@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -20,6 +21,7 @@ public class Ingredient implements Serializable {
     private Integer ingredientId;
 
     @Column(name = "Name")
+    @Nationalized
     private String name;
 
     @Column(name = "CaloriesPer100g")
@@ -35,6 +37,7 @@ public class Ingredient implements Serializable {
     private BigDecimal fat;
 
     @Column(name = "BaseUnit")
+    @Nationalized
     private String baseUnit;
 
     @Column(name = "ImageUrl")
