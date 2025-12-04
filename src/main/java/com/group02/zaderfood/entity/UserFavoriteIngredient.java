@@ -26,7 +26,4 @@ public class UserFavoriteIngredient implements Serializable {
 
     @Column(name = "AddedAt")
     private LocalDateTime addedAt;
-
-    // Các cột Audit (CreatedAt, UpdatedAt, IsDeleted...) 
-    // KHÔNG CÓ trong script v2.0 của bảng này nên đã bị xóa đi.
 }

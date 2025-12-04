@@ -1,8 +1,10 @@
 package com.group02.zaderfood.controller;
 
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
+import com.group02.zaderfood.entity.RecipeCollection;
 import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
+import com.group02.zaderfood.repository.RecipeCollectionRepository;
 import com.group02.zaderfood.repository.UserDietaryPreferenceRepository; // Bạn cần tạo repo này
 import com.group02.zaderfood.repository.UserProfileRepository;
 import com.group02.zaderfood.service.AiFoodService;
@@ -18,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/meal-plan")
@@ -26,6 +27,9 @@ public class MealPlanController {
 
     @Autowired
     private AiFoodService aiFoodService;
+
+    @Autowired
+    private RecipeCollectionRepository collectionRepo;
 
     @Autowired
     private UserProfileRepository userProfileRepository;
@@ -100,13 +104,20 @@ public class MealPlanController {
 
     // 3. Customize Page (Giữ nguyên)
     @GetMapping("/customize")
-    public String showCustomizePage(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String showCustomizePage(Model model, HttpSession session, RedirectAttributes redirectAttributes, @AuthenticationPrincipal CustomUserDetails user) {
         WeeklyPlanDTO plan = (WeeklyPlanDTO) session.getAttribute("currentWeeklyPlan");
         if (plan == null) {
             redirectAttributes.addFlashAttribute("error", "Please generate a plan first.");
             return "redirect:/meal-plan/generate";
         }
         model.addAttribute("weeklyPlan", plan);
+
+        if (user != null) {
+            // Giả sử bạn có entity RecipeCollection
+            List<RecipeCollection> myCollections = collectionRepo.findByUserId(user.getUserId());
+            model.addAttribute("myCollections", myCollections);
+        }
+
         return "mealplan/customize";
     }
 }

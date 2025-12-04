@@ -2,7 +2,7 @@ package com.group02.zaderfood.entity;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.LocalDateTime; 
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 

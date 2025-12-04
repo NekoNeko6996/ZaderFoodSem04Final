@@ -9,59 +9,94 @@
     <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
 
     <main class="flex-grow px-4 sm:px-6 lg:px-10 py-8">
-        <div class="mx-auto flex max-w-7xl flex-col gap-8">
+        <div class="mx-auto flex max-w-[1400px] flex-col gap-8">
 
             <div class="flex flex-wrap justify-between gap-3 p-4">
                 <div class="flex min-w-72 flex-col gap-2">
-                    <h1 class="text-dark-ink dark:text-white text-4xl font-black leading-tight">Your Weekly Plan</h1>
-                    <p class="text-gray-500 dark:text-gray-400 text-base">
-                        Review and customize your AI-generated schedule.
-                    </p>
+                    <h1 class="text-dark-ink dark:text-white text-4xl font-black">Your Weekly Plan</h1>
+                    <p class="text-gray-500">Review and customize your AI-generated schedule.</p>
                 </div>
                 <div class="flex gap-3">
-                    <a href="/meal-plan/generate" class="flex items-center justify-center gap-2 h-10 px-6 rounded-lg bg-gray-200 hover:bg-gray-300 text-dark-ink text-sm font-bold transition-colors">
+                    <a href="/meal-plan/generate" class="flex items-center justify-center gap-2 h-10 px-6 rounded-lg bg-gray-200 text-dark-ink text-sm font-bold">
                         <span class="material-symbols-outlined text-base">refresh</span> Regenerate
                     </a>
-                    <button onclick="savePlan()" class="flex items-center justify-center h-10 px-8 rounded-lg bg-chef-orange text-white text-sm font-bold shadow-lg shadow-chef-orange/20 hover:bg-chef-orange/90 transition-all">
+                    <button onclick="savePlan()" class="flex items-center justify-center h-10 px-8 rounded-lg bg-chef-orange text-white text-sm font-bold shadow-lg shadow-chef-orange/20">
                         Save to Account
                     </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                <div class="lg:col-span-1 flex flex-col gap-4 bg-white dark:bg-background-dark rounded-xl shadow-soft p-6 h-fit">
-                    <h2 class="text-dark-ink dark:text-white text-xl font-bold">Plan Summary</h2>
-                    <div class="flex flex-col gap-4 mt-2">
-                        <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
-                            <span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase">Total Days</span>
-                            <p class="text-2xl font-black text-dark-ink dark:text-white" th:text="${#lists.size(weeklyPlan.days)}">7</p>
+                <div class="lg:col-span-3 flex flex-col gap-6 sticky top-24">
+
+                    <div class="bg-white dark:bg-background-dark rounded-xl shadow-soft p-6">
+                        <h2 class="text-dark-ink dark:text-white text-lg font-bold">Plan Summary</h2>
+                        <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                            <span class="text-xs font-bold text-green-600 uppercase">Total Days</span>
+                            <p class="text-2xl font-black text-dark-ink" th:text="${#lists.size(weeklyPlan.days)}">7</p>
                         </div>
-                        <p class="text-sm text-gray-500">
-                            You can drag and drop recipes (feature coming soon) or click regenerate to get a new variety.
-                        </p>
+                    </div>
+
+                    <div class="bg-white dark:bg-background-dark rounded-xl shadow-soft p-6 flex flex-col gap-4 max-h-[600px]">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-dark-ink dark:text-white text-lg font-bold">My Collections</h2>
+                        </div>
+
+                        <select id="collectionSelect" onchange="loadCollectionRecipes(this.value)"
+                                class="w-full rounded-lg border-gray-200 text-sm focus:ring-primary focus:border-primary">
+                            <option value="">-- Select a Collection --</option>
+                            <th:block th:each="col : ${myCollections}">
+                                <option th:value="${col.collectionId}" th:text="${col.name}">My Favorites</option>
+                            </th:block>
+                        </select>
+
+                        <div id="draggableSource" class="flex flex-col gap-3 overflow-y-auto pr-1 flex-1 min-h-[300px]">
+                            <p class="text-sm text-gray-400 text-center mt-10">Select a collection to view recipes.</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div class="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
-                    <th:block th:each="day : ${weeklyPlan.days}">
+                    <th:block th:each="day, dayStat : ${weeklyPlan.days}">
                         <div class="flex flex-col gap-4 bg-white dark:bg-[#1e1e1e] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+
+                            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
                                 <h3 class="font-bold text-lg text-primary" th:text="${day.dayName}">Monday</h3>
-                                <span class="text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-dark-ink dark:text-white"
+                                <span class="text-xs font-bold bg-gray-100 px-2 py-1 rounded text-dark-ink total-cal-badge"
+                                      th:id="'cal-day-' + ${dayStat.index}"
+                                      th:data-value="${day.totalCalories}"
                                       th:text="${day.totalCalories + ' kcal'}">2000 kcal</span>
                             </div>
 
                             <div class="flex flex-col gap-3">
-                                <div th:each="meal : ${day.meals}" 
-                                     class="flex flex-col justify-center min-h-[80px] bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-3 hover:border-primary transition-colors cursor-pointer group">
-                                    <div class="flex justify-between items-start">
-                                        <p class="text-xs font-bold text-soft-grey uppercase" th:text="${meal.type}">Breakfast</p>
-                                        <span class="text-[10px] text-gray-400" th:text="${meal.calories + ' kcal'}"></span>
+                                <div th:each="meal, mealStat : ${day.meals}">
+
+                                    <div class="meal-slot relative group transition-all"
+                                         th:data-day-index="${dayStat.index}"
+                                         th:data-meal-type="${meal.type}"
+                                         ondragover="allowDrop(event)"
+                                         ondrop="drop(event)">
+
+                                        <div class="flex flex-col justify-center min-h-[90px] bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 p-3 hover:border-primary cursor-pointer">
+                                            <div class="flex justify-between items-start">
+                                                <p class="text-xs font-bold text-soft-grey uppercase" th:text="${meal.type}">Breakfast</p>
+                                                <span class="text-[10px] text-gray-400 meal-cal" th:text="${meal.calories + ' kcal'}"></span>
+                                            </div>
+                                            <p class="text-sm font-bold text-dark-ink mt-1 line-clamp-2 meal-name" 
+                                               th:text="${meal.recipeName}">Recipe Name</p>
+
+                                            <input type="hidden" class="input-recipe-id" th:name="|days[${dayStat.index}].meals[${mealStat.index}].recipeId|" th:value="${meal.recipeId}">
+                                            <input type="hidden" class="input-recipe-name" th:name="|days[${dayStat.index}].meals[${mealStat.index}].recipeName|" th:value="${meal.recipeName}">
+                                            <input type="hidden" class="input-recipe-cal" th:name="|days[${dayStat.index}].meals[${mealStat.index}].calories|" th:value="${meal.calories}">
+                                        </div>
+
+                                        <div class="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded-lg hidden pointer-events-none drop-overlay flex items-center justify-center">
+                                            <span class="text-primary font-bold text-sm">Drop to Replace</span>
+                                        </div>
                                     </div>
-                                    <p class="text-sm font-bold text-dark-ink dark:text-white mt-1 group-hover:text-primary transition-colors line-clamp-2" 
-                                       th:text="${meal.recipeName}">Recipe Name</p>
+
                                 </div>
                             </div>
                         </div>
@@ -75,39 +110,150 @@
     <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
 
     <script th:inline="javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            // Lấy thông báo từ Controller (Generate thành công)
-            const msgSuccess = /*[[${success}]]*/ null;
-            const swalData = /*[[${swal}]]*/ null;
+        // 1. Fetch Recipes từ Collection
+        async function loadCollectionRecipes(collectionId) {
+            const container = document.getElementById('draggableSource');
+            container.innerHTML = '<p class="text-center text-sm text-gray-400">Loading...</p>';
 
-            if (msgSuccess && typeof ZaderToast !== 'undefined') {
-                ZaderToast.success(msgSuccess);
+            if (!collectionId) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center mt-10">Select a collection to view recipes.</p>';
+                return;
             }
 
-            if (swalData) {
-                Swal.fire({
-                    title: swalData.title,
-                    text: swalData.text,
-                    icon: swalData.icon,
-                    confirmButtonColor: '#4cae4f'
+            try {
+                const response = await fetch(`/api/collections/${collectionId}/recipes`);
+                const recipes = await response.json();
+
+                container.innerHTML = ''; // Clear loading
+
+                if (recipes.length === 0) {
+                    container.innerHTML = '<p class="text-center text-sm text-gray-400">No recipes in this collection.</p>';
+                    return;
+                }
+
+                // Render Draggable Cards
+                recipes.forEach(r => {
+                    const card = document.createElement('div');
+                    card.className = "flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-md transition-all active:cursor-grabbing";
+                    card.draggable = true;
+
+                    // Gắn data cho sự kiện drag
+                    card.ondragstart = (e) => drag(e, r);
+
+                    card.innerHTML = `
+                        <img src="${r.image}" class="w-10 h-10 rounded-full object-cover bg-gray-100">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-dark-ink line-clamp-1">${r.name}</span>
+                            <span class="text-xs text-gray-500">${r.calories} kcal</span>
+                        </div>
+                        <span class="material-symbols-outlined text-gray-300 ml-auto text-lg">drag_indicator</span>
+                    `;
+                    container.appendChild(card);
                 });
+
+            } catch (error) {
+                console.error(error);
+                ZaderToast.error("Failed to load recipes");
             }
+        }
+
+        // 2. Drag & Drop Logic
+
+        function drag(ev, recipeData) {
+            // Truyền dữ liệu món ăn dưới dạng JSON string
+            ev.dataTransfer.setData("text/plain", JSON.stringify(recipeData));
+            ev.dataTransfer.effectAllowed = "copy"; // Chỉ copy, không move mất gốc
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault(); // Bắt buộc để cho phép drop
+
+            // Hiệu ứng visual khi kéo qua
+            const slot = ev.currentTarget;
+            const overlay = slot.querySelector('.drop-overlay');
+            if (overlay)
+                overlay.classList.remove('hidden');
+        }
+
+        // Xử lý khi chuột rời khỏi vùng drop (tắt hiệu ứng)
+        document.querySelectorAll('.meal-slot').forEach(slot => {
+            slot.addEventListener('dragleave', (e) => {
+                const overlay = slot.querySelector('.drop-overlay');
+                if (overlay)
+                    overlay.classList.add('hidden');
+            });
         });
 
+        function drop(ev) {
+            ev.preventDefault();
+            const slot = ev.currentTarget;
+
+            // Tắt hiệu ứng overlay
+            const overlay = slot.querySelector('.drop-overlay');
+            if (overlay)
+                overlay.classList.add('hidden');
+
+            try {
+                // Lấy dữ liệu từ thẻ được kéo
+                const data = JSON.parse(ev.dataTransfer.getData("text/plain"));
+
+                // Cập nhật UI ngay lập tức
+                slot.querySelector('.meal-name').textContent = data.name;
+                slot.querySelector('.meal-cal').textContent = data.calories + ' kcal';
+
+                // Cập nhật Hidden Input (Để gửi về server nếu cần save)
+                slot.querySelector('.input-recipe-id').value = data.recipeId;
+                slot.querySelector('.input-recipe-name').value = data.name;
+
+                // Cập nhật Calo cũ -> mới để tính lại tổng ngày
+                const calInput = slot.querySelector('.input-recipe-cal');
+                const oldCal = parseInt(calInput.value) || 0;
+                const newCal = parseInt(data.calories) || 0;
+                calInput.value = newCal;
+
+                // Tính lại tổng calo của ngày đó
+                updateDailyTotal(slot.dataset.dayIndex, oldCal, newCal);
+
+                ZaderToast.success("Updated meal!");
+
+            } catch (e) {
+                console.error("Drop error", e);
+            }
+        }
+
+        function updateDailyTotal(dayIndex, oldCal, newCal) {
+            const badge = document.getElementById(`cal-day-${dayIndex}`);
+            let currentTotal = parseInt(badge.getAttribute('data-value'));
+
+            currentTotal = currentTotal - oldCal + newCal;
+
+            badge.setAttribute('data-value', currentTotal);
+            badge.textContent = currentTotal + ' kcal';
+
+            // Hiệu ứng đổi màu nếu calo thay đổi
+            badge.classList.add('bg-yellow-100', 'text-yellow-700');
+            setTimeout(() => {
+                badge.classList.remove('bg-yellow-100', 'text-yellow-700');
+                badge.classList.add('bg-gray-100', 'text-dark-ink');
+            }, 500);
+        }
+
         function savePlan() {
+            // Logic gửi form hoặc json về server để lưu plan cuối cùng
             Swal.fire({
-                title: 'Save this plan?',
-                text: "This will be saved to your account history.",
+                title: 'Save Changes?',
+                text: 'Your customized plan will be saved.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#FF7043', // Chef Orange
-                confirmButtonText: 'Yes, save it!'
+                confirmButtonText: 'Save',
+                confirmButtonColor: '#4cae4f'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    ZaderToast.success("Plan saved successfully!");
-                    // Ở đây bạn sẽ gọi AJAX hoặc redirect đến controller save
+                    // Collect data and POST
+                    // ... (Code thu thập dữ liệu từ các hidden input và gửi Ajax)
+                    ZaderToast.success("Plan saved! (Demo)");
                 }
-            })
+            });
         }
     </script>
 </body>
