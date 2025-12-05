@@ -78,25 +78,30 @@
                 </div>
 
                 <div class="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-
                     <th:block th:each="day, dayStat : ${weeklyPlan.days}">
-                        <div class="weekly-day-card flex flex-col gap-4 bg-white dark:bg-[#1e1e1e] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="weekly-day-card flex flex-col gap-4 p-4 rounded-xl shadow-sm border transition-all relative"
+                             th:classappend="${day.hasConflict} ? 'bg-orange-50 border-orange-300 dark:bg-orange-900/10 dark:border-orange-700' : 'bg-white border-gray-100 dark:bg-[#1e1e1e] dark:border-gray-700'"
+                             th:data-has-conflict="${day.hasConflict}"
+                             th:data-current-source="${day.currentSource}"
+                             th:data-alt-meals="${day.altMealsJsonString}" th:data-alt-cal="${day.altTotalCalories}">
 
-                            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                                <h3 class="font-bold text-lg text-primary" th:text="${day.dayName}">Monday</h3>
+                            <div class="flex justify-between items-center border-b pb-2" 
+                                 th:classappend="${day.hasConflict} ? 'border-orange-200' : 'border-gray-100'">
 
-                                <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-bold text-dark-ink dark:text-white total-cal-badge"
+                                <div class="flex flex-col">
+                                    <h3 class="font-bold text-lg text-primary" th:text="${day.dayName}">Monday</h3>
+                                    <span th:if="${day.currentSource == 'SAVED_DB'}" class="text-[10px] font-bold text-white bg-green-600 px-2 py-0.5 rounded w-fit">SAVED IN DB</span>
+                                    <span th:if="${day.currentSource.startsWith('NEW')}" class="text-[10px] font-bold text-white bg-blue-500 px-2 py-0.5 rounded w-fit">NEW DRAFT</span>
+                                </div>
+
+                                <div class="flex items-center gap-1 bg-white/50 px-2 py-1 rounded text-xs font-bold text-dark-ink total-cal-badge"
                                      th:id="'cal-day-' + ${dayStat.index}"
                                      th:data-value="${day.totalCalories}">
-
-                                    <span th:text="${day.totalCalories}">1500</span>
-                                    <span class="text-gray-400 mx-0.5">/</span>
-                                    <span th:text="${targetCalories}" class="text-gray-500 dark:text-gray-400">2000</span>
-                                    <span class="ml-0.5">kcal</span>
+                                    <span th:text="${day.totalCalories}">1500</span> / <span th:text="${targetCalories}">2000</span> kcal
                                 </div>
                             </div>
 
-                            <div class="flex flex-col gap-3">
+                            <div class="flex flex-col gap-3" th:id="'meals-container-' + ${dayStat.index}">
                                 <div th:each="meal, mealStat : ${day.meals}">
 
                                     <div class="meal-slot relative group transition-all"
@@ -130,336 +135,468 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div th:if="${day.hasConflict}" class="mt-2 pt-2 border-t border-orange-200 flex justify-center">
+                                    <button type="button" 
+                                            th:onclick="'swapDayData(' + ${dayStat.index} + ')'"
+                                            class="flex items-center gap-2 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors">
+                                        <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                                        <span th:text="${day.currentSource == 'SAVED_DB'} ? 'View New Draft' : 'View Saved Plan'">Swap</span>
+                                    </button>
+
+                                    <input type="hidden" th:id="'alt-data-' + ${dayStat.index}" th:value="${day.altMealsJsonString}" />
+                                </div>
                             </div>
                         </div>
                     </th:block>
-
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</main>
 
-    <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+<th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
 
-    <script th:inline="javascript">
-        // 1. Fetch Recipes từ Collection
-        async function loadCollectionRecipes(collectionId) {
-            const container = document.getElementById('draggableSource');
-            container.innerHTML = '<p class="text-center text-sm text-gray-400">Loading...</p>';
+<script th:inline="javascript">
+    // 1. Fetch Recipes từ Collection
+    async function loadCollectionRecipes(collectionId) {
+        const container = document.getElementById('draggableSource');
+        container.innerHTML = '<p class="text-center text-sm text-gray-400">Loading...</p>';
 
-            if (!collectionId) {
-                container.innerHTML = '<p class="text-sm text-gray-400 text-center mt-10">Select a collection to view recipes.</p>';
+        if (!collectionId) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center mt-10">Select a collection to view recipes.</p>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/collections/${collectionId}/recipes`);
+            const recipes = await response.json();
+
+            container.innerHTML = ''; // Clear loading
+
+            if (recipes.length === 0) {
+                container.innerHTML = '<p class="text-center text-sm text-gray-400">No recipes in this collection.</p>';
                 return;
             }
 
-            try {
-                const response = await fetch(`/api/collections/${collectionId}/recipes`);
-                const recipes = await response.json();
+            // Render Draggable Cards
+            recipes.forEach(r => {
+                const card = document.createElement('div');
+                card.className = "flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-md transition-all active:cursor-grabbing";
+                card.draggable = true;
 
-                container.innerHTML = ''; // Clear loading
+                // Gắn data cho sự kiện drag
+                card.ondragstart = (e) => drag(e, r);
 
-                if (recipes.length === 0) {
-                    container.innerHTML = '<p class="text-center text-sm text-gray-400">No recipes in this collection.</p>';
-                    return;
-                }
-
-                // Render Draggable Cards
-                recipes.forEach(r => {
-                    const card = document.createElement('div');
-                    card.className = "flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-md transition-all active:cursor-grabbing";
-                    card.draggable = true;
-
-                    // Gắn data cho sự kiện drag
-                    card.ondragstart = (e) => drag(e, r);
-
-                    card.innerHTML = `
-                        <img src="${r.image}" 
-                             onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=No+Img'"
-                             class="w-10 h-10 rounded-full object-cover bg-gray-100 cursor-pointer hover:opacity-80"
-                             onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
+                card.innerHTML = `
+                    <img src="${r.image}" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=No+Img'"
+                         class="w-10 h-10 rounded-full object-cover bg-gray-100 cursor-pointer hover:opacity-80"
+                         onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
                              
-                        <div class="flex flex-col cursor-pointer" onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
-                            <span class="text-sm font-bold text-dark-ink line-clamp-1 hover:text-primary transition-colors">${r.name}</span>
-                            <span class="text-xs text-gray-500">${r.calories} kcal</span>
-                        </div>
+                    <div class="flex flex-col cursor-pointer" onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
+                        <span class="text-sm font-bold text-dark-ink line-clamp-1 hover:text-primary transition-colors">${r.name}</span>
+                        <span class="text-xs text-gray-500">${r.calories} kcal</span>
+                    </div>
                         
-                        <span class="material-symbols-outlined text-gray-300 ml-auto text-lg">drag_indicator</span>
-                    `;
-                    container.appendChild(card);
-                });
-
-            } catch (error) {
-                console.error(error);
-                ZaderToast.error("Failed to load recipes");
-            }
-        }
-
-        // 2. Drag & Drop Logic
-
-        function drag(ev, recipeData) {
-            // Truyền dữ liệu món ăn dưới dạng JSON string
-            ev.dataTransfer.setData("text/plain", JSON.stringify(recipeData));
-            ev.dataTransfer.effectAllowed = "copy"; // Chỉ copy, không move mất gốc
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault(); // Bắt buộc để cho phép drop
-
-            // Hiệu ứng visual khi kéo qua
-            const slot = ev.currentTarget;
-            const overlay = slot.querySelector('.drop-overlay');
-            if (overlay)
-                overlay.classList.remove('hidden');
-        }
-
-        // Xử lý khi chuột rời khỏi vùng drop (tắt hiệu ứng)
-        document.querySelectorAll('.meal-slot').forEach(slot => {
-            slot.addEventListener('dragleave', (e) => {
-                const overlay = slot.querySelector('.drop-overlay');
-                if (overlay)
-                    overlay.classList.add('hidden');
+                    <span class="material-symbols-outlined text-gray-300 ml-auto text-lg">drag_indicator</span>
+                `;
+                container.appendChild(card);
             });
-        });
 
-        function drop(ev) {
-            ev.preventDefault();
-            const slot = ev.currentTarget;
+        } catch (error) {
+            console.error(error);
+            ZaderToast.error("Failed to load recipes");
+        }
+    }
 
-            // Tắt hiệu ứng overlay
+    // 2. Drag & Drop Logic
+
+    function drag(ev, recipeData) {
+        // Truyền dữ liệu món ăn dưới dạng JSON string
+        ev.dataTransfer.setData("text/plain", JSON.stringify(recipeData));
+        ev.dataTransfer.effectAllowed = "copy"; // Chỉ copy, không move mất gốc
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault(); // Bắt buộc để cho phép drop
+
+        // Hiệu ứng visual khi kéo qua
+        const slot = ev.currentTarget;
+        const overlay = slot.querySelector('.drop-overlay');
+        if (overlay)
+            overlay.classList.remove('hidden');
+    }
+
+    // Xử lý khi chuột rời khỏi vùng drop (tắt hiệu ứng)
+    document.querySelectorAll('.meal-slot').forEach(slot => {
+        slot.addEventListener('dragleave', (e) => {
             const overlay = slot.querySelector('.drop-overlay');
             if (overlay)
                 overlay.classList.add('hidden');
+        });
+    });
 
-            try {
-                // Lấy dữ liệu từ thẻ được kéo
-                const data = JSON.parse(ev.dataTransfer.getData("text/plain"));
+    function drop(ev) {
+        ev.preventDefault();
+        const slot = ev.currentTarget;
 
-                // Cập nhật UI ngay lập tức
-                slot.querySelector('.meal-name').textContent = data.name;
-                slot.querySelector('.meal-cal').textContent = data.calories + ' kcal';
+        // Tắt hiệu ứng overlay
+        const overlay = slot.querySelector('.drop-overlay');
+        if (overlay)
+            overlay.classList.add('hidden');
 
-                // Cập nhật Hidden Input (Để gửi về server nếu cần save)
-                slot.querySelector('.input-recipe-id').value = data.recipeId;
-                slot.querySelector('.input-recipe-name').value = data.name;
+        try {
+            // Lấy dữ liệu từ thẻ được kéo
+            const data = JSON.parse(ev.dataTransfer.getData("text/plain"));
 
-                // Cập nhật Calo cũ -> mới để tính lại tổng ngày
-                const calInput = slot.querySelector('.input-recipe-cal');
-                const oldCal = parseInt(calInput.value) || 0;
-                const newCal = parseInt(data.calories) || 0;
-                calInput.value = newCal;
+            // Cập nhật UI ngay lập tức
+            slot.querySelector('.meal-name').textContent = data.name;
+            slot.querySelector('.meal-cal').textContent = data.calories + ' kcal';
 
-                const cardDiv = slot.querySelector('div.flex.flex-col');
-                cardDiv.classList.remove('border-chef-orange', 'bg-chef-orange/5');
-                cardDiv.classList.add('border-nutri-green', 'bg-gray-50');
+            // Cập nhật Hidden Input (Để gửi về server nếu cần save)
+            slot.querySelector('.input-recipe-id').value = data.recipeId;
+            slot.querySelector('.input-recipe-name').value = data.name;
 
-                const hintText = cardDiv.querySelector('p.text-chef-orange');
-                if (hintText)
-                    hintText.remove();
+            // Cập nhật Calo cũ -> mới để tính lại tổng ngày
+            const calInput = slot.querySelector('.input-recipe-cal');
+            const oldCal = parseInt(calInput.value) || 0;
+            const newCal = parseInt(data.calories) || 0;
+            calInput.value = newCal;
 
-                // Tính lại tổng calo của ngày đó
-                updateDailyTotal(slot.dataset.dayIndex, oldCal, newCal);
+            const cardDiv = slot.querySelector('div.flex.flex-col');
+            cardDiv.classList.remove('border-chef-orange', 'bg-chef-orange/5');
+            cardDiv.classList.add('border-nutri-green', 'bg-gray-50');
 
-                ZaderToast.success("Updated meal!");
+            const hintText = cardDiv.querySelector('p.text-chef-orange');
+            if (hintText)
+                hintText.remove();
 
-            } catch (e) {
-                console.error("Drop error", e);
-            }
+            // Tính lại tổng calo của ngày đó
+            updateDailyTotal(slot.dataset.dayIndex, oldCal, newCal);
+
+            ZaderToast.success("Updated meal!");
+
+        } catch (e) {
+            console.error("Drop error", e);
+        }
+    }
+
+    function updateDailyTotal(dayIndex, oldCal, newCal) {
+        const badge = document.getElementById(`cal-day-${dayIndex}`);
+        let currentTotal = parseInt(badge.getAttribute('data-value'));
+        const target = /*[[${targetCalories}]]*/ 2000; // Lấy biến từ Thymeleaf
+
+        currentTotal = currentTotal - oldCal + newCal;
+
+        // Cập nhật lại attribute
+        badge.setAttribute('data-value', currentTotal);
+
+        // Cập nhật lại Text theo format "Current / Target kcal"
+        badge.innerHTML = `
+            <span>${currentTotal}</span>
+            <span class="text-gray-400 mx-0.5">/</span>
+            <span class="text-gray-500 dark:text-gray-400">${target}</span>
+            <span class="ml-0.5">kcal</span>
+        `;
+
+        // Hiệu ứng Visual
+        badge.classList.add('bg-yellow-100', 'text-yellow-700');
+        setTimeout(() => {
+            badge.classList.remove('bg-yellow-100', 'text-yellow-700');
+            badge.classList.add('bg-gray-100', 'text-dark-ink');
+        }, 500);
+    }
+
+    function savePlan() {
+        const conflicts = document.querySelectorAll('.weekly-day-card[data-has-conflict="true"]');
+        let warningText = 'Your plan will be saved.';
+
+        if (conflicts.length > 0) {
+            warningText = `Warning: You are overwriting ${conflicts.length} existing daily plans! The old data for these dates will be lost.`;
         }
 
-        function updateDailyTotal(dayIndex, oldCal, newCal) {
-            const badge = document.getElementById(`cal-day-${dayIndex}`);
-            let currentTotal = parseInt(badge.getAttribute('data-value'));
-            const target = /*[[${targetCalories}]]*/ 2000; // Lấy biến từ Thymeleaf
+        Swal.fire({
+            title: 'Save Plan?',
+            text: warningText,
+            icon: conflicts.length > 0 ? 'warning' : 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Save it!',
+            confirmButtonColor: conflicts.length > 0 ? '#d33' : '#4cae4f'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // 1. Thu thập dữ liệu từ HTML
+                const days = [];
+                // Lặp qua từng cột ngày (Monday, Tuesday...)
+                document.querySelectorAll('.weekly-day-card').forEach((dayCard, index) => {
+                    const dayName = dayCard.querySelector('h3').innerText;
+                    const totalCal = parseInt(dayCard.querySelector('.total-cal-badge').getAttribute('data-value')) || 0;
 
-            currentTotal = currentTotal - oldCal + newCal;
+                    const meals = [];
+                    // Lặp qua từng món trong ngày
+                    dayCard.querySelectorAll('.meal-slot').forEach(slot => {
+                        const type = slot.getAttribute('data-meal-type');
+                        const recipeId = slot.querySelector('.input-recipe-id').value;
+                        const recipeName = slot.querySelector('.input-recipe-name').value;
+                        const calories = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
 
-            // Cập nhật lại attribute
-            badge.setAttribute('data-value', currentTotal);
-
-            // Cập nhật lại Text theo format "Current / Target kcal"
-            badge.innerHTML = `
-                <span>${currentTotal}</span>
-                <span class="text-gray-400 mx-0.5">/</span>
-                <span class="text-gray-500 dark:text-gray-400">${target}</span>
-                <span class="ml-0.5">kcal</span>
-            `;
-
-            // Hiệu ứng Visual
-            badge.classList.add('bg-yellow-100', 'text-yellow-700');
-            setTimeout(() => {
-                badge.classList.remove('bg-yellow-100', 'text-yellow-700');
-                badge.classList.add('bg-gray-100', 'text-dark-ink');
-            }, 500);
-        }
-
-        function savePlan() {
-            Swal.fire({
-                title: 'Save Changes?',
-                text: 'Your customized plan will be saved to your account starting from tomorrow.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Save',
-                confirmButtonColor: '#4cae4f'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // 1. Thu thập dữ liệu từ HTML
-                    const days = [];
-                    // Lặp qua từng cột ngày (Monday, Tuesday...)
-                    document.querySelectorAll('.weekly-day-card').forEach((dayCard, index) => {
-                        const dayName = dayCard.querySelector('h3').innerText;
-                        const totalCal = parseInt(dayCard.querySelector('.total-cal-badge').getAttribute('data-value')) || 0;
-
-                        const meals = [];
-                        // Lặp qua từng món trong ngày
-                        dayCard.querySelectorAll('.meal-slot').forEach(slot => {
-                            const type = slot.getAttribute('data-meal-type');
-                            const recipeId = slot.querySelector('.input-recipe-id').value;
-                            const recipeName = slot.querySelector('.input-recipe-name').value;
-                            const calories = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
-
-                            meals.push({
-                                type: type,
-                                recipeId: recipeId ? parseInt(recipeId) : null,
-                                recipeName: recipeName,
-                                calories: calories
-                            });
-                        });
-
-                        days.push({
-                            dayName: dayName,
-                            totalCalories: totalCal,
-                            meals: meals
+                        meals.push({
+                            type: type,
+                            recipeId: recipeId ? parseInt(recipeId) : null,
+                            recipeName: recipeName,
+                            calories: calories
                         });
                     });
 
-                    const payload = {days: days};
+                    days.push({
+                        dayName: dayName,
+                        totalCalories: totalCal,
+                        meals: meals
+                    });
+                });
 
-                    // 2. Gửi về Server
-                    fetch('/meal-plan/save', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                                    // Thêm CSRF token nếu project có bật CSRF protection
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                            .then(response => {
-                                if (response.ok) {
-                                    ZaderToast.success("Plan saved successfully!");
-                                    // Có thể redirect về trang quản lý lịch ăn
-                                    // window.location.href = '/user/meal-plans'; 
-                                } else {
-                                    ZaderToast.error("Failed to save plan.");
-                                }
-                            })
-                            .catch(err => {
-                                console.error(err);
-                                ZaderToast.error("Network error.");
-                            });
-                }
-            });
+                const payload = {days: days};
+
+                // 2. Gửi về Server
+                fetch('/meal-plan/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                                // Thêm CSRF token nếu project có bật CSRF protection
+                    },
+                    body: JSON.stringify(payload)
+                })
+                        .then(response => {
+                            if (response.ok) {
+                                ZaderToast.success("Plan saved successfully!");
+                                // Có thể redirect về trang quản lý lịch ăn
+                                // window.location.href = '/user/meal-plans'; 
+                            } else {
+                                ZaderToast.error("Failed to save plan.");
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            ZaderToast.error("Network error.");
+                        });
+            }
+        });
+    }
+
+
+    // === CLIENT-SIDE SEARCH LOGIC ===
+
+    // 1. Biến toàn cục chứa danh sách gốc
+    let allRecipesGlobal = [];
+
+    // 2. Hàm khởi tạo: Chạy ngay khi load trang
+    document.addEventListener('DOMContentLoaded', async function () {
+        await fetchAllRecipes();
+    });
+
+    async function fetchAllRecipes() {
+        const container = document.getElementById('miniSearchResults');
+        container.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Loading recipes...</p>';
+
+        try {
+            // Gọi API lấy toàn bộ danh sách
+            const response = await fetch('/recipes/all-mini');
+            if (response.ok) {
+                allRecipesGlobal = await response.json();
+
+                // Render lần đầu (hiện tất cả hoặc rỗng tùy bạn)
+                renderRecipes(allRecipesGlobal);
+            } else {
+                container.innerHTML = '<p class="text-center text-xs text-red-400">Failed to load data.</p>';
+            }
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = '<p class="text-center text-xs text-red-400">Connection error.</p>';
         }
+    }
 
+    // 3. Hàm Lọc (Search Local)
+    function performLocalSearch() {
+        const keyword = document.getElementById('miniSearchKeyword').value.toLowerCase();
+        const maxCal = parseInt(document.getElementById('miniSearchCal').value) || 2000;
 
-        // === CLIENT-SIDE SEARCH LOGIC ===
-
-        // 1. Biến toàn cục chứa danh sách gốc
-        let allRecipesGlobal = [];
-
-        // 2. Hàm khởi tạo: Chạy ngay khi load trang
-        document.addEventListener('DOMContentLoaded', async function () {
-            await fetchAllRecipes();
+        // Lọc mảng trong bộ nhớ máy khách
+        const filtered = allRecipesGlobal.filter(r => {
+            const matchesName = r.name.toLowerCase().includes(keyword);
+            const matchesCal = r.calories <= maxCal;
+            return matchesName && matchesCal;
         });
 
-        async function fetchAllRecipes() {
-            const container = document.getElementById('miniSearchResults');
-            container.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Loading recipes...</p>';
+        renderRecipes(filtered);
+    }
 
-            try {
-                // Gọi API lấy toàn bộ danh sách
-                const response = await fetch('/recipes/all-mini');
-                if (response.ok) {
-                    allRecipesGlobal = await response.json();
+    // 4. Hàm Render ra HTML
+    function renderRecipes(recipeList) {
+        const container = document.getElementById('miniSearchResults');
+        container.innerHTML = ''; // Clear previous results
 
-                    // Render lần đầu (hiện tất cả hoặc rỗng tùy bạn)
-                    renderRecipes(allRecipesGlobal);
-                } else {
-                    container.innerHTML = '<p class="text-center text-xs text-red-400">Failed to load data.</p>';
-                }
-            } catch (error) {
-                console.error(error);
-                container.innerHTML = '<p class="text-center text-xs text-red-400">Connection error.</p>';
-            }
+        if (recipeList.length === 0) {
+            container.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">No recipes match.</p>';
+            return;
         }
 
-        // 3. Hàm Lọc (Search Local)
-        function performLocalSearch() {
-            const keyword = document.getElementById('miniSearchKeyword').value.toLowerCase();
-            const maxCal = parseInt(document.getElementById('miniSearchCal').value) || 2000;
+        recipeList.forEach(r => {
+            const card = document.createElement('div');
 
-            // Lọc mảng trong bộ nhớ máy khách
-            const filtered = allRecipesGlobal.filter(r => {
-                const matchesName = r.name.toLowerCase().includes(keyword);
-                const matchesCal = r.calories <= maxCal;
-                return matchesName && matchesCal;
+            // --- Style & Drag Attributes ---
+            card.className = "relative flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-sm transition-all active:cursor-grabbing group";
+            card.draggable = true;
+
+            // Attach Drag Event
+            card.ondragstart = (e) => drag(e, r);
+
+            // --- HTML Content ---
+            // We add an <a> tag wrapping the image or a specific view button
+            card.innerHTML = `
+            <div class="relative w-10 h-10 shrink-0 group/img cursor-pointer">
+                <img src="${r.image}" 
+                     class="w-full h-full rounded-full object-cover bg-gray-100" 
+                     onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=No+Img'"
+                     onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')"> <div class="absolute inset-0 bg-black/20 rounded-full hidden group-hover/img:flex items-center justify-center pointer-events-none">
+                    <span class="material-symbols-outlined text-white text-[10px]">visibility</span>
+                </div>
+            </div>
+                
+            <div class="flex flex-col min-w-0 flex-1 cursor-pointer" onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
+                <span class="text-xs font-bold text-dark-ink truncate w-full group-hover:text-primary transition-colors" title="${r.name}">${r.name}</span>
+                <span class="text-[10px] text-gray-500">${r.calories || 0} kcal</span>
+            </div>
+                
+            <span class="material-symbols-outlined text-gray-300 text-base" title="Drag to plan">drag_indicator</span>
+        `;
+            container.appendChild(card);
+        });
+    }
+
+    // 5. Kết nối sự kiện vào Input HTML
+    // (Thay thế debounceSearch cũ bằng hàm này)
+    function onSearchInput() {
+        performLocalSearch();
+    }
+
+    function onCalorieChange(val) {
+        document.getElementById('calLabel').textContent = val;
+        performLocalSearch();
+    }
+
+    // --- SWAP LOGIC (Hoán đổi dữ liệu Cũ/Mới) ---
+    function swapDayData(dayIndex) {
+        try {
+            // 1. Lấy Container Ngày & Nút bấm
+            const mealsContainer = document.getElementById(`meals-container-${dayIndex}`);
+            const altDataInput = document.getElementById(`alt-data-${dayIndex}`);
+            const dayCard = mealsContainer.closest('.weekly-day-card');
+            const swapBtnText = dayCard.querySelector('button span'); // Text của nút Swap
+            const sourceTag = dayCard.querySelector('.flex.flex-col span.text-\\[10px\\]'); // Tag SAVED/NEW
+            const calBadge = document.getElementById(`cal-day-${dayIndex}`); // Badge tổng calo
+
+            // 2. Thu thập dữ liệu HIỆN TẠI đang hiển thị (Current -> Backup)
+            const currentMeals = [];
+            mealsContainer.querySelectorAll('.meal-slot').forEach(slot => {
+                const rId = slot.querySelector('.input-recipe-id').value;
+                const rName = slot.querySelector('.input-recipe-name').value;
+                const rCal = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
+                const type = slot.getAttribute('data-meal-type');
+
+                currentMeals.push({
+                    recipeId: rId ? parseInt(rId) : null,
+                    recipeName: rName,
+                    calories: rCal,
+                    type: type
+                });
             });
+            // Lấy tổng calo hiện tại
+            // Lấy phần tử text đầu tiên (số calo hiện tại) trong badge "1500 / 2000"
+            const currentTotalCal = parseInt(calBadge.innerText.split('/')[0].trim()) || 0;
 
-            renderRecipes(filtered);
-        }
 
-        // 4. Hàm Render ra HTML
-        function renderRecipes(recipeList) {
-            const container = document.getElementById('miniSearchResults');
-            container.innerHTML = ''; // Clear previous results
+            // 3. Lấy dữ liệu DỰ PHÒNG từ input ẩn (Backup -> New Current)
+            const altMeals = JSON.parse(altDataInput.value);
+            const altTotalCal = parseInt(dayCard.getAttribute('data-alt-cal')) || 0; // Cần thêm attr này ở HTML nếu chưa có
 
-            if (recipeList.length === 0) {
-                container.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">No recipes match.</p>';
-                return;
-            }
 
-            recipeList.forEach(r => {
-                const card = document.createElement('div');
+            // 4. THỰC HIỆN HOÁN ĐỔI (Swap)
+            // A. Cập nhật Input ẩn với dữ liệu vừa thu thập
+            altDataInput.value = JSON.stringify(currentMeals);
+            dayCard.setAttribute('data-alt-cal', currentTotalCal);
 
-                // --- Style & Drag Attributes ---
-                card.className = "relative flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-sm transition-all active:cursor-grabbing group";
-                card.draggable = true;
+            // B. Render lại giao diện với dữ liệu mới (altMeals)
+            mealsContainer.innerHTML = ''; // Xóa cũ
 
-                // Attach Drag Event
-                card.ondragstart = (e) => drag(e, r);
+            // Sắp xếp lại altMeals theo thứ tự bữa ăn chuẩn (Breakfast -> Lunch -> Dinner)
+            const order = {'Breakfast': 1, 'Lunch': 2, 'Dinner': 3};
+            altMeals.sort((a, b) => (order[a.type] || 4) - (order[b.type] || 4));
 
-                // --- HTML Content ---
-                // We add an <a> tag wrapping the image or a specific view button
-                card.innerHTML = `
-                <div class="relative w-10 h-10 shrink-0 group/img cursor-pointer">
-                    <img src="${r.image}" 
-                         class="w-full h-full rounded-full object-cover bg-gray-100" 
-                         onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=No+Img'"
-                         onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')"> <div class="absolute inset-0 bg-black/20 rounded-full hidden group-hover/img:flex items-center justify-center pointer-events-none">
-                        <span class="material-symbols-outlined text-white text-[10px]">visibility</span>
+            altMeals.forEach(meal => {
+                // Tạo HTML cho từng meal-slot (Copy cấu trúc từ Thymeleaf xuống đây)
+                const isEmpty = !meal.recipeId;
+                const slotHtml = `
+                    <div class="meal-slot relative group transition-all"
+                         data-day-index="${dayIndex}"
+                         data-meal-type="${meal.type}"
+                         ondragover="allowDrop(event)"
+                         ondrop="drop(event)">
+
+                        <div class="flex flex-col justify-center min-h-[90px] rounded-lg border-2 border-dashed p-3 hover:border-primary cursor-pointer transition-colors
+                                    ${isEmpty ? 'border-chef-orange bg-chef-orange/5' : 'border-nutri-green bg-gray-50'}">
+                            
+                            <div class="flex justify-between items-start">
+                                <p class="text-xs font-bold text-soft-grey uppercase">${meal.type}</p>
+                                <span class="text-[10px] text-gray-400 meal-cal">${meal.calories} kcal</span>
+                            </div>
+                            
+                            <p class="text-sm font-bold text-dark-ink mt-1 line-clamp-2 meal-name">${meal.recipeName}</p>
+                            
+                            ${isEmpty ? '<p class="text-xs text-chef-orange mt-1 italic hint-text">Drag a recipe here</p>' : ''}
+
+                            <input type="hidden" class="input-recipe-id" name="days[${dayIndex}].meals[].recipeId" value="${meal.recipeId || ''}">
+                            <input type="hidden" class="input-recipe-name" name="days[${dayIndex}].meals[].recipeName" value="${meal.recipeName}">
+                            <input type="hidden" class="input-recipe-cal" name="days[${dayIndex}].meals[].calories" value="${meal.calories}">
+                        </div>
+                        
+                        <div class="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded-lg hidden pointer-events-none drop-overlay flex items-center justify-center">
+                            <span class="text-primary font-bold text-sm">Drop to Replace</span>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="flex flex-col min-w-0 flex-1 cursor-pointer" onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
-                    <span class="text-xs font-bold text-dark-ink truncate w-full group-hover:text-primary transition-colors" title="${r.name}">${r.name}</span>
-                    <span class="text-[10px] text-gray-500">${r.calories || 0} kcal</span>
-                </div>
-                
-                <span class="material-symbols-outlined text-gray-300 text-base" title="Drag to plan">drag_indicator</span>
-            `;
-                container.appendChild(card);
+                `;
+                mealsContainer.insertAdjacentHTML('beforeend', slotHtml);
             });
-        }
 
-        // 5. Kết nối sự kiện vào Input HTML
-        // (Thay thế debounceSearch cũ bằng hàm này)
-        function onSearchInput() {
-            performLocalSearch();
-        }
+            // 5. Cập nhật Badge Tổng Calo
+            const targetCal = calBadge.innerText.split('/')[1].trim(); // Giữ nguyên target
+            calBadge.innerHTML = `<span>${altTotalCal}</span> / ${targetCal}`;
+            calBadge.setAttribute('data-value', altTotalCal);
 
-        function onCalorieChange(val) {
-            document.getElementById('calLabel').textContent = val;
-            performLocalSearch();
+            // 6. Đổi Text và Màu Sắc trạng thái
+            const currentSource = dayCard.getAttribute('data-current-source');
+
+            if (currentSource === 'SAVED_DB') {
+                // Đang là Saved -> Chuyển sang New
+                dayCard.setAttribute('data-current-source', 'NEW_AI'); // Hoặc NEW_MANUAL
+                swapBtnText.innerText = 'View Saved Plan';
+
+                sourceTag.innerText = 'NEW DRAFT';
+                sourceTag.className = 'text-[10px] font-bold text-white bg-blue-500 px-2 py-0.5 rounded w-fit';
+            } else {
+                // Đang là New -> Chuyển sang Saved
+                dayCard.setAttribute('data-current-source', 'SAVED_DB');
+                swapBtnText.innerText = 'View New Draft';
+
+                sourceTag.innerText = 'SAVED IN DB';
+                sourceTag.className = 'text-[10px] font-bold text-white bg-green-600 px-2 py-0.5 rounded w-fit';
+            }
+
+            ZaderToast.success("Swapped plan version");
+
+        } catch (e) {
+            console.error(e);
+            ZaderToast.error("Error swapping data");
         }
-    </script>
+    }
+</script>
 </body>
 </html>

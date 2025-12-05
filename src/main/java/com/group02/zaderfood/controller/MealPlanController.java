@@ -1,11 +1,15 @@
 package com.group02.zaderfood.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group02.zaderfood.dto.SavePlanDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.DailyMealPlan;
+import com.group02.zaderfood.entity.MealItem;
 import com.group02.zaderfood.entity.RecipeCollection;
 import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
+import com.group02.zaderfood.repository.DailyMealPlanRepository;
+import com.group02.zaderfood.repository.MealItemRepository;
 import com.group02.zaderfood.repository.RecipeCollectionRepository;
 import com.group02.zaderfood.repository.UserDietaryPreferenceRepository; // Bạn cần tạo repo này
 import com.group02.zaderfood.repository.UserProfileRepository;
@@ -27,8 +31,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -51,6 +57,12 @@ public class MealPlanController {
 
     @Autowired
     private MealPlanService mealPlanService;
+
+    @Autowired
+    private DailyMealPlanRepository dailyRepo;
+
+    @Autowired
+    private MealItemRepository itemRepo;
 
     private String getDayLabel(LocalDate date) {
         // EEEE: Tên thứ (Monday), dd/MM: Ngày tháng
@@ -91,7 +103,7 @@ public class MealPlanController {
         model.addAttribute("currentCalories", defaultCalories);
         model.addAttribute("currentDiet", defaultDiet);
         model.addAttribute("missingData", missingData); // Cờ để bật SweetAlert
-        
+
         if (currentUser != null) {
             // Giả sử bạn có hàm này trong MealPlanService
             List<DailyMealPlan> history = mealPlanService.getRecentPlans(currentUser.getUserId());
@@ -108,23 +120,27 @@ public class MealPlanController {
             @RequestParam int calories,
             @RequestParam String dietType,
             @RequestParam String goal,
+            @RequestParam(required = false) String startDateStr,
             HttpSession session) { // Bỏ RedirectAttributes vì dùng JSON
 
         try {
+            LocalDate startDate = (startDateStr != null && !startDateStr.isEmpty())
+                    ? LocalDate.parse(startDateStr)
+                    : LocalDate.now().plusDays(1);
+
             System.out.println("--- AI REQUEST: " + calories + "kcal | " + dietType + " ---");
 
             // Gọi AI
             WeeklyPlanDTO plan = aiFoodService.generateWeeklyPlan(calories, dietType, goal);
 
             if (plan != null && plan.days != null && !plan.days.isEmpty()) {
-                // THÀNH CÔNG: Lưu session và trả về URL redirect
-                LocalDate startDate = LocalDate.now().plusDays(1);
+                checkConflictsAndAssignDates(plan, startDate, "NEW_AI", (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
                 for (int i = 0; i < plan.days.size(); i++) {
                     plan.days.get(i).dayName = getDayLabel(startDate.plusDays(i));
                 }
 
                 session.setAttribute("currentWeeklyPlan", plan);
-
+                session.setAttribute("manualTargetCalories", calories);
                 return ResponseEntity.ok(Map.of(
                         "status", "success",
                         "redirectUrl", "/meal-plan/customize",
@@ -163,7 +179,11 @@ public class MealPlanController {
 
         // --- SỬA LỖI TẠI ĐÂY ---
         int targetCalories = 2000;
-        if (user != null) {
+        Integer sessionTarget = (Integer) session.getAttribute("manualTargetCalories");
+        if (sessionTarget != null) {
+            targetCalories = sessionTarget;
+        } else if (user != null) {
+            // 2. Nếu không có trong session, mới lấy từ DB Profile
             UserProfile profile = userProfileRepository.findById(user.getUserId()).orElse(null);
             if (profile != null && profile.getCalorieGoalPerDay() != null) {
                 targetCalories = profile.getCalorieGoalPerDay();
@@ -177,33 +197,114 @@ public class MealPlanController {
     }
 
     @GetMapping("/manual")
-    public String manualStart(HttpSession session, RedirectAttributes redirectAttributes) {
+    @PostMapping("/manual")
+    public String manualStart(
+            @RequestParam(required = false) String startDateStr,
+            @RequestParam(required = false, defaultValue = "2000") int calories, // [MỚI] Nhận Calories
+            HttpSession session,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
+        LocalDate startDate = (startDateStr != null && !startDateStr.isEmpty())
+                ? LocalDate.parse(startDateStr)
+                : LocalDate.now().plusDays(1);
+
         WeeklyPlanDTO emptyPlan = new WeeklyPlanDTO();
         emptyPlan.days = new ArrayList<>();
 
-        // Bắt đầu từ ngày mai
-        LocalDate startDate = LocalDate.now().plusDays(1);
+        System.err.println(startDateStr);
 
+        // Tạo 7 ngày rỗng
         for (int i = 0; i < 7; i++) {
-            LocalDate currentDate = startDate.plusDays(i);
-
-            WeeklyPlanDTO.DailyPlan dailyPlan = new WeeklyPlanDTO.DailyPlan();
-            dailyPlan.dayName = getDayLabel(currentDate); // SỬA: Dùng ngày động
-            dailyPlan.totalCalories = 0;
-            dailyPlan.meals = new ArrayList<>();
-
-            dailyPlan.meals.add(createEmptyMeal("Breakfast"));
-            dailyPlan.meals.add(createEmptyMeal("Lunch"));
-            dailyPlan.meals.add(createEmptyMeal("Dinner"));
-
-            emptyPlan.days.add(dailyPlan);
+            WeeklyPlanDTO.DailyPlan day = new WeeklyPlanDTO.DailyPlan();
+            day.meals = new ArrayList<>();
+            day.meals.add(createEmptyMeal("Breakfast"));
+            day.meals.add(createEmptyMeal("Lunch"));
+            day.meals.add(createEmptyMeal("Dinner"));
+            day.totalCalories = 0;
+            emptyPlan.days.add(day);
         }
 
-        session.setAttribute("currentWeeklyPlan", emptyPlan);
-        // Đánh dấu là chế độ tạo mới (để sau này phân biệt với chế độ sửa)
-        session.setAttribute("planMode", "CREATE");
+        // Kiểm tra xung đột
+        checkConflictsAndAssignDates(emptyPlan, startDate, "NEW_MANUAL", user);
+        session.setAttribute("manualTargetCalories", calories);
 
+        session.setAttribute("currentWeeklyPlan", emptyPlan);
         return "redirect:/meal-plan/customize";
+    }
+
+    // Add ObjectMapper as a field in your controller or create a new instance inside the method if needed
+    // private final ObjectMapper objectMapper = new ObjectMapper(); 
+    private void checkConflictsAndAssignDates(WeeklyPlanDTO plan, LocalDate startDate, String sourceMode, CustomUserDetails user) {
+        if (user == null) {
+            return;
+        }
+        Integer userId = user.getUserId();
+
+        // Initialize ObjectMapper for JSON conversion
+        ObjectMapper mapper = new ObjectMapper();
+
+        for (int i = 0; i < plan.days.size(); i++) {
+            WeeklyPlanDTO.DailyPlan dayDto = plan.days.get(i);
+            LocalDate currentDate = startDate.plusDays(i);
+
+            // 1. Assign date info
+            dayDto.dateString = currentDate.toString();
+            dayDto.dayName = currentDate.format(java.time.format.DateTimeFormatter.ofPattern("EEEE dd/MM"));
+
+            // 2. Check DB for conflicts
+            Optional<DailyMealPlan> dbPlanOpt = dailyRepo.findByUserIdAndPlanDate(userId, currentDate);
+
+            if (dbPlanOpt.isPresent()) {
+                dayDto.hasConflict = true;
+
+                // Fetch saved data from DB
+                List<MealItem> dbItems = itemRepo.findByMealPlanId(dbPlanOpt.get().getMealPlanId());
+                List<WeeklyPlanDTO.Meal> savedMeals = new ArrayList<>();
+                for (MealItem item : dbItems) {
+                    WeeklyPlanDTO.Meal m = new WeeklyPlanDTO.Meal();
+                    m.recipeId = item.getRecipeId();
+                    m.recipeName = item.getCustomDishName();
+                    m.calories = item.getCalories().intValue();
+                    m.type = item.getMealTimeType().name();
+                    savedMeals.add(m);
+                }
+                int savedCal = dbPlanOpt.get().getTotalCalories().intValue();
+
+                // 3. Swap Logic
+                if (sourceMode.equals("NEW_MANUAL")) {
+                    // Manual Mode: Prioritize SAVED (OLD)
+                    dayDto.currentSource = "SAVED_DB";
+
+                    // Push NEW (Empty) to Alternate
+                    dayDto.altMeals = dayDto.meals; // These are the empty slots created in manualStart
+                    dayDto.altTotalCalories = dayDto.totalCalories;
+
+                    // Set OLD to Current Display
+                    dayDto.meals = savedMeals;
+                    dayDto.totalCalories = savedCal;
+
+                } else {
+                    // AI Mode: Prioritize NEW (AI)
+                    dayDto.currentSource = "NEW_AI";
+
+                    // Push OLD (Saved) to Alternate
+                    dayDto.altMeals = savedMeals;
+                    dayDto.altTotalCalories = savedCal;
+                }
+
+                // [CRITICAL FIX] Convert altMeals to JSON string immediately
+                try {
+                    dayDto.altMealsJsonString = mapper.writeValueAsString(dayDto.altMeals);
+                } catch (Exception e) {
+                    dayDto.altMealsJsonString = "[]";
+                }
+            } else {
+                // No Conflict
+                dayDto.hasConflict = false;
+                dayDto.currentSource = sourceMode;
+                dayDto.altMealsJsonString = "[]"; // Initialize empty JSON for safety
+            }
+        }
     }
 
     private WeeklyPlanDTO.Meal createEmptyMeal(String type) {
@@ -233,20 +334,22 @@ public class MealPlanController {
             return ResponseEntity.badRequest().body(Map.of("message", "Error saving plan: " + e.getMessage()));
         }
     }
-    
+
     @GetMapping("/history/{date}")
-    public String viewHistoryPlan(@PathVariable LocalDate date, 
-                                  HttpSession session,
-                                  @AuthenticationPrincipal CustomUserDetails user) {
-        
+    public String viewHistoryPlan(@PathVariable LocalDate date,
+            HttpSession session,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
         // 1. Gọi Service lấy dữ liệu từ DB và map ngược lại thành WeeklyPlanDTO
         WeeklyPlanDTO plan = mealPlanService.getPlanByDate(user.getUserId(), date);
-        
-        if (plan == null) return "redirect:/meal-plan/generate";
+
+        if (plan == null) {
+            return "redirect:/meal-plan/generate";
+        }
 
         session.setAttribute("currentWeeklyPlan", plan);
         session.setAttribute("planMode", "EDIT"); // Đánh dấu là đang sửa
-        
+
         return "redirect:/meal-plan/customize";
     }
 }

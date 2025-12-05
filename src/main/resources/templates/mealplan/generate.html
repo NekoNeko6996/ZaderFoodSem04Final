@@ -59,6 +59,12 @@
                                 </div>
                             </label>
 
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium pb-2">Start Date</p>
+                                <input type="date" id="startDateInput" name="startDateStr" 
+                                       class="form-input-field w-full rounded-lg border-[#e7ddda] dark:bg-[#23140f] h-14 px-4 text-[#181210] dark:text-white">
+                            </label>
+
                             <div id="ai-loading-alert" class="hidden p-4 mt-2 text-sm text-blue-800 border border-blue-200 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-900" role="alert">
                                 <div class="flex items-center gap-3">
                                     <span class="material-symbols-outlined text-xl">hourglass_top</span>
@@ -80,10 +86,10 @@
                                     </svg>
                                 </button>
 
-                                <a href="/meal-plan/manual" id="btnArrange"
-                                   class="flex-1 sm:flex-none flex items-center justify-center rounded-lg h-12 px-5 bg-gray-100 dark:bg-gray-800 text-[#181210] dark:text-white text-base font-bold hover:bg-gray-200 transition-colors border border-[#e7ddda] dark:border-gray-700">
+                                <button type="button" onclick="submitManual()" id="btnArrange"
+                                        class="flex-1 sm:flex-none flex items-center justify-center rounded-lg h-12 px-5 bg-gray-100 dark:bg-gray-800 text-[#181210] dark:text-white text-base font-bold hover:bg-gray-200 transition-colors border border-[#e7ddda] dark:border-gray-700">
                                     Arrange it yourself
-                                </a>
+                                </button>
 
                                 <button type="button" id="btnCancel" onclick="cancelGeneration()"
                                         class="hidden flex-1 sm:flex-none flex items-center justify-center rounded-lg h-12 px-5 bg-red-100 text-red-600 text-base font-bold hover:bg-red-200 transition-colors border border-red-200">
@@ -222,9 +228,33 @@
 
         // Logic cũ (Profile check) giữ nguyên
         document.addEventListener('DOMContentLoaded', function () {
-            const isMissingData = /*[[${missingData}]]*/ false;
-            // ... (Swal code)
+            const dateInput = document.getElementById('startDateInput');
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.value = tomorrow.toISOString().split('T')[0];
         });
+
+        function submitManual() {
+            // 1. Lấy tất cả giá trị từ form
+            const dateInput = document.getElementById('startDateInput');
+            // Dùng querySelector để lấy input theo name vì chúng không có ID riêng
+            const calInput = document.querySelector('input[name="calories"]');
+            const dietInput = document.querySelector('select[name="dietType"]');
+            const goalInput = document.querySelector('select[name="goal"]');
+
+            const params = new URLSearchParams({
+                startDateStr: dateInput.value || '',
+                calories: calInput.value || '2000',
+                dietType: dietInput.value || 'Balanced',
+                goal: goalInput.value || 'Maintenance'
+            });
+
+            console.log("Manual Params:", params.toString());
+
+            // 2. Chuyển hướng với full tham số
+            // Kết quả sẽ dạng: /meal-plan/manual?startDateStr=2025-12-14&calories=1500&dietType=Keto...
+            window.location.href = `/meal-plan/manual?${params.toString()}`;
+        }
     </script>
 </body>
 </html>
