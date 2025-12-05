@@ -2,6 +2,7 @@ package com.group02.zaderfood.controller;
 
 import com.group02.zaderfood.dto.SavePlanDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
+import com.group02.zaderfood.entity.DailyMealPlan;
 import com.group02.zaderfood.entity.RecipeCollection;
 import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
@@ -21,11 +22,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpSession;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -44,9 +48,14 @@ public class MealPlanController {
 
     @Autowired
     private UserDietaryPreferenceRepository dietaryRepo;
-    
+
     @Autowired
     private MealPlanService mealPlanService;
+
+    private String getDayLabel(LocalDate date) {
+        // EEEE: Tên thứ (Monday), dd/MM: Ngày tháng
+        return date.format(DateTimeFormatter.ofPattern("EEEE dd/MM"));
+    }
 
     // 1. Hiển thị trang tạo (Generate Page) - Đã update logic lấy dữ liệu
     @GetMapping("/generate")
@@ -82,6 +91,12 @@ public class MealPlanController {
         model.addAttribute("currentCalories", defaultCalories);
         model.addAttribute("currentDiet", defaultDiet);
         model.addAttribute("missingData", missingData); // Cờ để bật SweetAlert
+        
+        if (currentUser != null) {
+            // Giả sử bạn có hàm này trong MealPlanService
+            List<DailyMealPlan> history = mealPlanService.getRecentPlans(currentUser.getUserId());
+            model.addAttribute("planHistory", history);
+        }
 
         return "mealplan/generate";
     }
@@ -103,6 +118,11 @@ public class MealPlanController {
 
             if (plan != null && plan.days != null && !plan.days.isEmpty()) {
                 // THÀNH CÔNG: Lưu session và trả về URL redirect
+                LocalDate startDate = LocalDate.now().plusDays(1);
+                for (int i = 0; i < plan.days.size(); i++) {
+                    plan.days.get(i).dayName = getDayLabel(startDate.plusDays(i));
+                }
+
                 session.setAttribute("currentWeeklyPlan", plan);
 
                 return ResponseEntity.ok(Map.of(
@@ -119,7 +139,6 @@ public class MealPlanController {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", "error",
                     "message", "Server Error: " + e.getMessage()
@@ -159,24 +178,31 @@ public class MealPlanController {
 
     @GetMapping("/manual")
     public String manualStart(HttpSession session, RedirectAttributes redirectAttributes) {
-        // Tạo một Plan rỗng với 7 ngày
         WeeklyPlanDTO emptyPlan = new WeeklyPlanDTO();
         emptyPlan.days = new ArrayList<>();
 
-        String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-        for (String day : days) {
+        // Bắt đầu từ ngày mai
+        LocalDate startDate = LocalDate.now().plusDays(1);
+
+        for (int i = 0; i < 7; i++) {
+            LocalDate currentDate = startDate.plusDays(i);
+
             WeeklyPlanDTO.DailyPlan dailyPlan = new WeeklyPlanDTO.DailyPlan();
-            dailyPlan.dayName = day;
+            dailyPlan.dayName = getDayLabel(currentDate); // SỬA: Dùng ngày động
             dailyPlan.totalCalories = 0;
             dailyPlan.meals = new ArrayList<>();
-            // Tạo sẵn 3 bữa trống để giữ khung
+
             dailyPlan.meals.add(createEmptyMeal("Breakfast"));
             dailyPlan.meals.add(createEmptyMeal("Lunch"));
             dailyPlan.meals.add(createEmptyMeal("Dinner"));
+
             emptyPlan.days.add(dailyPlan);
         }
 
         session.setAttribute("currentWeeklyPlan", emptyPlan);
+        // Đánh dấu là chế độ tạo mới (để sau này phân biệt với chế độ sửa)
+        session.setAttribute("planMode", "CREATE");
+
         return "redirect:/meal-plan/customize";
     }
 
@@ -204,8 +230,23 @@ public class MealPlanController {
 
             return ResponseEntity.ok(Map.of("message", "Plan saved successfully!"));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("message", "Error saving plan: " + e.getMessage()));
         }
+    }
+    
+    @GetMapping("/history/{date}")
+    public String viewHistoryPlan(@PathVariable LocalDate date, 
+                                  HttpSession session,
+                                  @AuthenticationPrincipal CustomUserDetails user) {
+        
+        // 1. Gọi Service lấy dữ liệu từ DB và map ngược lại thành WeeklyPlanDTO
+        WeeklyPlanDTO plan = mealPlanService.getPlanByDate(user.getUserId(), date);
+        
+        if (plan == null) return "redirect:/meal-plan/generate";
+
+        session.setAttribute("currentWeeklyPlan", plan);
+        session.setAttribute("planMode", "EDIT"); // Đánh dấu là đang sửa
+        
+        return "redirect:/meal-plan/customize";
     }
 }

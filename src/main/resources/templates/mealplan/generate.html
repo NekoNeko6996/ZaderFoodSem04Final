@@ -98,6 +98,19 @@
                     </div>
                 </form>
             </div>
+            <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm p-6 md:p-8 mt-8" th:if="${not #lists.isEmpty(planHistory)}">
+                <h2 class="text-xl font-bold text-dark-ink dark:text-white mb-4">Your Saved Plans</h2>
+                <div class="grid gap-4">
+                    <div th:each="plan : ${planHistory}" class="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div>
+                            <p class="font-bold text-primary" th:text="${#temporals.format(plan.planDate, 'EEEE dd/MM/yyyy')}">Date</p>
+                            <p class="text-sm text-gray-500" th:text="${plan.totalCalories + ' kcal'}">2000 kcal</p>
+                        </div>
+                        <a th:href="@{/meal-plan/history/{date}(date=${plan.planDate})}" 
+                           class="px-4 py-2 text-sm bg-gray-200 rounded-lg font-bold">View / Edit</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -166,7 +179,7 @@
             const spinner = document.getElementById('spinnerGenerate');
             const btnArrange = document.getElementById('btnArrange');
             const btnCancel = document.getElementById('btnCancel');
-            
+
             const alertBox = document.getElementById('ai-loading-alert');
 
             if (isLoading) {
@@ -183,7 +196,7 @@
                 // SWAP BUTTONS
                 btnArrange.classList.add('hidden');
                 btnCancel.classList.remove('hidden');
-                
+
                 alertBox.classList.remove('hidden');
                 alertBox.classList.add('flex');
 
@@ -201,7 +214,7 @@
                 // SWAP BUTTONS BACK
                 btnArrange.classList.remove('hidden');
                 btnCancel.classList.add('hidden');
-                
+
                 alertBox.classList.add('hidden');
                 alertBox.classList.remove('flex');
             }

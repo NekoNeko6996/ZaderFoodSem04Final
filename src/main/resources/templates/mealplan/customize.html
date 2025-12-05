@@ -174,6 +174,7 @@
 
                     card.innerHTML = `
                         <img src="${r.image}" 
+                             onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=No+Img'"
                              class="w-10 h-10 rounded-full object-cover bg-gray-100 cursor-pointer hover:opacity-80"
                              onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
                              
