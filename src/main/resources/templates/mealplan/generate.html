@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}">
+        <title>Generate Weekly Plan</title>
+    </head>
+    <body class="font-display bg-[#f8f6f5] dark:bg-[#23140f] flex flex-col min-h-screen">
+
+    <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
+    <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
+
+    <main class="px-4 sm:px-10 lg:px-20 xl:px-40 flex flex-1 justify-center py-10">
+        <div class="flex flex-col w-full max-w-5xl flex-1 gap-8">
+            <div class="flex flex-col gap-4">
+                <div class="flex min-w-72 flex-col gap-3">
+                    <h1 class="text-[#181210] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+                        Generate Your Weekly Meal Plan
+                    </h1>
+                    <p class="text-[#8d6a5e] dark:text-white/60 text-base font-normal leading-normal">
+                        Get a personalized 7-day meal plan with one click, tailored to your nutritional needs and preferences.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm p-6 md:p-8">
+                <form id="generateForm" onsubmit="handleGenerate(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                        <div class="md:col-span-2 flex flex-col gap-6">
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium leading-normal pb-2">Target Daily Calories</p>
+                                <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                    <input name="calories" type="number" th:value="${currentCalories}"
+                                           class="form-input-field flex w-full rounded-lg text-[#181210] dark:text-white focus:ring-[#ff7142] border-[#e7ddda] dark:bg-[#23140f] h-14 p-[15px]" 
+                                           placeholder="e.g. 2000" />
+                                </div>
+                            </label>
+
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium leading-normal pb-2">Dietary Preference</p>
+                                <div class="relative">
+                                    <select name="dietType" class="form-input-field w-full rounded-lg border-[#e7ddda] dark:bg-[#23140f] text-[#181210] dark:text-white h-14 px-4">
+                                        <option value="Balanced" th:selected="${currentDiet == 'Balanced'}">Balanced</option>
+                                        <option value="Low Carb" th:selected="${currentDiet == 'Low Carb'}">Low Carb</option>
+                                        <option value="Vegetarian" th:selected="${currentDiet == 'Vegetarian'}">Vegetarian</option>
+                                        <option value="Vegan" th:selected="${currentDiet == 'Vegan'}">Vegan</option>
+                                        <option value="Keto" th:selected="${currentDiet == 'Keto'}">Keto</option>
+                                    </select>
+                                </div>
+                            </label>
+
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium leading-normal pb-2">Current Goal</p>
+                                <div class="relative">
+                                    <select name="goal" class="form-input-field w-full rounded-lg border-[#e7ddda] dark:bg-[#23140f] text-[#181210] dark:text-white h-14 px-4">
+                                        <option value="Maintenance">Weight Maintenance</option>
+                                        <option value="Weight Loss">Weight Loss</option>
+                                        <option value="Muscle Gain">Muscle Gain</option>
+                                    </select>
+                                </div>
+                            </label>
+
+                            <label class="flex flex-col w-full">
+                                <p class="text-[#181210] dark:text-white text-base font-medium pb-2">Start Date</p>
+                                <input type="date" id="startDateInput" name="startDateStr" 
+                                       class="form-input-field w-full rounded-lg border-[#e7ddda] dark:bg-[#23140f] h-14 px-4 text-[#181210] dark:text-white">
+                            </label>
+
+                            <div id="ai-loading-alert" class="hidden p-4 mt-2 text-sm text-blue-800 border border-blue-200 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-900" role="alert">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-xl">hourglass_top</span>
+                                    <div>
+                                        <span class="font-bold">The system is processing...</span>
+                                        <p class="mt-1">The AI ​​calculation will take about <span class="font-bold">2 to 3 minutes</span>. Please stay on the page and wait a moment.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-4 mt-2">
+                                <button type="submit" id="btnGenerate"
+                                        class="flex-1 flex items-center justify-center rounded-lg h-12 px-5 bg-[#ff7142] text-white text-base font-bold hover:bg-[#e6663b] transition-all shadow-lg shadow-orange-200 dark:shadow-none disabled:opacity-70 disabled:cursor-not-allowed">
+                                    <span class="material-symbols-outlined mr-2" id="iconGenerate">restaurant_menu</span>
+                                    <span id="textGenerate">Generate Weekly Plan</span>
+                                    <svg id="spinnerGenerate" class="animate-spin ml-2 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </button>
+
+                                <button type="button" onclick="submitManual()" id="btnArrange"
+                                        class="flex-1 sm:flex-none flex items-center justify-center rounded-lg h-12 px-5 bg-gray-100 dark:bg-gray-800 text-[#181210] dark:text-white text-base font-bold hover:bg-gray-200 transition-colors border border-[#e7ddda] dark:border-gray-700">
+                                    Arrange it yourself
+                                </button>
+
+                                <button type="button" id="btnCancel" onclick="cancelGeneration()"
+                                        class="hidden flex-1 sm:flex-none flex items-center justify-center rounded-lg h-12 px-5 bg-red-100 text-red-600 text-base font-bold hover:bg-red-200 transition-colors border border-red-200">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2 border-t md:border-t-0 md:border-l border-dashed border-[#e7ddda] pt-6 md:pt-0 md:pl-8">
+                            <p class="text-base font-semibold text-[#181210] dark:text-white pb-2">Your Profile Summary</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm p-6 md:p-8 mt-8" th:if="${not #lists.isEmpty(planHistory)}">
+                <h2 class="text-xl font-bold text-dark-ink dark:text-white mb-4">Your Saved Plans</h2>
+                <div class="grid gap-4">
+                    <div th:each="plan : ${planHistory}" class="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div>
+                            <p class="font-bold text-primary" th:text="${#temporals.format(plan.planDate, 'EEEE dd/MM/yyyy')}">Date</p>
+                            <p class="text-sm text-gray-500" th:text="${plan.totalCalories + ' kcal'}">2000 kcal</p>
+                        </div>
+                        <a th:href="@{/meal-plan/history/{date}(date=${plan.planDate})}" 
+                           class="px-4 py-2 text-sm bg-gray-200 rounded-lg font-bold">View / Edit</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+
+    <script th:inline="javascript">
+        let abortController = null;
+
+        async function handleGenerate(event) {
+            event.preventDefault();
+            const form = document.getElementById('generateForm');
+            const formData = new FormData(form);
+
+            toggleLoadingState(true);
+
+            abortController = new AbortController();
+
+            try {
+                // Gọi API
+                const response = await fetch('/meal-plan/generate', {
+                    method: 'POST',
+                    body: formData,
+                    signal: abortController.signal
+                });
+
+                // Đọc kết quả JSON
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    // THÀNH CÔNG -> Redirect
+                    ZaderToast.success(data.message);
+                    setTimeout(() => {
+                        window.location.href = data.redirectUrl;
+                    }, 500);
+                } else {
+                    // CÓ LỖI -> Hiện Toast (Không reload trang)
+                    console.error("Server Error:", data);
+                    ZaderToast.error(data.message || "Failed to generate plan");
+                    toggleLoadingState(false); // Mở khóa nút để thử lại
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    ZaderToast.show('Cancelled', 'info');
+                } else {
+                    console.error(error);
+                    ZaderToast.error('Connection failed. Is Ollama running?');
+                }
+                toggleLoadingState(false);
+            }
+        }
+
+        function cancelGeneration() {
+            if (abortController) {
+                abortController.abort(); // Ngắt kết nối mạng
+                abortController = null;
+            }
+            toggleLoadingState(false); // Reset UI
+        }
+
+        function toggleLoadingState(isLoading) {
+            const inputs = document.querySelectorAll('.form-input-field');
+            const btnGenerate = document.getElementById('btnGenerate');
+            const iconGenerate = document.getElementById('iconGenerate');
+            const textGenerate = document.getElementById('textGenerate');
+            const spinner = document.getElementById('spinnerGenerate');
+            const btnArrange = document.getElementById('btnArrange');
+            const btnCancel = document.getElementById('btnCancel');
+
+            const alertBox = document.getElementById('ai-loading-alert');
+
+            if (isLoading) {
+                // DISABLE FORM
+                inputs.forEach(input => input.disabled = true);
+
+                // UPDATE BUTTON GENERATE
+                btnGenerate.disabled = true;
+                btnGenerate.classList.add('cursor-not-allowed');
+                iconGenerate.classList.add('hidden');
+                textGenerate.innerText = 'Chef is cooking...';
+                spinner.classList.remove('hidden');
+
+                // SWAP BUTTONS
+                btnArrange.classList.add('hidden');
+                btnCancel.classList.remove('hidden');
+
+                alertBox.classList.remove('hidden');
+                alertBox.classList.add('flex');
+
+            } else {
+                // ENABLE FORM
+                inputs.forEach(input => input.disabled = false);
+
+                // RESET BUTTON GENERATE
+                btnGenerate.disabled = false;
+                btnGenerate.classList.remove('cursor-not-allowed');
+                iconGenerate.classList.remove('hidden');
+                textGenerate.innerText = 'Generate Weekly Plan';
+                spinner.classList.add('hidden');
+
+                // SWAP BUTTONS BACK
+                btnArrange.classList.remove('hidden');
+                btnCancel.classList.add('hidden');
+
+                alertBox.classList.add('hidden');
+                alertBox.classList.remove('flex');
+            }
+        }
+
+        // Logic cũ (Profile check) giữ nguyên
+        document.addEventListener('DOMContentLoaded', function () {
+            const dateInput = document.getElementById('startDateInput');
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.value = tomorrow.toISOString().split('T')[0];
+        });
+
+        function submitManual() {
+            // 1. Lấy tất cả giá trị từ form
+            const dateInput = document.getElementById('startDateInput');
+            // Dùng querySelector để lấy input theo name vì chúng không có ID riêng
+            const calInput = document.querySelector('input[name="calories"]');
+            const dietInput = document.querySelector('select[name="dietType"]');
+            const goalInput = document.querySelector('select[name="goal"]');
+
+            const params = new URLSearchParams({
+                startDateStr: dateInput.value || '',
+                calories: calInput.value || '2000',
+                dietType: dietInput.value || 'Balanced',
+                goal: goalInput.value || 'Maintenance'
+            });
+
+            console.log("Manual Params:", params.toString());
+
+            // 2. Chuyển hướng với full tham số
+            // Kết quả sẽ dạng: /meal-plan/manual?startDateStr=2025-12-14&calories=1500&dietType=Keto...
+            window.location.href = `/meal-plan/manual?${params.toString()}`;
+        }
+    </script>
+</body>
+</html>

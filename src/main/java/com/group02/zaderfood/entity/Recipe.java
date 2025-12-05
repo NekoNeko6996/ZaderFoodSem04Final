@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -23,12 +24,14 @@ public class Recipe implements Serializable {
     private Integer recipeId;
 
     @Column(name = "Name")
+    @Nationalized
     private String name;
 
     @Column(name = "Description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Column(name = "Difficulty")
+    @Nationalized
     @Enumerated(EnumType.STRING)
     private DifficultyLevel difficulty;
 

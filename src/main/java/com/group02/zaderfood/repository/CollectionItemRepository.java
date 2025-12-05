@@ -10,16 +10,17 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CollectionItemRepository extends JpaRepository<CollectionItem, Integer> {
+
     boolean existsByCollectionIdAndRecipeId(Integer collectionId, Integer recipeId);
-    
-    @Query("SELECT c.recipeId FROM CollectionItem c WHERE c.collectionId = :collectionId AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+
+    @Query("SELECT c.recipeId FROM CollectionItem c WHERE c.collectionId = :collectionId")
     List<Integer> findRecipeIdsByCollectionId(@Param("collectionId") Integer collectionId);
-    
-    @Query("SELECT COUNT(c) FROM CollectionItem c WHERE c.collectionId = :collectionId AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+
+    @Query("SELECT COUNT(c) FROM CollectionItem c WHERE c.collectionId = :collectionId")
     int countByCollectionId(@Param("collectionId") Integer collectionId);
 
     // Kiểm tra tồn tại để xóa (cho chức năng remove khỏi collection)
     Optional<CollectionItem> findByCollectionIdAndRecipeId(Integer collectionId, Integer recipeId);
-    
+
     void deleteByCollectionId(Integer collectionId);
 }

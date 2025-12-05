@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -23,8 +24,9 @@ public class RecipeStep implements Serializable {
 
     @Column(name = "StepNumber")
     private Integer stepNumber;
-
-    @Column(name = "Instruction")
+    
+    @Nationalized
+    @Column(name = "Instruction", columnDefinition = "NVARCHAR(MAX)")
     private String instruction;
 
     @Column(name = "MediaUrl")
@@ -32,15 +34,6 @@ public class RecipeStep implements Serializable {
 
     @Column(name = "CreatedAt")
     private LocalDateTime createdAt;
-
-    @Column(name = "UpdatedAt")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "IsDeleted")
-    private Boolean isDeleted;
-
-    @Column(name = "DeletedAt")
-    private LocalDateTime deletedAt;
     
     // JOIN
     @ManyToOne

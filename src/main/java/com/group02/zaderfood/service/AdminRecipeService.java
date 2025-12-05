@@ -128,7 +128,6 @@ public class AdminRecipeService {
                 .orElseThrow(() -> new RuntimeException("Step not found"));
 
         step.setInstruction(newInstruction);
-        step.setUpdatedAt(LocalDateTime.now());
 
         recipeStepRepository.save(step);
     }

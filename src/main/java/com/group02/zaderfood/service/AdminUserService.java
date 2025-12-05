@@ -1,9 +1,11 @@
 package com.group02.zaderfood.service;
 
 import com.group02.zaderfood.entity.User;
+import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
 import com.group02.zaderfood.entity.enums.UserRole;
 import com.group02.zaderfood.entity.enums.UserStatus;
+import com.group02.zaderfood.repository.UserDietaryPreferenceRepository;
 import com.group02.zaderfood.repository.UserProfileRepository;
 import com.group02.zaderfood.repository.UserRepository;
 import jakarta.servlet.ServletOutputStream;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminUserService {
@@ -31,6 +35,8 @@ public class AdminUserService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private UserProfileRepository userProfileRepository;
+    @Autowired
+    private UserDietaryPreferenceRepository dietRepo;
 
     // 1. Lấy danh sách user có phân trang và lọc
     public Page<User> getUsers(Integer currentUserId, String keyword, UserRole role, UserStatus status, int page, int size) {
@@ -117,8 +123,8 @@ public class AdminUserService {
             row.createCell(4).setCellValue(user.getStatus().name());
             row.createCell(5).setCellValue(user.getCreatedAt().toString().split("T")[0]);
 
-            // Lấy thông tin từ bảng UserProfile
             Optional<UserProfile> profileOpt = userProfileRepository.findById(user.getUserId());
+
             if (profileOpt.isPresent()) {
                 UserProfile profile = profileOpt.get();
                 row.createCell(6).setCellValue(profile.getGender() != null ? profile.getGender().name() : "N/A");
@@ -126,9 +132,20 @@ public class AdminUserService {
                 row.createCell(8).setCellValue(profile.getWeightKg() != null ? profile.getWeightKg().toString() : "0");
                 row.createCell(9).setCellValue(profile.getHeightCm() != null ? profile.getHeightCm().toString() : "0");
                 row.createCell(10).setCellValue(profile.getActivityLevel() != null ? profile.getActivityLevel().name() : "N/A");
-                row.createCell(11).setCellValue(profile.getDietaryPreference() != null ? profile.getDietaryPreference().name() : "N/A");
+
+                // [FIX] Lấy danh sách chế độ ăn từ bảng mới và nối chuỗi
+                List<UserDietaryPreference> diets = dietRepo.findByUserId(user.getUserId());
+                if (!diets.isEmpty()) {
+                    // Ví dụ kết quả: "KETO, GLUTEN_FREE"
+                    String dietString = diets.stream()
+                            .map(d -> d.getDietType().name())
+                            .collect(Collectors.joining(", "));
+                    row.createCell(11).setCellValue(dietString);
+                } else {
+                    row.createCell(11).setCellValue("N/A");
+                }
+
             } else {
-                // Nếu chưa có profile thì để trống hoặc ghi N/A
                 for (int k = 6; k <= 11; k++) {
                     row.createCell(k).setCellValue("N/A");
                 }
