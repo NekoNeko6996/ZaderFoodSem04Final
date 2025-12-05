@@ -33,6 +33,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
     @Query("SELECT r FROM Recipe r WHERE r.status = :status AND (r.isDeleted IS NULL OR r.isDeleted = false)")
     List<Recipe> findByStatusAndIsDeletedFalse(@Param("status") RecipeStatus status);
     
-    @Query(value = "SELECT TOP 100 * FROM Recipes ORDER BY NEWID()", nativeQuery = true) 
+    @Query(value = "SELECT TOP 50 * FROM Recipes ORDER BY NEWID()", nativeQuery = true)
     List<Recipe> findRandomRecipes();
 }

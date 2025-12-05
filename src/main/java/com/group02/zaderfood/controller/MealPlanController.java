@@ -1,5 +1,6 @@
 package com.group02.zaderfood.controller;
 
+import com.group02.zaderfood.dto.SavePlanDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.RecipeCollection;
 import com.group02.zaderfood.entity.UserDietaryPreference;
@@ -9,6 +10,7 @@ import com.group02.zaderfood.repository.UserDietaryPreferenceRepository; // Bạ
 import com.group02.zaderfood.repository.UserProfileRepository;
 import com.group02.zaderfood.service.AiFoodService;
 import com.group02.zaderfood.service.CustomUserDetails;
+import com.group02.zaderfood.service.MealPlanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -19,7 +21,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/meal-plan")
@@ -36,6 +44,9 @@ public class MealPlanController {
 
     @Autowired
     private UserDietaryPreferenceRepository dietaryRepo;
+    
+    @Autowired
+    private MealPlanService mealPlanService;
 
     // 1. Hiển thị trang tạo (Generate Page) - Đã update logic lấy dữ liệu
     @GetMapping("/generate")
@@ -77,28 +88,42 @@ public class MealPlanController {
 
     // 2. Xử lý tạo plan (Giữ nguyên logic cũ, chỉ map lại UI)
     @PostMapping("/generate")
-    public String generatePlan(
+    @ResponseBody // Bắt buộc: Để trả về JSON thay vì tìm file HTML
+    public ResponseEntity<?> generatePlan(
             @RequestParam int calories,
             @RequestParam String dietType,
             @RequestParam String goal,
-            RedirectAttributes redirectAttributes,
-            HttpSession session) {
+            HttpSession session) { // Bỏ RedirectAttributes vì dùng JSON
 
         try {
+            System.out.println("--- AI REQUEST: " + calories + "kcal | " + dietType + " ---");
+
+            // Gọi AI
             WeeklyPlanDTO plan = aiFoodService.generateWeeklyPlan(calories, dietType, goal);
 
             if (plan != null && plan.days != null && !plan.days.isEmpty()) {
+                // THÀNH CÔNG: Lưu session và trả về URL redirect
                 session.setAttribute("currentWeeklyPlan", plan);
-                redirectAttributes.addFlashAttribute("success", "Weekly plan generated successfully!");
-                return "redirect:/meal-plan/customize";
+
+                return ResponseEntity.ok(Map.of(
+                        "status", "success",
+                        "redirectUrl", "/meal-plan/customize",
+                        "message", "Weekly plan created successfully!"
+                ));
             } else {
-                redirectAttributes.addFlashAttribute("error", "AI could not generate a valid plan. Try again.");
-                return "redirect:/meal-plan/generate";
+                // THẤT BẠI: Trả về lỗi để JS hiện Toast
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "error",
+                        "message", "AI response is empty. Please check Ollama connection."
+                ));
             }
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "System Error: " + e.getMessage());
-            return "redirect:/meal-plan/generate";
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", "Server Error: " + e.getMessage()
+            ));
         }
     }
 
@@ -113,11 +138,74 @@ public class MealPlanController {
         model.addAttribute("weeklyPlan", plan);
 
         if (user != null) {
-            // Giả sử bạn có entity RecipeCollection
             List<RecipeCollection> myCollections = collectionRepo.findByUserId(user.getUserId());
             model.addAttribute("myCollections", myCollections);
         }
 
+        // --- SỬA LỖI TẠI ĐÂY ---
+        int targetCalories = 2000;
+        if (user != null) {
+            UserProfile profile = userProfileRepository.findById(user.getUserId()).orElse(null);
+            if (profile != null && profile.getCalorieGoalPerDay() != null) {
+                targetCalories = profile.getCalorieGoalPerDay();
+            }
+        }
+        // [QUAN TRỌNG] Dòng này bị thiếu trong code cũ của bạn
+        model.addAttribute("targetCalories", targetCalories);
+        // -----------------------
+
         return "mealplan/customize";
+    }
+
+    @GetMapping("/manual")
+    public String manualStart(HttpSession session, RedirectAttributes redirectAttributes) {
+        // Tạo một Plan rỗng với 7 ngày
+        WeeklyPlanDTO emptyPlan = new WeeklyPlanDTO();
+        emptyPlan.days = new ArrayList<>();
+
+        String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+        for (String day : days) {
+            WeeklyPlanDTO.DailyPlan dailyPlan = new WeeklyPlanDTO.DailyPlan();
+            dailyPlan.dayName = day;
+            dailyPlan.totalCalories = 0;
+            dailyPlan.meals = new ArrayList<>();
+            // Tạo sẵn 3 bữa trống để giữ khung
+            dailyPlan.meals.add(createEmptyMeal("Breakfast"));
+            dailyPlan.meals.add(createEmptyMeal("Lunch"));
+            dailyPlan.meals.add(createEmptyMeal("Dinner"));
+            emptyPlan.days.add(dailyPlan);
+        }
+
+        session.setAttribute("currentWeeklyPlan", emptyPlan);
+        return "redirect:/meal-plan/customize";
+    }
+
+    private WeeklyPlanDTO.Meal createEmptyMeal(String type) {
+        WeeklyPlanDTO.Meal meal = new WeeklyPlanDTO.Meal();
+        meal.type = type;
+        meal.recipeName = "Drag a recipe here";
+        meal.calories = 0;
+        meal.recipeId = null;
+        return meal;
+    }
+
+    @PostMapping("/save")
+    @ResponseBody // Bắt buộc để trả về JSON
+    public ResponseEntity<?> savePlan(@RequestBody SavePlanDTO planDto,
+            @AuthenticationPrincipal CustomUserDetails user) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not logged in"));
+        }
+
+        try {
+            // Gọi Service để lưu vào DB
+            mealPlanService.saveWeeklyPlan(user.getUserId(), planDto);
+
+            return ResponseEntity.ok(Map.of("message", "Plan saved successfully!"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("message", "Error saving plan: " + e.getMessage()));
+        }
     }
 }

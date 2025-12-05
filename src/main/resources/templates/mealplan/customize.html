@@ -27,17 +27,37 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
                 <div class="lg:col-span-3 flex flex-col gap-6 sticky top-24">
+                    <div class="bg-white dark:bg-background-dark rounded-xl shadow-soft p-6 flex flex-col gap-4">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="toggleSearchPanel()">
+                            <h2 class="text-dark-ink dark:text-white text-lg font-bold">Find Recipes</h2>
+                            <span id="toggleIcon" class="material-symbols-outlined text-gray-400 transform transition-transform">expand_less</span>
+                        </div>
 
-                    <div class="bg-white dark:bg-background-dark rounded-xl shadow-soft p-6">
-                        <h2 class="text-dark-ink dark:text-white text-lg font-bold">Plan Summary</h2>
-                        <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
-                            <span class="text-xs font-bold text-green-600 uppercase">Total Days</span>
-                            <p class="text-2xl font-black text-dark-ink" th:text="${#lists.size(weeklyPlan.days)}">7</p>
+                        <div id="searchPanelContent" class="flex flex-col gap-4 transition-all duration-300">
+                            <div class="flex flex-col gap-3">
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                                        <span class="material-symbols-outlined text-lg">search</span>
+                                    </span>
+                                    <input type="text" id="miniSearchKeyword" placeholder="Search by name..." 
+                                           class="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-primary focus:border-primary"
+                                           onkeyup="onSearchInput()"> </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500 font-bold">Max Cal:</span>
+                                    <input type="range" id="miniSearchCal" min="100" max="2000" step="50" value="2000"
+                                           class="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                                           oninput="onCalorieChange(this.value)">
+                                    <span id="calLabel" class="text-xs font-bold text-primary w-12 text-right">2000</span>
+                                </div>
+                            </div>
+
+                            <div id="miniSearchResults" class="flex flex-col gap-3 overflow-y-auto pr-1 max-h-[300px] min-h-[100px] border-t border-gray-100 pt-3">
+                                <p class="text-xs text-gray-400 text-center mt-4">Type to search...</p>
+                            </div>
                         </div>
                     </div>
-
                     <div class="bg-white dark:bg-background-dark rounded-xl shadow-soft p-6 flex flex-col gap-4 max-h-[600px]">
                         <div class="flex justify-between items-center">
                             <h2 class="text-dark-ink dark:text-white text-lg font-bold">My Collections</h2>
@@ -60,14 +80,20 @@
                 <div class="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
                     <th:block th:each="day, dayStat : ${weeklyPlan.days}">
-                        <div class="flex flex-col gap-4 bg-white dark:bg-[#1e1e1e] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="weekly-day-card flex flex-col gap-4 bg-white dark:bg-[#1e1e1e] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
 
                             <div class="flex justify-between items-center border-b border-gray-100 pb-2">
                                 <h3 class="font-bold text-lg text-primary" th:text="${day.dayName}">Monday</h3>
-                                <span class="text-xs font-bold bg-gray-100 px-2 py-1 rounded text-dark-ink total-cal-badge"
-                                      th:id="'cal-day-' + ${dayStat.index}"
-                                      th:data-value="${day.totalCalories}"
-                                      th:text="${day.totalCalories + ' kcal'}">2000 kcal</span>
+
+                                <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-bold text-dark-ink dark:text-white total-cal-badge"
+                                     th:id="'cal-day-' + ${dayStat.index}"
+                                     th:data-value="${day.totalCalories}">
+
+                                    <span th:text="${day.totalCalories}">1500</span>
+                                    <span class="text-gray-400 mx-0.5">/</span>
+                                    <span th:text="${targetCalories}" class="text-gray-500 dark:text-gray-400">2000</span>
+                                    <span class="ml-0.5">kcal</span>
+                                </div>
                             </div>
 
                             <div class="flex flex-col gap-3">
@@ -79,13 +105,20 @@
                                          ondragover="allowDrop(event)"
                                          ondrop="drop(event)">
 
-                                        <div class="flex flex-col justify-center min-h-[90px] bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 p-3 hover:border-primary cursor-pointer">
+                                        <div th:classappend="${meal.recipeId == null} ? 'border-chef-orange bg-chef-orange/5' : 'border-nutri-green bg-gray-50'"
+                                             class="flex flex-col justify-center min-h-[90px] rounded-lg border-2 border-dashed p-3 hover:border-primary cursor-pointer transition-colors">
+
                                             <div class="flex justify-between items-start">
                                                 <p class="text-xs font-bold text-soft-grey uppercase" th:text="${meal.type}">Breakfast</p>
                                                 <span class="text-[10px] text-gray-400 meal-cal" th:text="${meal.calories + ' kcal'}"></span>
                                             </div>
+
                                             <p class="text-sm font-bold text-dark-ink mt-1 line-clamp-2 meal-name" 
                                                th:text="${meal.recipeName}">Recipe Name</p>
+
+                                            <p th:if="${meal.recipeId == null}" class="text-xs text-chef-orange mt-1 italic">
+                                                Drag a recipe here
+                                            </p>
 
                                             <input type="hidden" class="input-recipe-id" th:name="|days[${dayStat.index}].meals[${mealStat.index}].recipeId|" th:value="${meal.recipeId}">
                                             <input type="hidden" class="input-recipe-name" th:name="|days[${dayStat.index}].meals[${mealStat.index}].recipeName|" th:value="${meal.recipeName}">
@@ -96,7 +129,6 @@
                                             <span class="text-primary font-bold text-sm">Drop to Replace</span>
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -141,11 +173,15 @@
                     card.ondragstart = (e) => drag(e, r);
 
                     card.innerHTML = `
-                        <img src="${r.image}" class="w-10 h-10 rounded-full object-cover bg-gray-100">
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-dark-ink line-clamp-1">${r.name}</span>
+                        <img src="${r.image}" 
+                             class="w-10 h-10 rounded-full object-cover bg-gray-100 cursor-pointer hover:opacity-80"
+                             onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
+                             
+                        <div class="flex flex-col cursor-pointer" onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
+                            <span class="text-sm font-bold text-dark-ink line-clamp-1 hover:text-primary transition-colors">${r.name}</span>
                             <span class="text-xs text-gray-500">${r.calories} kcal</span>
                         </div>
+                        
                         <span class="material-symbols-outlined text-gray-300 ml-auto text-lg">drag_indicator</span>
                     `;
                     container.appendChild(card);
@@ -211,6 +247,14 @@
                 const newCal = parseInt(data.calories) || 0;
                 calInput.value = newCal;
 
+                const cardDiv = slot.querySelector('div.flex.flex-col');
+                cardDiv.classList.remove('border-chef-orange', 'bg-chef-orange/5');
+                cardDiv.classList.add('border-nutri-green', 'bg-gray-50');
+
+                const hintText = cardDiv.querySelector('p.text-chef-orange');
+                if (hintText)
+                    hintText.remove();
+
                 // Tính lại tổng calo của ngày đó
                 updateDailyTotal(slot.dataset.dayIndex, oldCal, newCal);
 
@@ -224,13 +268,22 @@
         function updateDailyTotal(dayIndex, oldCal, newCal) {
             const badge = document.getElementById(`cal-day-${dayIndex}`);
             let currentTotal = parseInt(badge.getAttribute('data-value'));
+            const target = /*[[${targetCalories}]]*/ 2000; // Lấy biến từ Thymeleaf
 
             currentTotal = currentTotal - oldCal + newCal;
 
+            // Cập nhật lại attribute
             badge.setAttribute('data-value', currentTotal);
-            badge.textContent = currentTotal + ' kcal';
 
-            // Hiệu ứng đổi màu nếu calo thay đổi
+            // Cập nhật lại Text theo format "Current / Target kcal"
+            badge.innerHTML = `
+                <span>${currentTotal}</span>
+                <span class="text-gray-400 mx-0.5">/</span>
+                <span class="text-gray-500 dark:text-gray-400">${target}</span>
+                <span class="ml-0.5">kcal</span>
+            `;
+
+            // Hiệu ứng Visual
             badge.classList.add('bg-yellow-100', 'text-yellow-700');
             setTimeout(() => {
                 badge.classList.remove('bg-yellow-100', 'text-yellow-700');
@@ -239,21 +292,172 @@
         }
 
         function savePlan() {
-            // Logic gửi form hoặc json về server để lưu plan cuối cùng
             Swal.fire({
                 title: 'Save Changes?',
-                text: 'Your customized plan will be saved.',
+                text: 'Your customized plan will be saved to your account starting from tomorrow.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Save',
                 confirmButtonColor: '#4cae4f'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Collect data and POST
-                    // ... (Code thu thập dữ liệu từ các hidden input và gửi Ajax)
-                    ZaderToast.success("Plan saved! (Demo)");
+                    // 1. Thu thập dữ liệu từ HTML
+                    const days = [];
+                    // Lặp qua từng cột ngày (Monday, Tuesday...)
+                    document.querySelectorAll('.weekly-day-card').forEach((dayCard, index) => {
+                        const dayName = dayCard.querySelector('h3').innerText;
+                        const totalCal = parseInt(dayCard.querySelector('.total-cal-badge').getAttribute('data-value')) || 0;
+
+                        const meals = [];
+                        // Lặp qua từng món trong ngày
+                        dayCard.querySelectorAll('.meal-slot').forEach(slot => {
+                            const type = slot.getAttribute('data-meal-type');
+                            const recipeId = slot.querySelector('.input-recipe-id').value;
+                            const recipeName = slot.querySelector('.input-recipe-name').value;
+                            const calories = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
+
+                            meals.push({
+                                type: type,
+                                recipeId: recipeId ? parseInt(recipeId) : null,
+                                recipeName: recipeName,
+                                calories: calories
+                            });
+                        });
+
+                        days.push({
+                            dayName: dayName,
+                            totalCalories: totalCal,
+                            meals: meals
+                        });
+                    });
+
+                    const payload = {days: days};
+
+                    // 2. Gửi về Server
+                    fetch('/meal-plan/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                                    // Thêm CSRF token nếu project có bật CSRF protection
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                            .then(response => {
+                                if (response.ok) {
+                                    ZaderToast.success("Plan saved successfully!");
+                                    // Có thể redirect về trang quản lý lịch ăn
+                                    // window.location.href = '/user/meal-plans'; 
+                                } else {
+                                    ZaderToast.error("Failed to save plan.");
+                                }
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                ZaderToast.error("Network error.");
+                            });
                 }
             });
+        }
+
+
+        // === CLIENT-SIDE SEARCH LOGIC ===
+
+        // 1. Biến toàn cục chứa danh sách gốc
+        let allRecipesGlobal = [];
+
+        // 2. Hàm khởi tạo: Chạy ngay khi load trang
+        document.addEventListener('DOMContentLoaded', async function () {
+            await fetchAllRecipes();
+        });
+
+        async function fetchAllRecipes() {
+            const container = document.getElementById('miniSearchResults');
+            container.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Loading recipes...</p>';
+
+            try {
+                // Gọi API lấy toàn bộ danh sách
+                const response = await fetch('/recipes/all-mini');
+                if (response.ok) {
+                    allRecipesGlobal = await response.json();
+
+                    // Render lần đầu (hiện tất cả hoặc rỗng tùy bạn)
+                    renderRecipes(allRecipesGlobal);
+                } else {
+                    container.innerHTML = '<p class="text-center text-xs text-red-400">Failed to load data.</p>';
+                }
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<p class="text-center text-xs text-red-400">Connection error.</p>';
+            }
+        }
+
+        // 3. Hàm Lọc (Search Local)
+        function performLocalSearch() {
+            const keyword = document.getElementById('miniSearchKeyword').value.toLowerCase();
+            const maxCal = parseInt(document.getElementById('miniSearchCal').value) || 2000;
+
+            // Lọc mảng trong bộ nhớ máy khách
+            const filtered = allRecipesGlobal.filter(r => {
+                const matchesName = r.name.toLowerCase().includes(keyword);
+                const matchesCal = r.calories <= maxCal;
+                return matchesName && matchesCal;
+            });
+
+            renderRecipes(filtered);
+        }
+
+        // 4. Hàm Render ra HTML
+        function renderRecipes(recipeList) {
+            const container = document.getElementById('miniSearchResults');
+            container.innerHTML = ''; // Clear previous results
+
+            if (recipeList.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">No recipes match.</p>';
+                return;
+            }
+
+            recipeList.forEach(r => {
+                const card = document.createElement('div');
+
+                // --- Style & Drag Attributes ---
+                card.className = "relative flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-sm transition-all active:cursor-grabbing group";
+                card.draggable = true;
+
+                // Attach Drag Event
+                card.ondragstart = (e) => drag(e, r);
+
+                // --- HTML Content ---
+                // We add an <a> tag wrapping the image or a specific view button
+                card.innerHTML = `
+                <div class="relative w-10 h-10 shrink-0 group/img cursor-pointer">
+                    <img src="${r.image}" 
+                         class="w-full h-full rounded-full object-cover bg-gray-100" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=No+Img'"
+                         onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')"> <div class="absolute inset-0 bg-black/20 rounded-full hidden group-hover/img:flex items-center justify-center pointer-events-none">
+                        <span class="material-symbols-outlined text-white text-[10px]">visibility</span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col min-w-0 flex-1 cursor-pointer" onclick="window.open('/recipes/detail/${r.recipeId}', '_blank')">
+                    <span class="text-xs font-bold text-dark-ink truncate w-full group-hover:text-primary transition-colors" title="${r.name}">${r.name}</span>
+                    <span class="text-[10px] text-gray-500">${r.calories || 0} kcal</span>
+                </div>
+                
+                <span class="material-symbols-outlined text-gray-300 text-base" title="Drag to plan">drag_indicator</span>
+            `;
+                container.appendChild(card);
+            });
+        }
+
+        // 5. Kết nối sự kiện vào Input HTML
+        // (Thay thế debounceSearch cũ bằng hàm này)
+        function onSearchInput() {
+            performLocalSearch();
+        }
+
+        function onCalorieChange(val) {
+            document.getElementById('calLabel').textContent = val;
+            performLocalSearch();
         }
     </script>
 </body>

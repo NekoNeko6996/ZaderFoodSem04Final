@@ -39,6 +39,13 @@ public class AiFoodService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private RestTemplate getRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(60000);
+        factory.setReadTimeout(600000); // 10 phút
+        return new RestTemplate(factory);
+    }
+
     public AiFoodResponse analyzeFood(String textDescription, MultipartFile imageFile) {
         try {
             // 1. Chuyển ảnh sang Base64
@@ -129,14 +136,6 @@ public class AiFoodService {
         return response;
     }
 
-    // Config RestTemplate Timeout
-    private RestTemplate getRestTemplate() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(60000);
-        factory.setReadTimeout(300000);
-        return new RestTemplate(factory);
-    }
-
     public WeeklyPlanDTO generateWeeklyPlan(int calories, String dietType, String goal) {
         try {
             // 1. Lấy dữ liệu: Giới hạn 40 món để giảm tải và tránh AI bị "ngáo" vì quá nhiều text
@@ -158,31 +157,38 @@ public class AiFoodService {
                     .collect(Collectors.joining(", "));
 
             // 3. PROMPT (Đã cập nhật Strict Mode)
+            // 3. PROMPT (Đã cập nhật yêu cầu tính toán Calo)
             String promptText = String.format(
                     "Role: Nutritionist API. \n"
                     + "Context: I have these recipes: [%s].\n"
                     + "Task: Create a 7-day meal plan (Monday to Sunday) using ONLY the provided recipes.\n"
                     + "Constraints: \n"
-                    + "1. User Diet: '%s'. Target: %d kcal/day. Goal: %s.\n"
-                    + "2. OUTPUT FULL JSON ONLY. Do NOT use markdown. Do NOT use '...'. Do NOT truncate.\n"
-                    + "3. Ensure the JSON structure is exactly:\n"
+                    + "1. User Diet: '%s'. Goal: %s.\n"
+                    + "2. CALORIE TARGET: %d kcal/day. You MUST select 3 meals (Breakfast, Lunch, Dinner) such that their SUM is approximately equal to the target (allow +/- 200 kcal variance). Do NOT just pick random recipes.\n"
+                    + "3. OUTPUT FULL JSON ONLY. Do NOT use markdown. Do NOT use '...'. Do NOT truncate.\n"
+                    + "4. Ensure the JSON structure is exactly:\n"
                     + "{ \"days\": [ \n"
                     + "  { \"dayName\": \"Monday\", \"totalCalories\": 0, \"meals\": [ \n"
-                    + "    { \"type\": \"Breakfast\", \"recipeId\": 123, \"recipeName\": \"Exact Name From List\", \"calories\": 0 }, \n"
-                    + "    { \"type\": \"Lunch\", \"recipeId\": 456, \"recipeName\": \"...\", \"calories\": 0 }, \n"
-                    + "    { \"type\": \"Dinner\", \"recipeId\": 789, \"recipeName\": \"...\", \"calories\": 0 } \n"
+                    + "    { \"type\": \"Breakfast\", \"recipeId\": 123, \"recipeName\": \"Name\", \"calories\": 0 }, \n"
+                    + "    { \"type\": \"Lunch\", \"recipeId\": 456, \"recipeName\": \"Name\", \"calories\": 0 }, \n"
+                    + "    { \"type\": \"Dinner\", \"recipeId\": 789, \"recipeName\": \"Name\", \"calories\": 0 } \n"
                     + "  ] },\n"
                     + "  ... (Repeat for all 7 days) ... \n"
                     + "] }",
-                    recipeContext, dietType, calories, goal
+                    recipeContext, dietType, goal, calories // Lưu ý thứ tự tham số: calories nằm ở vị trí %d
             );
 
             // 4. Payload
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", "llama3"); // Đảm bảo bạn đang dùng model text (llama3)
+            requestBody.put("model", "llama3");
             requestBody.put("prompt", promptText);
             requestBody.put("stream", false);
-            requestBody.put("options", Map.of("num_ctx", 8192, "temperature", 0.6)); // Giảm nhiệt độ để AI bớt sáng tạo linh tinh
+
+            requestBody.put("options", Map.of(
+                    "num_ctx", 8192, // Bộ nhớ ngữ cảnh tối đa của Llama3 (8k)
+                    "num_predict", -1, // [QUAN TRỌNG] -1 nghĩa là KHÔNG GIỚI HẠN (viết đến khi xong thì thôi)
+                    "temperature", 0.5 // Giữ nguyên để AI bớt sáng tạo linh tinh
+            ));
 
             // 5. Gửi Request
             HttpHeaders headers = new HttpHeaders();
@@ -224,7 +230,22 @@ public class AiFoodService {
 
                 if (jsonStart != -1 && jsonEnd != -1) {
                     cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
-                    return objectMapper.readValue(cleanJson, WeeklyPlanDTO.class);
+                    WeeklyPlanDTO dto = objectMapper.readValue(cleanJson, WeeklyPlanDTO.class);
+
+                    if (dto.days != null) {
+                        for (WeeklyPlanDTO.DailyPlan day : dto.days) {
+                            if (day.meals != null) {
+                                int realTotal = 0;
+                                for (WeeklyPlanDTO.Meal meal : day.meals) {
+                                    realTotal += meal.calories;
+                                }
+                                day.totalCalories = realTotal;
+                            }
+                        }
+                    }
+                    // -------------------------------------
+
+                    return dto;
                 }
             }
         } catch (Exception e) {

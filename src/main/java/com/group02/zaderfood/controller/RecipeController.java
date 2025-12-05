@@ -182,4 +182,25 @@ public class RecipeController {
         // Quay lại trang Search và báo thành công
         return "redirect:/recipes/search?success=request_submitted";
     }
+
+    @GetMapping("/all-mini")
+    public ResponseEntity<?> getAllRecipesMini() {
+        // Lấy toàn bộ món ăn (hoặc giới hạn 500 món nếu DB quá lớn sau này)
+        // Lưu ý: Chỉ lấy các trường cần thiết để JSON nhẹ nhất có thể
+        List<Recipe> recipes = recipeRepository.findAll();
+
+        List<Map<String, Object>> result = recipes.stream().map(r -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("recipeId", r.getRecipeId());
+            map.put("name", r.getName()); // Tên để search
+            map.put("calories", r.getTotalCalories()); // Calo để lọc
+            map.put("image", r.getImageUrl() != null ? r.getImageUrl() : "/images/default-food.png");
+
+            // Thêm trường tìm kiếm không dấu (optional - để tìm 'pho' ra 'phở')
+            // map.put("searchString", removeAccents(r.getName()).toLowerCase()); 
+            return map;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
 }
