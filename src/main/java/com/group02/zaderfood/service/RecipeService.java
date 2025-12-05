@@ -134,7 +134,6 @@ public class RecipeService {
                     step.setInstruction(instruction);
                     // step.setMediaUrl(...) // Nếu có upload ảnh bước
                     step.setCreatedAt(LocalDateTime.now());
-                    step.setUpdatedAt(LocalDateTime.now());
 
                     recipeStepRepository.save(step);
                 }
@@ -279,9 +278,6 @@ public class RecipeService {
             item.setCollectionId(collection.getCollectionId());
             item.setRecipeId(recipeId);
             item.setAddedAt(LocalDateTime.now());
-            item.setCreatedAt(LocalDateTime.now());
-            item.setUpdatedAt(LocalDateTime.now());
-            item.setIsDeleted(false);
 
             collectionItemRepository.save(item);
             return true; // Thêm mới thành công

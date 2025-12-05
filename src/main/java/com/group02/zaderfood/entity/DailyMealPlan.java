@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -33,8 +34,18 @@ public class DailyMealPlan implements Serializable {
     @Column(name = "IsGeneratedByAI")
     private Boolean isGeneratedByAI;
 
-    @Column(name = "Notes")
-    private String notes;
+    @Column(name = "Notes", columnDefinition = "NVARCHAR(MAX)")
+    @Nationalized
+    private String notes;   
+    
+    @Column(name = "TotalProtein")
+    private BigDecimal totalProtein;
+
+    @Column(name = "TotalCarbs")
+    private BigDecimal totalCarbs;
+
+    @Column(name = "TotalFat")
+    private BigDecimal totalFat;
 
     @Column(name = "Status")
     @Enumerated(EnumType.STRING)

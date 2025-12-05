@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -27,11 +28,9 @@ public class Review implements Serializable {
     @Column(name = "Rating")
     private Integer rating;
 
-    @Column(name = "Comment")
+    @Column(name = "Comment", columnDefinition = "NVARCHAR(MAX)")
+    @Nationalized
     private String comment;
-
-    @Column(name = "ImageUrl")
-    private String imageUrl;
 
     @Column(name = "CreatedAt")
     private LocalDateTime createdAt;

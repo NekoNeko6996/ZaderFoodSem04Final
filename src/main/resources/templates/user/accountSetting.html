@@ -1,232 +1,260 @@
 <!DOCTYPE html>
 <html class="light" lang="en" xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-        <title>Account Settings - Zader Food</title>
-        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-        <link href="https://fonts.googleapis.com" rel="preconnect"/>
-        <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
-
-        <script>
-            tailwind.config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        colors: {
-                            "primary": "#FF7043",
-                            "chef-orange": "#FF7043",
-                            "background-light": "#FAFAFA",
-                            "smart-white": "#FAFAFA",
-                            "background-dark": "#1a1a1a",
-                            "card-white": "#FFFFFF",
-                            "dark-ink": "#263238",
-                            "soft-grey": "#78909C",
-                            "nutri-green": "#4CAF50",
-                            "deep-forest": "#2E7D32",
-                            "smart-mist": "#CFD8DC",
-                        },
-                        fontFamily: {
-                            "display": ["Plus Jakarta Sans", "sans-serif"]
-                        },
-                    },
-                },
-            }
-        </script>
-        <style>
-            .material-symbols-outlined {
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            }
-        </style>
+    <head th:replace="~{fragments/head :: common-head}">
+        <title>Account Settings - Zader Food</title> 
     </head>
+
     <body class="font-display bg-smart-white dark:bg-background-dark text-dark-ink">
-        <div class="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
 
-            <header class="sticky top-0 z-50 w-full bg-card-white text-dark-ink shadow-md">
-                <div class="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
-                    <a class="flex items-center gap-2" href="#">
-                        <span class="material-symbols-outlined text-4xl text-dark-ink">restaurant_menu</span>
-                        <span class="text-2xl font-bold text-dark-ink">Zader Food</span>
-                    </a>
-                </div>
-            </header>
+    <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
 
-            <main class="flex h-full grow flex-col py-10 md:py-20">
-                <div class="container mx-auto px-4">
-                    <div class="mx-auto flex max-w-4xl flex-col gap-8">
-                        <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em] text-center">Account Settings</h1>
+    <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
 
-                        <div th:if="${successMessage}" class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50" role="alert">
-                            <span class="font-medium">Success!</span> <span th:text="${successMessage}"></span>
-                        </div>
-                        <div th:if="${errorMessage}" class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50" role="alert">
-                            <span class="font-medium">Error!</span> <span th:text="${errorMessage}"></span>
-                        </div>
+    <div class="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
 
-                        <div class="bg-card-white rounded-xl shadow-subtle p-6 md:p-10">
-                            <form th:action="@{/user/settings}" th:object="${userProfileDTO}" method="post">
-                                <div class="flex flex-col gap-8">
+        <main class="flex h-full grow flex-col py-10 md:py-20">
+            <div class="container mx-auto px-4">
+                <div class="mx-auto flex max-w-5xl flex-col gap-8">
+                    <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em] text-center">Account Settings</h1>
 
-                                    <div class="flex flex-col gap-6">
-                                        <h3 class="text-dark-ink text-lg font-bold leading-tight tracking-[-0.015em]">Personal Information</h3>
+                    <div th:if="${successMessage}" class="hidden p-4 mb-2 text-sm text-green-800 rounded-lg bg-green-50 flex items-center gap-2" role="alert">
+                        <span class="material-symbols-outlined text-lg">check_circle</span>
+                        <div><span class="font-medium">Success!</span> <span th:text="${successMessage}"></span></div>
+                    </div>
 
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Full Name</span>
-                                                <input th:field="*{fullName}" class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary" />
-                                            </label>
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Email Address</span>
-                                                <input th:field="*{email}" readonly class="form-input flex w-full min-w-0 flex-1 rounded-lg text-soft-grey bg-gray-100/50 border border-smart-mist h-12 px-4 text-base cursor-not-allowed" />
-                                            </label>
+                    <div class="bg-card-white rounded-xl shadow-subtle p-6 md:p-10">
+                        <form th:action="@{/user/settings}" th:object="${userProfileDTO}" method="post">
+                            <div class="flex flex-col gap-10">
+
+                                <div class="flex flex-col gap-6">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-smart-mist pb-4">
+                                        <div>
+                                            <h3 class="text-dark-ink text-xl font-bold leading-tight">Nutritional Goal & Overview</h3>
+                                            <p class="text-soft-grey text-sm mt-1">Managed by our AI Calculator based on your body metrics.</p>
                                         </div>
-
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Date of Birth</span>
-                                                <input type="date" 
-                                                       th:field="*{birthDate}" 
-                                                       th:value="${userProfileDTO.birthDate}"
-                                                       class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary" />
-                                            </label>
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Gender</span>
-                                                <select th:field="*{gender}" class="form-select flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary">
-                                                    <option value="">Select Gender</option>
-                                                    <option value="MALE">Male</option>
-                                                    <option value="FEMALE">Female</option>
-                                                    <option value="OTHER">Other</option>
-                                                </select>
-                                            </label>
-                                        </div>
-
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Weight (Kg)</span>
-                                                <input type="number" step="0.1" th:field="*{weightKg}" class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base" />
-                                            </label>
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Height (Cm)</span>
-                                                <input type="number" step="0.1" th:field="*{heightCm}" class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base" />
-                                            </label>
-                                        </div>
+                                        <a href="/nutrition/calculator" class="flex items-center justify-center gap-2 rounded-lg bg-nutri-green/10 text-nutri-green border border-nutri-green px-4 py-2 text-sm font-bold hover:bg-nutri-green hover:text-white transition-all">
+                                            <span class="material-symbols-outlined text-lg">calculate</span>
+                                            Re-calculate Needs
+                                        </a>
                                     </div>
 
-                                    <div class="border-t border-gray-200/70 pt-8 flex flex-col gap-6">
-                                        <h3 class="text-dark-ink text-lg font-bold leading-tight tracking-[-0.015em]">Nutritional Goals</h3>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Daily Calorie Target</span>
-                                                <input type="number" th:field="*{calorieGoalPerDay}" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 placeholder:text-soft-grey text-base font-normal leading-normal focus:border-primary transition-colors" />
-                                            </label>
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Activity Level</span>
-                                                <select th:field="*{activityLevel}" class="form-select flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary">
-                                                    <option value="">Select Level</option>
-                                                    <option value="SEDENTARY">Sedentary (Ít vận động)</option>
-                                                    <option value="LIGHTLY_ACTIVE">Lightly Active</option>
-                                                    <option value="MODERATELY_ACTIVE">Moderately Active</option>
-                                                    <option value="VERY_ACTIVE">Very Active</option>
-                                                    <option value="EXTRA_ACTIVE">Extra Active</option>
-                                                </select>
-                                            </label>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-chef-orange/5 to-chef-orange/10 border border-chef-orange/20 p-6">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <div class="p-2 bg-white rounded-full shadow-sm text-chef-orange">
+                                                    <span class="material-symbols-outlined text-xl block">flag</span>
+                                                </div>
+                                                <span class="text-sm font-bold text-dark-ink uppercase tracking-wider">Daily Target</span>
+                                            </div>
+                                            <div class="flex items-baseline gap-1 mt-2">
+                                                <input type="number" th:field="*{calorieGoalPerDay}" 
+                                                       class="bg-transparent border-0 border-b-2 border-chef-orange/50 focus:border-chef-orange focus:ring-0 text-3xl font-black text-chef-orange w-32 p-0 m-0 leading-none placeholder-chef-orange/30" 
+                                                       placeholder="2000">
+                                                <span class="text-sm font-medium text-soft-grey">kcal</span>
+                                            </div>
+                                            <p class="text-xs text-soft-grey mt-3">Target calories to achieve your goal.</p>
+                                        </div>
+
+                                        <div class="relative overflow-hidden rounded-xl bg-gray-50 border border-gray-200 p-6">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <div class="p-2 bg-white rounded-full shadow-sm text-protein-blue">
+                                                    <span class="material-symbols-outlined text-xl block">local_fire_department</span>
+                                                </div>
+                                                <span class="text-sm font-bold text-soft-grey uppercase tracking-wider">TDEE (Maintenance)</span>
+                                            </div>
+                                            <div class="flex items-baseline gap-1 mt-2">
+                                                <span class="text-2xl font-bold text-dark-ink" th:text="${userProfileDTO.tdee != null ? userProfileDTO.tdee : '---'}">---</span>
+                                                <span class="text-xs font-medium text-soft-grey">kcal</span>
+                                            </div>
+                                            <p class="text-xs text-soft-grey mt-3">Energy you burn daily.</p>
+                                            <input type="hidden" th:field="*{tdee}">
+                                        </div>
+
+                                        <div class="relative overflow-hidden rounded-xl bg-gray-50 border border-gray-200 p-6">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <div class="p-2 bg-white rounded-full shadow-sm text-purple-500">
+                                                    <span class="material-symbols-outlined text-xl block">vital_signs</span>
+                                                </div>
+                                                <span class="text-sm font-bold text-soft-grey uppercase tracking-wider">BMR (Basal Rate)</span>
+                                            </div>
+                                            <div class="flex items-baseline gap-1 mt-2">
+                                                <span class="text-2xl font-bold text-dark-ink" th:text="${userProfileDTO.bmr != null ? userProfileDTO.bmr : '---'}">---</span>
+                                                <span class="text-xs font-medium text-soft-grey">kcal</span>
+                                            </div>
+                                            <p class="text-xs text-soft-grey mt-3">Energy burned at rest.</p>
+                                            <input type="hidden" th:field="*{bmr}">
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div class="border-t border-gray-200/70 pt-8 flex flex-col gap-6">
-                                        <h3 class="text-dark-ink text-lg font-bold leading-tight tracking-[-0.015em] pb-1">Dietary Preferences (Select One)</h3>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" th:field="*{dietaryPreference}" value="NONE" class="form-radio h-5 w-5 text-nutri-green border-smart-mist focus:ring-nutri-green/50"/>
-                                                <span class="text-dark-ink text-base">None (Ăn thường)</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" th:field="*{dietaryPreference}" value="VEGAN" class="form-radio h-5 w-5 text-nutri-green border-smart-mist focus:ring-nutri-green/50"/>
-                                                <span class="text-dark-ink text-base">Vegan</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" th:field="*{dietaryPreference}" value="VEGETARIAN" class="form-radio h-5 w-5 text-nutri-green border-smart-mist focus:ring-nutri-green/50"/>
-                                                <span class="text-dark-ink text-base">Vegetarian</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" th:field="*{dietaryPreference}" value="KETO" class="form-radio h-5 w-5 text-nutri-green border-smart-mist focus:ring-nutri-green/50"/>
-                                                <span class="text-dark-ink text-base">Keto</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" th:field="*{dietaryPreference}" value="EAT_CLEAN" class="form-radio h-5 w-5 text-nutri-green border-smart-mist focus:ring-nutri-green/50"/>
-                                                <span class="text-dark-ink text-base">Eat Clean</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" th:field="*{dietaryPreference}" value="LOW_CARB" class="form-radio h-5 w-5 text-nutri-green border-smart-mist focus:ring-nutri-green/50"/>
-                                                <span class="text-dark-ink text-base">Low Carb</span>
-                                            </label>
-                                        </div>
+                                <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
+                                    <h3 class="text-dark-ink text-lg font-bold leading-tight">Personal Information</h3>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Full Name</span>
+                                            <input th:field="*{fullName}" class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" />
+                                        </label>
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Email Address</span>
+                                            <input th:field="*{email}" readonly class="form-input flex w-full rounded-lg text-soft-grey bg-gray-100 border border-smart-mist h-12 px-4 cursor-not-allowed" />
+                                        </label>
                                     </div>
 
-                                    <div class="border-t border-gray-200/70 pt-8 flex flex-col gap-6">
-                                        <h3 class="text-dark-ink text-lg font-bold leading-tight tracking-[-0.015em]">Allergies & Notes</h3>
-                                        <div class="grid grid-cols-1 gap-6">
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Allergies (Ex: Peanuts, Gluten...)</span>
-                                                <textarea th:field="*{allergies}" rows="3" class="form-input flex w-full min-w-0 flex-1 resize-none rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist p-4 text-base focus:border-primary transition-colors"></textarea>
-                                            </label>
-                                        </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                        <label class="flex flex-col gap-2 md:col-span-2">
+                                            <span class="text-dark-ink text-sm font-medium">Date of Birth</span>
+                                            <input type="date" th:field="*{birthDate}" class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" />
+                                        </label>
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Gender</span>
+                                            <select th:field="*{gender}" class="form-select flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary">
+                                                <option value="">Select</option>
+                                                <option value="MALE">Male</option>
+                                                <option value="FEMALE">Female</option>
+                                                <option value="OTHER">Other</option>
+                                            </select>
+                                        </label>
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Activity Level</span>
+                                            <select th:field="*{activityLevel}" class="form-select flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary">
+                                                <option value="SEDENTARY">Sedentary</option>
+                                                <option value="LIGHTLY_ACTIVE">Light Active</option>
+                                                <option value="MODERATELY_ACTIVE">Moderate</option>
+                                                <option value="VERY_ACTIVE">Very Active</option>
+                                                <option value="EXTRA_ACTIVE">Extra Active</option>
+                                            </select>
+                                        </label>
                                     </div>
 
-                                    <div class="border-t border-gray-200/70 pt-8 flex flex-col sm:flex-row-reverse gap-4">
-                                        <button type="submit" class="flex w-full sm:w-auto min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-chef-orange text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-chef-orange/90 transition-colors">
-                                            <span class="truncate">Save Changes</span>
-                                        </button>
-                                        <button type="reset" class="flex w-full sm:w-auto min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-soft-grey text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-soft-grey/90 transition-colors">
-                                            <span class="truncate">Cancel</span>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Weight (Kg)</span>
+                                            <input type="number" step="0.1" th:field="*{weightKg}" class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" />
+                                        </label>
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Height (Cm)</span>
+                                            <input type="number" step="0.1" th:field="*{heightCm}" class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
+                                    <div class="flex flex-col gap-2">
+                                        <h3 class="text-dark-ink text-lg font-bold leading-tight">Dietary Preferences</h3>
+                                        <p class="text-soft-grey text-sm">Select all that apply to help us suggest better recipes.</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-3">
+                                        <th:block th:each="type : ${allDietTypes}">
+                                            <label class="cursor-pointer relative group">
+                                                <input type="checkbox" th:field="*{dietaryPreferences}" th:value="${type}" class="peer sr-only"/>
+                                                <span class="flex items-center justify-center rounded-full border border-smart-mist bg-white px-4 py-2 text-sm font-medium text-soft-grey transition-all 
+                                                      peer-checked:bg-nutri-green peer-checked:text-white peer-checked:border-nutri-green peer-checked:shadow-md
+                                                      group-hover:border-nutri-green/50">
+                                                    <span th:text="${#strings.capitalize(#strings.toLowerCase(type.name().replace('_', ' ')))}">Diet Name</span>
+                                                </span>
+                                            </label>
+                                        </th:block>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
+                                    <h3 class="text-dark-ink text-lg font-bold leading-tight">Allergies & Notes</h3>
+                                    <label class="flex flex-col gap-2">
+                                        <span class="text-dark-ink text-sm font-medium">Allergies (Separated by comma)</span>
+                                        <textarea th:field="*{allergies}" rows="3" placeholder="e.g. Peanuts, Shellfish, Dairy..." 
+                                                  class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist p-4 focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
+                                    </label>
+                                </div>
+
+                                <div class="pt-8 flex flex-col sm:flex-row-reverse gap-4">
+                                    <button type="submit" class="flex w-full sm:w-auto min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-chef-orange text-white text-base font-bold shadow-lg shadow-chef-orange/20 hover:bg-chef-orange/90 hover:shadow-xl transition-all">
+                                        Save Changes
+                                    </button>
+                                    <button type="reset" class="flex w-full sm:w-auto min-w-[100px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-gray-100 text-soft-grey text-base font-bold hover:bg-gray-200 transition-all">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div id="security-section" class="border-t border-gray-200 pt-10 mt-10">
+                            <h3 class="text-dark-ink text-lg font-bold mb-6 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-soft-grey">lock</span>
+                                Security & Password
+                            </h3>
+                            <form th:action="@{/user/change-password}" th:object="${changePasswordDTO}" method="post">
+                                <div class="flex flex-col gap-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Current Password</span>
+                                            <input type="password" th:field="*{currentPassword}" required class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" placeholder="••••••••"/>
+                                        </label>
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">New Password</span>
+                                            <input type="password" th:field="*{newPassword}" required class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" placeholder="••••••••"/>
+                                        </label>
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Confirm Password</span>
+                                            <input type="password" th:field="*{confirmPassword}" required class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary" placeholder="••••••••"/>
+                                        </label>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit" class="flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-dark-ink text-white text-base font-bold hover:bg-black transition-all">
+                                            Update Password
                                         </button>
                                     </div>
                                 </div>
                             </form>
-                            </form> 
-                            <div class="border-t border-gray-200/70 pt-8 mt-8">
-                                <h3 class="text-dark-ink text-lg font-bold leading-tight tracking-[-0.015em] mb-6">Security & Password</h3>
-                                <form th:action="@{/user/change-password}" th:object="${changePasswordDTO}" method="post">
-                                    <div class="flex flex-col gap-6">
-
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Current Password</span>
-                                                <input type="password" th:field="*{currentPassword}" required
-                                                       class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary transition-colors" 
-                                                       placeholder="••••••••"/>
-                                            </label>
-
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">New Password</span>
-                                                <input type="password" th:field="*{newPassword}" required
-                                                       class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary transition-colors" 
-                                                       placeholder="••••••••"/>
-                                            </label>
-
-                                            <label class="flex flex-col gap-2">
-                                                <span class="text-dark-ink text-sm font-medium leading-normal">Confirm New Password</span>
-                                                <input type="password" th:field="*{confirmPassword}" required
-                                                       class="form-input flex w-full min-w-0 flex-1 rounded-lg text-dark-ink bg-card-white focus:ring-primary border border-smart-mist h-12 px-4 text-base focus:border-primary transition-colors" 
-                                                       placeholder="••••••••"/>
-                                            </label>
-                                        </div>
-
-                                        <div class="flex flex-col sm:flex-row-reverse gap-4">
-                                            <button type="submit" 
-                                                    class="flex w-full sm:w-auto min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-dark-ink text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-dark-ink/90 transition-colors">
-                                                <span class="truncate">Update Password</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>  
-                        </div>
+                        </div>  
                     </div>
                 </div>
-            </main>
-        </div>
-    </body>
+            </div>
+        </main>
+
+        <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+    </div>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            /* * NHẬN DỮ LIỆU TỪ CONTROLLER
+             * Thymeleaf sẽ điền giá trị vào các biến này khi render server-side
+             */
+            const msgSuccess = /*[[${success}]]*/ null;      // Lấy từ redirectAttributes.addFlashAttribute("success",...)
+            const msgError = /*[[${error}]]*/ null;          // Lấy từ redirectAttributes.addFlashAttribute("error",...)
+            const swalData = /*[[${swal}]]*/ null;           // Lấy data SweetAlert nếu có
+
+            // 1. XỬ LÝ TOAST (Thông báo góc phải)
+            if (msgSuccess) {
+                // Nếu ZaderToast đã được define ở file toast.html
+                if (typeof ZaderToast !== 'undefined') {
+                    ZaderToast.success(msgSuccess);
+                } else {
+                    console.warn("ZaderToast chưa được load");
+                }
+            }
+
+            if (msgError) {
+                if (typeof ZaderToast !== 'undefined') {
+                    ZaderToast.error(msgError);
+                }
+            }
+
+            // 2. XỬ LÝ SWEETALERT (Popup to giữa màn hình)
+            // Dùng cái này khi muốn thông báo quan trọng (VD: Đổi pass xong bắt đăng nhập lại)
+            if (swalData) {
+                Swal.fire({
+                    title: swalData.title || 'Thông báo',
+                    text: swalData.text || '',
+                    icon: swalData.icon || 'info',
+                    confirmButtonColor: '#FF7043', // Màu Chef Orange
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
+</body>
 </html>

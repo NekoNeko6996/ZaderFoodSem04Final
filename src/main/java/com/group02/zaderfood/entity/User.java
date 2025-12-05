@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -21,12 +22,14 @@ public class User implements Serializable {
     private Integer userId;
 
     @Column(name = "Email")
+    @Nationalized
     private String email;
 
     @Column(name = "PasswordHash")
     private String passwordHash;
 
     @Column(name = "FullName")
+    @Nationalized
     private String fullName;
 
     @Column(name = "Role")

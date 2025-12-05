@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 @NoArgsConstructor
@@ -29,9 +30,11 @@ public class RecipeIngredient implements Serializable {
     private BigDecimal quantity;
 
     @Column(name = "Unit")
+    @Nationalized
     private String unit;
 
-    @Column(name = "Note")
+    @Column(name = "Note", columnDefinition = "NVARCHAR(MAX)")
+    @Nationalized
     private String note;
 
     @Column(name = "CreatedAt")
