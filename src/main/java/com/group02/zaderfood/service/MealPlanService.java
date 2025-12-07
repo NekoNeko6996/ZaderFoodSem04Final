@@ -19,9 +19,11 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class MealPlanService {
@@ -41,79 +43,97 @@ public class MealPlanService {
 
     @Transactional
     public void saveWeeklyPlan(Integer userId, SavePlanDTO dto) {
-        // Mặc định ngày bắt đầu là ngày mai (nếu AI trả về thứ chung chung)
         LocalDate defaultStartDate = LocalDate.now().plusDays(1);
         int dayOffset = 0;
 
         for (SavePlanDTO.DayPlan dayDto : dto.days) {
-            // 1. XÁC ĐỊNH NGÀY (PlanDate)
+            // 1. XÁC ĐỊNH NGÀY
             LocalDate planDate;
             try {
-                // Cố gắng parse chuỗi "Friday 06/12"
                 planDate = parseDateFromLabel(dayDto.dayName);
             } catch (Exception e) {
-                // Fallback: Nếu không parse được (VD: "Monday"), dùng logic cộng dồn ngày
                 planDate = defaultStartDate.plusDays(dayOffset++);
             }
 
-            // 2. XỬ LÝ LƯU ĐÈ (Overwrite)
-            // Kiểm tra xem user đã có plan cho ngày này chưa
-            Optional<DailyMealPlan> existingPlan = dailyRepo.findByUserIdAndPlanDate(userId, planDate);
+            // 2. XỬ LÝ DAILY MEAL PLAN (UPDATE HOẶC INSERT)
+            DailyMealPlan dailyPlan;
+            Optional<DailyMealPlan> existingPlanOpt = dailyRepo.findByUserIdAndPlanDate(userId, planDate);
 
-            if (existingPlan.isPresent()) {
-                // Nếu có, xóa các món ăn cũ của plan đó đi
-                // (Lưu ý: Bạn cần thêm method deleteByMealPlanId trong MealItemRepository hoặc dùng logic dưới)
-                List<MealItem> oldItems = itemRepo.findByMealPlanId(existingPlan.get().getMealPlanId());
-                itemRepo.deleteAll(oldItems);
-
-                // Xóa luôn header plan cũ để tạo mới cho sạch (hoặc update tùy logic, ở đây chọn xóa lưu mới)
-                dailyRepo.delete(existingPlan.get());
-                dailyRepo.flush(); // Đẩy lệnh xóa xuống DB ngay
+            if (existingPlanOpt.isPresent()) {
+                // CASE: UPDATE (Giữ nguyên ID cũ)
+                dailyPlan = existingPlanOpt.get();
+                dailyPlan.setTotalCalories(BigDecimal.valueOf(dayDto.totalCalories));
+                dailyPlan.setUpdatedAt(LocalDateTime.now());
+                // Không xóa, chỉ update thông tin cần thiết
+            } else {
+                // CASE: INSERT MỚI
+                dailyPlan = DailyMealPlan.builder()
+                        .userId(userId)
+                        .planDate(planDate)
+                        .totalCalories(BigDecimal.valueOf(dayDto.totalCalories))
+                        .status(PlanStatus.PLANNED)
+                        .isGeneratedByAI(true)
+                        .createdAt(LocalDateTime.now())
+                        .build();
             }
 
-            // 3. TẠO PLAN MỚI
-            // Biến tổng dinh dưỡng
+            // Lưu DailyPlan (Save sẽ tự hiểu update nếu có ID, insert nếu chưa)
+            dailyPlan = dailyRepo.save(dailyPlan);
+
+            // 3. TÍNH TOÁN MACROS TỔNG HỢP
             BigDecimal dailyProtein = BigDecimal.ZERO;
             BigDecimal dailyCarbs = BigDecimal.ZERO;
             BigDecimal dailyFat = BigDecimal.ZERO;
 
-            DailyMealPlan dailyPlan = DailyMealPlan.builder()
-                    .userId(userId)
-                    .planDate(planDate)
-                    .totalCalories(BigDecimal.valueOf(dayDto.totalCalories))
-                    .status(PlanStatus.PLANNED)
-                    .isGeneratedByAI(true)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            dailyPlan = dailyRepo.save(dailyPlan);
-
-            // 4. LƯU MÓN ĂN (Meal Items)
+            // 4. XỬ LÝ MEAL ITEMS (SMART UPDATE)
             if (dayDto.meals != null) {
+                // Lấy danh sách cũ từ DB để so sánh
+                List<MealItem> dbItems = itemRepo.findByMealPlanId(dailyPlan.getMealPlanId());
+
+                // Map để tra cứu nhanh theo ID
+                Map<Integer, MealItem> dbItemMap = dbItems.stream()
+                        .collect(Collectors.toMap(MealItem::getMealItemId, item -> item));
+
+                List<Integer> processedIds = new ArrayList<>(); // Danh sách ID đã được xử lý
                 int orderIndex = 1;
+
                 for (SavePlanDTO.MealItemDTO mealDto : dayDto.meals) {
                     if (mealDto.recipeName == null || mealDto.recipeName.isEmpty()) {
                         continue;
                     }
 
-                    MealItem item = MealItem.builder()
-                            .mealPlanId(dailyPlan.getMealPlanId())
-                            .recipeId(mealDto.recipeId)
-                            .customDishName(mealDto.recipeName)
-                            .calories(BigDecimal.valueOf(mealDto.calories))
-                            .mealTimeType(mapMealType(mealDto.type))
-                            .quantityMultiplier(BigDecimal.ONE)
-                            .orderIndex(orderIndex++)
-                            .createdAt(LocalDateTime.now())
-                            .build();
+                    MealItem itemToSave;
 
-                    itemRepo.save(item);
+                    // A. KIỂM TRA CÓ ID GỬI LÊN KHÔNG?
+                    if (mealDto.mealItemId != null && dbItemMap.containsKey(mealDto.mealItemId)) {
+                        // UPDATE: Lấy entity cũ ra sửa
+                        itemToSave = dbItemMap.get(mealDto.mealItemId);
+                        processedIds.add(mealDto.mealItemId); // Đánh dấu ID này còn dùng
+                    } else {
+                        // INSERT: Tạo mới
+                        itemToSave = new MealItem();
+                        itemToSave.setMealPlanId(dailyPlan.getMealPlanId());
+                        itemToSave.setCreatedAt(LocalDateTime.now());
+                        itemToSave.setIsCustomEntry(false);
+                        itemToSave.setIsDeleted(false);
+                    }
 
-                    // Cộng dồn Macros
+                    // B. GÁN DỮ LIỆU MỚI
+                    itemToSave.setRecipeId(mealDto.recipeId);
+                    itemToSave.setCustomDishName(mealDto.recipeName);
+                    itemToSave.setCalories(BigDecimal.valueOf(mealDto.calories));
+                    itemToSave.setMealTimeType(mapMealType(mealDto.type));
+                    itemToSave.setQuantityMultiplier(BigDecimal.ONE);
+                    itemToSave.setOrderIndex(orderIndex++);
+                    itemToSave.setUpdatedAt(LocalDateTime.now());
+
+                    itemRepo.save(itemToSave);
+
+                    // C. CỘNG DỒN MACROS
                     if (mealDto.recipeId != null) {
                         Recipe r = recipeRepo.findById(mealDto.recipeId).orElse(null);
                         if (r != null) {
-                            recipeService.calculateRecipeMacros(r); // Tính toán on-the-fly
+                            recipeService.calculateRecipeMacros(r);
                             if (r.getProtein() != null) {
                                 dailyProtein = dailyProtein.add(r.getProtein());
                             }
@@ -126,9 +146,16 @@ public class MealPlanService {
                         }
                     }
                 }
+
+                // D. DELETE: Xóa những item cũ không còn trong danh sách mới
+                for (MealItem dbItem : dbItems) {
+                    if (!processedIds.contains(dbItem.getMealItemId())) {
+                        itemRepo.delete(dbItem);
+                    }
+                }
             }
 
-            // Update lại tổng Macros cho ngày
+            // 5. CẬP NHẬT MACROS CHO DAILY PLAN
             dailyPlan.setTotalProtein(dailyProtein);
             dailyPlan.setTotalCarbs(dailyCarbs);
             dailyPlan.setTotalFat(dailyFat);
@@ -137,7 +164,7 @@ public class MealPlanService {
     }
 
     // Helper: Parse chuỗi "Friday 06/12" thành LocalDate
-    private LocalDate parseDateFromLabel(String label) {
+    public LocalDate parseDateFromLabel(String label) {
         // Regex tìm mẫu "dd/MM"
         Pattern pattern = Pattern.compile("(\\d{1,2})/(\\d{1,2})");
         Matcher matcher = pattern.matcher(label);
@@ -186,18 +213,31 @@ public class MealPlanService {
             dayDto.totalCalories = dp.getTotalCalories().intValue();
             dayDto.meals = new ArrayList<>();
 
+            // [FIX 1: ĐƯA RA NGOÀI VÒNG LẶP]
+            // Gán giá trị mặc định cho ngày, kể cả khi ngày đó chưa có món ăn nào
+            dayDto.currentSource = "SAVED_DB";
+            dayDto.hasConflict = true;
+            dayDto.altMealsJsonString = "[]";
+
             List<MealItem> items = itemRepo.findByMealPlanId(dp.getMealPlanId());
             for (MealItem item : items) {
+                // Kiểm tra an toàn
+                if (item == null) {
+                    continue;
+                }
+
                 WeeklyPlanDTO.Meal mealDto = new WeeklyPlanDTO.Meal();
+                mealDto.mealItemId = item.getMealItemId();
                 mealDto.recipeId = item.getRecipeId();
                 mealDto.recipeName = item.getCustomDishName();
                 mealDto.calories = item.getCalories().intValue();
-                mealDto.type = item.getMealTimeType().name(); // Enum to String
+
+                // [FIX 2: Code gọn gàng hơn, xóa dòng thừa gây lỗi]
+                mealDto.type = (item.getMealTimeType() != null) ? item.getMealTimeType().name() : "BREAKFAST";
+
                 dayDto.meals.add(mealDto);
 
-                dayDto.currentSource = "SAVED_DB"; // Vì đây là xem lịch sử đã lưu
-                dayDto.hasConflict = true;         // Đã lưu thì coi như có conflict nếu muốn sửa
-                dayDto.altMealsJsonString = "[]";
+                // (XÓA các dòng gán dayDto.currentSource ở đây đi)
             }
             dto.days.add(dayDto);
         }

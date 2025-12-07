@@ -101,50 +101,61 @@
                                 </div>
                             </div>
 
-                            <div class="flex flex-col gap-3" th:id="'meals-container-' + ${dayStat.index}">
-                                <div th:each="meal, mealStat : ${day.meals}">
+                            <div class="flex flex-col gap-4" th:id="'meals-container-' + ${dayStat.index}">
 
-                                    <div class="meal-slot relative group transition-all"
-                                         th:data-day-index="${dayStat.index}"
-                                         th:data-meal-type="${meal.type}"
-                                         ondragover="allowDrop(event)"
-                                         ondrop="drop(event)">
-
-                                        <div th:classappend="${meal.recipeId == null} ? 'border-chef-orange bg-chef-orange/5' : 'border-nutri-green bg-gray-50'"
-                                             class="flex flex-col justify-center min-h-[90px] rounded-lg border-2 border-dashed p-3 hover:border-primary cursor-pointer transition-colors">
-
-                                            <div class="flex justify-between items-start">
-                                                <p class="text-xs font-bold text-soft-grey uppercase" th:text="${meal.type}">Breakfast</p>
-                                                <span class="text-[10px] text-gray-400 meal-cal" th:text="${meal.calories + ' kcal'}"></span>
-                                            </div>
-
-                                            <p class="text-sm font-bold text-dark-ink mt-1 line-clamp-2 meal-name" 
-                                               th:text="${meal.recipeName}">Recipe Name</p>
-
-                                            <p th:if="${meal.recipeId == null}" class="text-xs text-chef-orange mt-1 italic">
-                                                Drag a recipe here
-                                            </p>
-
-                                            <input type="hidden" class="input-recipe-id" th:name="|days[${dayStat.index}].meals[${mealStat.index}].recipeId|" th:value="${meal.recipeId}">
-                                            <input type="hidden" class="input-recipe-name" th:name="|days[${dayStat.index}].meals[${mealStat.index}].recipeName|" th:value="${meal.recipeName}">
-                                            <input type="hidden" class="input-recipe-cal" th:name="|days[${dayStat.index}].meals[${mealStat.index}].calories|" th:value="${meal.calories}">
-                                        </div>
-
-                                        <div class="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded-lg hidden pointer-events-none drop-overlay flex items-center justify-center">
-                                            <span class="text-primary font-bold text-sm">Drop to Replace</span>
-                                        </div>
+                                <div class="meal-section flex flex-col gap-2">
+                                    <div class="flex justify-between items-center"> <span class="text-xs font-bold text-gray-400 uppercase">Breakfast</span>
+                                        <button onclick="addMealSlot(this, 'Breakfast')" type="button" 
+                                                class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-dark-ink transition-colors font-bold">
+                                            + Add Item
+                                        </button>
+                                    </div>
+                                    <div class="meal-list-container flex flex-col gap-2" data-type="Breakfast">
+                                        <th:block th:each="meal : ${day.meals}" th:if="${meal != null and (meal.type == 'Breakfast' or meal.type == 'BREAKFAST')}">
+                                            <div th:replace="~{fragments/meal-slot-fragment::mealSlotFragment(${meal}, ${dayStat.index})}"></div>
+                                        </th:block>
                                     </div>
                                 </div>
-                                <div th:if="${day.hasConflict}" class="mt-2 pt-2 border-t border-orange-200 flex justify-center">
-                                    <button type="button" 
-                                            th:onclick="'swapDayData(' + ${dayStat.index} + ')'"
-                                            class="flex items-center gap-2 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors">
-                                        <span class="material-symbols-outlined text-sm">swap_horiz</span>
-                                        <span th:text="${day.currentSource == 'SAVED_DB'} ? 'View New Draft' : 'View Saved Plan'">Swap</span>
-                                    </button>
-
-                                    <input type="hidden" th:id="'alt-data-' + ${dayStat.index}" th:value="${day.altMealsJsonString}" />
+                                <div class="meal-section flex flex-col gap-2 border-t border-dashed border-gray-100 pt-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Lunch</span>
+                                        <button onclick="addMealSlot(this, 'Lunch')" type="button" 
+                                                class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-dark-ink transition-colors font-bold">
+                                            + Add Item
+                                        </button>
+                                    </div>
+                                    <div class="meal-list-container flex flex-col gap-2" data-type="Lunch">
+                                        <th:block th:each="meal : ${day.meals}" th:if="${meal != null and (meal.type == 'Lunch' or meal.type == 'LUNCH')}">
+                                            <div th:replace="~{fragments/meal-slot-fragment::mealSlotFragment(${meal}, ${dayStat.index})}"></div>
+                                        </th:block>
+                                    </div>
                                 </div>
+                                <div class="meal-section flex flex-col gap-2 border-t border-dashed border-gray-100 pt-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Dinner</span>
+                                        <button onclick="addMealSlot(this, 'Dinner')" type="button" 
+                                                class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-dark-ink transition-colors font-bold">
+                                            + Add Item
+                                        </button>
+                                    </div>
+                                    <div class="meal-list-container flex flex-col gap-2" data-type="Dinner">
+                                        <th:block th:each="meal : ${day.meals}" th:if="${meal != null and (meal.type == 'Dinner' or meal.type == 'DINNER')}">
+                                            <div th:replace="~{fragments/meal-slot-fragment::mealSlotFragment(${meal}, ${dayStat.index})}"></div>
+                                        </th:block>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div th:if="${day.hasConflict}" class="mt-2 pt-2 border-t border-orange-200 flex justify-center">
+                                <button type="button" 
+                                        th:onclick="'swapDayData(' + ${dayStat.index} + ')'"
+                                        class="flex items-center gap-2 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors">
+                                    <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                                    <span th:text="${day.currentSource == 'SAVED_DB'} ? 'View New Draft' : 'View Saved Plan'">Swap</span>
+                                </button>
+
+                                <input type="hidden" th:id="'alt-data-' + ${dayStat.index}" 
+                                       th:value="${day.altMealsJsonString}" />
                             </div>
                         </div>
                     </th:block>
@@ -155,7 +166,68 @@
 </main>
 
 <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+<script>
+    // Hàm thêm slot mới
+    function addMealSlot(btn, type) {
+        // Tìm container chứa danh sách món của bữa đó
+        const container = btn.closest('.meal-section').querySelector('.meal-list-container');
 
+        // Lấy dayIndex từ container cha lớn hơn
+        const dayCard = btn.closest('.weekly-day-card');
+        // Tìm một slot bất kỳ để copy dayIndex, hoặc parse từ ID cha nếu có
+        // Đơn giản nhất: Tìm cal-day-X để lấy X
+        const badgeId = dayCard.querySelector('.total-cal-badge').id;
+        const dayIndex = badgeId.replace('cal-day-', '');
+
+        // HTML mẫu cho slot rỗng (Copy từ HTML trên nhưng bỏ Thymeleaf)
+        const newSlot = document.createElement('div');
+        newSlot.className = "meal-slot relative group transition-all mt-2";
+        newSlot.setAttribute('data-day-index', dayIndex);
+        newSlot.setAttribute('data-meal-type', type);
+        newSlot.setAttribute('ondragover', 'allowDrop(event)');
+        newSlot.setAttribute('ondrop', 'drop(event)');
+
+        newSlot.innerHTML = `
+             <input type="hidden" class="input-meal-item-id" value="">
+             <input type="hidden" class="input-recipe-id" value="">
+        
+             <button onclick="removeMealSlot(this)" type="button" 
+                     class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm">
+                 <span class="material-symbols-outlined text-[12px]">close</span>
+             </button>
+             <div class="flex flex-col justify-center min-h-[60px] rounded-lg border-2 border-dashed border-chef-orange bg-chef-orange/5 p-2 hover:border-primary cursor-pointer transition-colors">
+                 <div class="flex justify-between items-start">
+                     <p class="text-sm font-bold text-dark-ink line-clamp-1 meal-name">Drag a recipe here</p>
+                     <span class="text-[10px] text-gray-400 meal-cal">0 kcal</span>
+                 </div>
+                 <p class="text-xs text-chef-orange mt-1 italic hint-text">Empty Slot</p>
+                 <input type="hidden" class="input-recipe-id" value="">
+                 <input type="hidden" class="input-recipe-name" value="Drag a recipe here">
+                 <input type="hidden" class="input-recipe-cal" value="0">
+             </div>
+             <div class="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded-lg hidden pointer-events-none drop-overlay flex items-center justify-center">
+                <span class="text-primary font-bold text-sm">Drop to Replace</span>
+             </div>
+        `;
+
+        container.appendChild(newSlot);
+    }
+
+    // Hàm xóa slot
+    function removeMealSlot(btn) {
+        const slot = btn.closest('.meal-slot');
+        const dayIndex = slot.getAttribute('data-day-index');
+
+        // Lấy calo của món sắp xóa để trừ đi
+        const cal = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
+
+        // Xóa khỏi DOM
+        slot.remove();
+
+        // Cập nhật lại tổng Calo ngày
+        updateDailyTotal(dayIndex, cal, 0);
+    }
+</script>
 <script th:inline="javascript">
     // 1. Fetch Recipes từ Collection
     async function loadCollectionRecipes(collectionId) {
@@ -339,7 +411,10 @@
                         const recipeName = slot.querySelector('.input-recipe-name').value;
                         const calories = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
 
+                        const mealItemId = slot.querySelector('.input-meal-item-id').value;
+
                         meals.push({
+                            mealItemId: mealItemId ? parseInt(mealItemId) : null,
                             type: type,
                             recipeId: recipeId ? parseInt(recipeId) : null,
                             recipeName: recipeName,
@@ -486,21 +561,21 @@
     // --- SWAP LOGIC (Hoán đổi dữ liệu Cũ/Mới) ---
     function swapDayData(dayIndex) {
         try {
-            // 1. Lấy Container Ngày & Nút bấm
+            // 1. Lấy Elements
             const mealsContainer = document.getElementById(`meals-container-${dayIndex}`);
             const altDataInput = document.getElementById(`alt-data-${dayIndex}`);
             const dayCard = mealsContainer.closest('.weekly-day-card');
-            const swapBtnText = dayCard.querySelector('button span'); // Text của nút Swap
-            const sourceTag = dayCard.querySelector('.flex.flex-col span.text-\\[10px\\]'); // Tag SAVED/NEW
-            const calBadge = document.getElementById(`cal-day-${dayIndex}`); // Badge tổng calo
+            const swapBtnText = dayCard.querySelector('button span:last-child');
+            const sourceTag = dayCard.querySelector('.flex.flex-col span.text-\\[10px\\]');
+            const calBadge = document.getElementById(`cal-day-${dayIndex}`);
 
-            // 2. Thu thập dữ liệu HIỆN TẠI đang hiển thị (Current -> Backup)
+            // 2. Thu thập dữ liệu HIỆN TẠI (Current -> Backup)
             const currentMeals = [];
             mealsContainer.querySelectorAll('.meal-slot').forEach(slot => {
                 const rId = slot.querySelector('.input-recipe-id').value;
                 const rName = slot.querySelector('.input-recipe-name').value;
                 const rCal = parseInt(slot.querySelector('.input-recipe-cal').value) || 0;
-                const type = slot.getAttribute('data-meal-type');
+                const type = slot.getAttribute('data-meal-type'); // Quan trọng: Lấy đúng type
 
                 currentMeals.push({
                     recipeId: rId ? parseInt(rId) : null,
@@ -509,83 +584,105 @@
                     type: type
                 });
             });
-            // Lấy tổng calo hiện tại
-            // Lấy phần tử text đầu tiên (số calo hiện tại) trong badge "1500 / 2000"
-            const currentTotalCal = parseInt(calBadge.innerText.split('/')[0].trim()) || 0;
+            const currentTotalCal = parseInt(calBadge.getAttribute('data-value')) || 0;
 
-
-            // 3. Lấy dữ liệu DỰ PHÒNG từ input ẩn (Backup -> New Current)
+            // 3. Lấy dữ liệu DỰ PHÒNG (Backup -> New Current)
             const altMeals = JSON.parse(altDataInput.value);
-            const altTotalCal = parseInt(dayCard.getAttribute('data-alt-cal')) || 0; // Cần thêm attr này ở HTML nếu chưa có
+            const altTotalCal = parseInt(dayCard.getAttribute('data-alt-cal')) || 0;
 
-
-            // 4. THỰC HIỆN HOÁN ĐỔI (Swap)
-            // A. Cập nhật Input ẩn với dữ liệu vừa thu thập
+            // 4. SWAP DATA
             altDataInput.value = JSON.stringify(currentMeals);
             dayCard.setAttribute('data-alt-cal', currentTotalCal);
 
-            // B. Render lại giao diện với dữ liệu mới (altMeals)
-            mealsContainer.innerHTML = ''; // Xóa cũ
+            // 5. RENDER LẠI UI THEO CẤU TRÚC MỚI (3 SECTIONS)
+            mealsContainer.innerHTML = ''; // Clear cũ
 
-            // Sắp xếp lại altMeals theo thứ tự bữa ăn chuẩn (Breakfast -> Lunch -> Dinner)
-            const order = {'Breakfast': 1, 'Lunch': 2, 'Dinner': 3};
-            altMeals.sort((a, b) => (order[a.type] || 4) - (order[b.type] || 4));
+            // Định nghĩa các bữa ăn
+            const mealTypes = ['Breakfast', 'Lunch', 'Dinner'];
 
-            altMeals.forEach(meal => {
-                // Tạo HTML cho từng meal-slot (Copy cấu trúc từ Thymeleaf xuống đây)
-                const isEmpty = !meal.recipeId;
-                const slotHtml = `
-                    <div class="meal-slot relative group transition-all"
-                         data-day-index="${dayIndex}"
-                         data-meal-type="${meal.type}"
-                         ondragover="allowDrop(event)"
-                         ondrop="drop(event)">
+            mealTypes.forEach((type, index) => {
+                // Lọc các món thuộc bữa này
+                const mealsForType = altMeals.filter(m =>
+                    m.type && m.type.toUpperCase() === type.toUpperCase()
+                );
 
-                        <div class="flex flex-col justify-center min-h-[90px] rounded-lg border-2 border-dashed p-3 hover:border-primary cursor-pointer transition-colors
-                                    ${isEmpty ? 'border-chef-orange bg-chef-orange/5' : 'border-nutri-green bg-gray-50'}">
-                            
-                            <div class="flex justify-between items-start">
-                                <p class="text-xs font-bold text-soft-grey uppercase">${meal.type}</p>
-                                <span class="text-[10px] text-gray-400 meal-cal">${meal.calories} kcal</span>
+                // Tạo Header Section (Có nút Add Item)
+                const section = document.createElement('div');
+                section.className = "meal-section flex flex-col gap-2";
+                if (index > 0)
+                    section.classList.add("border-t", "border-dashed", "border-gray-100", "pt-2");
+
+                const header = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-400 uppercase">${type}</span>
+                        <button onclick="addMealSlot(this, '${type}')" type="button" 
+                                class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-dark-ink transition-colors font-bold">
+                            + Add Item
+                        </button>
+                    </div>
+                    <div class="meal-list-container flex flex-col gap-2" data-type="${type}"></div>
+                `;
+                section.innerHTML = header;
+                mealsContainer.appendChild(section);
+
+                // Render từng món ăn vào list
+                const listContainer = section.querySelector('.meal-list-container');
+
+                mealsForType.forEach(meal => {
+                    const isEmpty = !meal.recipeId;
+                    // HTML cho slot món ăn (Giống hệt addMealSlot nhưng có dữ liệu)
+                    const slotHtml = `
+                        <div class="meal-slot relative group transition-all mt-1"
+                             data-day-index="${dayIndex}"
+                             data-meal-type="${meal.type}"
+                             ondragover="allowDrop(event)"
+                             ondrop="drop(event)">
+
+                            <button onclick="removeMealSlot(this)" type="button" 
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-sm cursor-pointer">
+                                <span class="material-symbols-outlined text-[12px]">close</span>
+                            </button>
+
+                            <div class="flex flex-col justify-center min-h-[60px] rounded-lg border-2 border-dashed p-2 hover:border-primary cursor-pointer transition-colors relative z-10
+                                        ${isEmpty ? 'border-chef-orange bg-chef-orange/5' : 'border-nutri-green bg-gray-50'}">
+                                
+                                <div class="flex justify-between items-start pointer-events-none">
+                                    <p class="text-sm font-bold text-dark-ink line-clamp-1 meal-name">${meal.recipeName}</p>
+                                    <span class="text-[10px] text-gray-400 meal-cal">${meal.calories} kcal</span>
+                                </div>
+                                
+                                ${isEmpty ? '<p class="text-xs text-chef-orange mt-1 italic hint-text pointer-events-none">Drag recipe here</p>' : ''}
+
+                                <input type="hidden" class="input-recipe-id" name="days[${dayIndex}].meals[].recipeId" value="${meal.recipeId || ''}">
+                                <input type="hidden" class="input-recipe-name" name="days[${dayIndex}].meals[].recipeName" value="${meal.recipeName}">
+                                <input type="hidden" class="input-recipe-cal" name="days[${dayIndex}].meals[].calories" value="${meal.calories}">
                             </div>
                             
-                            <p class="text-sm font-bold text-dark-ink mt-1 line-clamp-2 meal-name">${meal.recipeName}</p>
-                            
-                            ${isEmpty ? '<p class="text-xs text-chef-orange mt-1 italic hint-text">Drag a recipe here</p>' : ''}
-
-                            <input type="hidden" class="input-recipe-id" name="days[${dayIndex}].meals[].recipeId" value="${meal.recipeId || ''}">
-                            <input type="hidden" class="input-recipe-name" name="days[${dayIndex}].meals[].recipeName" value="${meal.recipeName}">
-                            <input type="hidden" class="input-recipe-cal" name="days[${dayIndex}].meals[].calories" value="${meal.calories}">
+                            <div class="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded-lg hidden pointer-events-none drop-overlay flex items-center justify-center z-30">
+                                <span class="text-primary font-bold text-sm">Drop to Replace</span>
+                            </div>
                         </div>
-                        
-                        <div class="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed rounded-lg hidden pointer-events-none drop-overlay flex items-center justify-center">
-                            <span class="text-primary font-bold text-sm">Drop to Replace</span>
-                        </div>
-                    </div>
-                `;
-                mealsContainer.insertAdjacentHTML('beforeend', slotHtml);
+                    `;
+                    listContainer.insertAdjacentHTML('beforeend', slotHtml);
+                });
             });
 
-            // 5. Cập nhật Badge Tổng Calo
-            const targetCal = calBadge.innerText.split('/')[1].trim(); // Giữ nguyên target
-            calBadge.innerHTML = `<span>${altTotalCal}</span> / ${targetCal}`;
+            // 6. Cập nhật Badge Tổng Calo & Nút Bấm (Giữ nguyên logic cũ)
+            const targetCalText = calBadge.innerText.split('/')[1].trim();
+            const targetCal = targetCalText.replace('kcal', '').trim(); // Xóa chữ kcal cũ đi
+
+            calBadge.innerHTML = `<span>${altTotalCal}</span> / ${targetCal} kcal`;
             calBadge.setAttribute('data-value', altTotalCal);
 
-            // 6. Đổi Text và Màu Sắc trạng thái
             const currentSource = dayCard.getAttribute('data-current-source');
-
             if (currentSource === 'SAVED_DB') {
-                // Đang là Saved -> Chuyển sang New
-                dayCard.setAttribute('data-current-source', 'NEW_AI'); // Hoặc NEW_MANUAL
+                dayCard.setAttribute('data-current-source', 'NEW_AI');
                 swapBtnText.innerText = 'View Saved Plan';
-
                 sourceTag.innerText = 'NEW DRAFT';
                 sourceTag.className = 'text-[10px] font-bold text-white bg-blue-500 px-2 py-0.5 rounded w-fit';
             } else {
-                // Đang là New -> Chuyển sang Saved
                 dayCard.setAttribute('data-current-source', 'SAVED_DB');
                 swapBtnText.innerText = 'View New Draft';
-
                 sourceTag.innerText = 'SAVED IN DB';
                 sourceTag.className = 'text-[10px] font-bold text-white bg-green-600 px-2 py-0.5 rounded w-fit';
             }

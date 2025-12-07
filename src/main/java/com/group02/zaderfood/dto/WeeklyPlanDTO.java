@@ -1,9 +1,6 @@
 package com.group02.zaderfood.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-// [1] Thêm import này
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 
 public class WeeklyPlanDTO {
@@ -28,7 +25,7 @@ public class WeeklyPlanDTO {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Meal {
-
+        public Integer mealItemId;
         public String type;
         public Integer recipeId;
         public String recipeName;

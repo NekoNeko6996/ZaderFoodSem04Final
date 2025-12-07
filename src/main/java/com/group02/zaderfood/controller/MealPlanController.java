@@ -319,18 +319,45 @@ public class MealPlanController {
     @PostMapping("/save")
     @ResponseBody // Bắt buộc để trả về JSON
     public ResponseEntity<?> savePlan(@RequestBody SavePlanDTO planDto,
-            @AuthenticationPrincipal CustomUserDetails user) {
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpSession session) { // [1] Inject HttpSession
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not logged in"));
         }
 
         try {
-            // Gọi Service để lưu vào DB
+            // 1. Lưu xuống DB (Logic cũ)
             mealPlanService.saveWeeklyPlan(user.getUserId(), planDto);
 
+            // [2] LOGIC MỚI: Cập nhật lại Session để khi reload thấy dữ liệu mới
+            if (planDto.days != null && !planDto.days.isEmpty()) {
+                // Lấy ngày bắt đầu từ ngày đầu tiên trong danh sách gửi lên
+                String firstDayLabel = planDto.days.get(0).dayName;
+
+                try {
+                    // Parse ngày (Gọi hàm public vừa sửa bên Service)
+                    LocalDate startDate = mealPlanService.parseDateFromLabel(firstDayLabel);
+
+                    // Lấy dữ liệu tươi mới từ DB (đã có ID đầy đủ)
+                    WeeklyPlanDTO freshPlan = mealPlanService.getPlanByDate(user.getUserId(), startDate);
+
+                    // Ghi đè vào Session
+                    session.setAttribute("currentWeeklyPlan", freshPlan);
+
+                    // Chuyển trạng thái sang EDIT (để logic hiển thị đúng là Saved Plan)
+                    session.setAttribute("planMode", "EDIT");
+
+                } catch (Exception e) {
+                    // Nếu không parse được ngày (hiếm khi xảy ra), log lỗi nhưng vẫn trả về success cho user đỡ hoang mang
+                    System.err.println("Failed to refresh session after save: " + e.getMessage());
+                }
+            }
+
             return ResponseEntity.ok(Map.of("message", "Plan saved successfully!"));
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("message", "Error saving plan: " + e.getMessage()));
         }
     }
