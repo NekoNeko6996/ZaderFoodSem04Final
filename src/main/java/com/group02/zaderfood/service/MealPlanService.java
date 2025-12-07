@@ -157,7 +157,6 @@ public class MealPlanService {
         throw new IllegalArgumentException("Cannot parse date from label");
     }
 
-
     private MealType mapMealType(String typeStr) {
         if (typeStr == null) {
             return MealType.BREAKFAST;
@@ -195,6 +194,10 @@ public class MealPlanService {
                 mealDto.calories = item.getCalories().intValue();
                 mealDto.type = item.getMealTimeType().name(); // Enum to String
                 dayDto.meals.add(mealDto);
+
+                dayDto.currentSource = "SAVED_DB"; // Vì đây là xem lịch sử đã lưu
+                dayDto.hasConflict = true;         // Đã lưu thì coi như có conflict nếu muốn sửa
+                dayDto.altMealsJsonString = "[]";
             }
             dto.days.add(dayDto);
         }
