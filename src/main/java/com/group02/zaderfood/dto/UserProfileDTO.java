@@ -3,6 +3,7 @@ package com.group02.zaderfood.dto;
 import com.group02.zaderfood.entity.enums.ActivityLevel;
 import com.group02.zaderfood.entity.enums.DietType;
 import com.group02.zaderfood.entity.enums.Gender;
+import com.group02.zaderfood.entity.enums.UserGoal;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,6 +20,7 @@ public class UserProfileDTO {
     private BigDecimal heightCm;    
     private BigDecimal bmr;
     private BigDecimal tdee;
+    private UserGoal goal;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;

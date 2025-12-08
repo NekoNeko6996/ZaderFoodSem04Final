@@ -1,7 +1,10 @@
 package com.group02.zaderfood.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group02.zaderfood.dto.AiFoodResponse;
+import com.group02.zaderfood.dto.DayDetailDTO;
 import com.group02.zaderfood.dto.SavePlanDTO;
+import com.group02.zaderfood.dto.UserProfileDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.DailyMealPlan;
 import com.group02.zaderfood.entity.MealItem;
@@ -15,7 +18,9 @@ import com.group02.zaderfood.repository.UserDietaryPreferenceRepository; // Bạ
 import com.group02.zaderfood.repository.UserProfileRepository;
 import com.group02.zaderfood.service.AiFoodService;
 import com.group02.zaderfood.service.CustomUserDetails;
+import com.group02.zaderfood.service.FileStorageService;
 import com.group02.zaderfood.service.MealPlanService;
+import com.group02.zaderfood.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -26,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpSession;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -38,6 +44,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping("/meal-plan")
@@ -64,6 +71,12 @@ public class MealPlanController {
     @Autowired
     private MealItemRepository itemRepo;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    @Autowired
+    private UserService userService;
+
     private String getDayLabel(LocalDate date) {
         // EEEE: Tên thứ (Monday), dd/MM: Ngày tháng
         return date.format(DateTimeFormatter.ofPattern("EEEE dd/MM"));
@@ -80,35 +93,41 @@ public class MealPlanController {
         String defaultDiet = "Balanced";
         boolean missingData = false;
 
+        // Khởi tạo DTO rỗng để tránh lỗi null bên view nếu user chưa login hoặc lỗi
+        UserProfileDTO userProfileDTO = new UserProfileDTO();
+
         if (currentUser != null) {
-            // A. Lấy thông tin Profile (Calories Goal)
-            UserProfile profile = userProfileRepository.findById(currentUser.getUserId()).orElse(null);
+            try {
+                // 1. Lấy toàn bộ Profile DTO từ Service (Chứa Goal, Diet, BMR, TDEE...)
+                userProfileDTO = userService.getUserProfile(currentUser.getUserId());
 
-            if (profile != null && profile.getCalorieGoalPerDay() != null && profile.getCalorieGoalPerDay() > 0) {
-                defaultCalories = profile.getCalorieGoalPerDay();
-            } else {
-                // Nếu chưa có goal -> Đánh dấu thiếu dữ liệu
-                missingData = true;
-            }
+                // 2. Kiểm tra dữ liệu quan trọng
+                if (userProfileDTO.getCalorieGoalPerDay() != null && userProfileDTO.getCalorieGoalPerDay() > 0) {
+                    defaultCalories = userProfileDTO.getCalorieGoalPerDay();
+                } else {
+                    missingData = true; // Đánh dấu nếu thiếu Calo
+                }
 
-            // B. Lấy thông tin Diet Preference
-            List<UserDietaryPreference> diets = dietaryRepo.findByUserId(currentUser.getUserId());
-            if (!diets.isEmpty()) {
-                // Lấy kiểu ăn đầu tiên tìm thấy (hoặc logic ưu tiên của bạn)
-                defaultDiet = diets.get(0).getDietType().name(); // Giả sử Enum tên khớp value
+                // 3. Lấy Diet (Nếu list không rỗng)
+                if (userProfileDTO.getDietaryPreferences() != null && !userProfileDTO.getDietaryPreferences().isEmpty()) {
+                    // Lấy cái đầu tiên làm mặc định hoặc xử lý chuỗi
+                    defaultDiet = userProfileDTO.getDietaryPreferences().get(0).name();
+                }
+
+                // 4. Lấy lịch sử (History)
+                List<DailyMealPlan> history = mealPlanService.getRecentPlans(currentUser.getUserId());
+                model.addAttribute("planHistory", history);
+
+            } catch (Exception e) {
+                // Nếu lỗi, userProfileDTO vẫn là object rỗng (new UserProfileDTO()) nên không crash view 
             }
         }
 
         // Đẩy dữ liệu ra View
-        model.addAttribute("currentCalories", defaultCalories);
+        model.addAttribute("userProfile", userProfileDTO); // [QUAN TRỌNG] Gửi object này sang generate.html mới
+        model.addAttribute("currentCalories", defaultCalories); // Giữ lại để tương thích logic cũ nếu cần
         model.addAttribute("currentDiet", defaultDiet);
-        model.addAttribute("missingData", missingData); // Cờ để bật SweetAlert
-
-        if (currentUser != null) {
-            // Giả sử bạn có hàm này trong MealPlanService
-            List<DailyMealPlan> history = mealPlanService.getRecentPlans(currentUser.getUserId());
-            model.addAttribute("planHistory", history);
-        }
+        model.addAttribute("missingData", missingData);
 
         return "mealplan/generate";
     }
@@ -319,18 +338,45 @@ public class MealPlanController {
     @PostMapping("/save")
     @ResponseBody // Bắt buộc để trả về JSON
     public ResponseEntity<?> savePlan(@RequestBody SavePlanDTO planDto,
-            @AuthenticationPrincipal CustomUserDetails user) {
+            @AuthenticationPrincipal CustomUserDetails user,
+            HttpSession session) { // [1] Inject HttpSession
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not logged in"));
         }
 
         try {
-            // Gọi Service để lưu vào DB
+            // 1. Lưu xuống DB (Logic cũ)
             mealPlanService.saveWeeklyPlan(user.getUserId(), planDto);
 
+            // [2] LOGIC MỚI: Cập nhật lại Session để khi reload thấy dữ liệu mới
+            if (planDto.days != null && !planDto.days.isEmpty()) {
+                // Lấy ngày bắt đầu từ ngày đầu tiên trong danh sách gửi lên
+                String firstDayLabel = planDto.days.get(0).dayName;
+
+                try {
+                    // Parse ngày (Gọi hàm public vừa sửa bên Service)
+                    LocalDate startDate = mealPlanService.parseDateFromLabel(firstDayLabel);
+
+                    // Lấy dữ liệu tươi mới từ DB (đã có ID đầy đủ)
+                    WeeklyPlanDTO freshPlan = mealPlanService.getPlanByDate(user.getUserId(), startDate);
+
+                    // Ghi đè vào Session
+                    session.setAttribute("currentWeeklyPlan", freshPlan);
+
+                    // Chuyển trạng thái sang EDIT (để logic hiển thị đúng là Saved Plan)
+                    session.setAttribute("planMode", "EDIT");
+
+                } catch (Exception e) {
+                    // Nếu không parse được ngày (hiếm khi xảy ra), log lỗi nhưng vẫn trả về success cho user đỡ hoang mang
+                    System.err.println("Failed to refresh session after save: " + e.getMessage());
+                }
+            }
+
             return ResponseEntity.ok(Map.of("message", "Plan saved successfully!"));
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("message", "Error saving plan: " + e.getMessage()));
         }
     }
@@ -351,5 +397,145 @@ public class MealPlanController {
         session.setAttribute("planMode", "EDIT"); // Đánh dấu là đang sửa
 
         return "redirect:/meal-plan/customize";
+    }
+
+    @GetMapping("/day/{dateStr}")
+    public String showDayDetail(@PathVariable String dateStr,
+            @AuthenticationPrincipal CustomUserDetails user,
+            Model model) {
+        try {
+            LocalDate date = LocalDate.parse(dateStr);
+            DayDetailDTO dayDetail = mealPlanService.getDayDetail(user.getUserId(), date);
+
+            if (dayDetail == null) {
+                return "redirect:/meal-plan/customize";
+            }
+
+            model.addAttribute("dayDetail", dayDetail);
+
+            // --- 1. THIẾT LẬP MẶC ĐỊNH (FALLBACK) ---
+            int targetCalories = 2000;
+            BigDecimal bmr = BigDecimal.ZERO;
+            BigDecimal tdee = BigDecimal.ZERO;
+
+            // Tính mặc định theo tỉ lệ chuẩn (50% Carb - 25% Pro - 25% Fat) nếu DB chưa có
+            // Lưu ý: Tính tạm ở đây dựa trên 2000 kcal, tí nữa sẽ tính lại nếu targetCalories thay đổi
+            int targetProt = 125;
+            int targetCarb = 250;
+            int targetFat = 55;
+
+            // --- 2. LẤY DỮ LIỆU TỪ PROFILE ---
+            if (user != null) {
+                UserProfile profile = userProfileRepository.findById(user.getUserId()).orElse(null);
+                if (profile != null) {
+
+                    // A. Lấy Calo & Chỉ số cơ thể
+                    if (profile.getCalorieGoalPerDay() != null && profile.getCalorieGoalPerDay() > 0) {
+                        targetCalories = profile.getCalorieGoalPerDay();
+
+                        // Recalculate default macros based on new calories (nếu user chưa set macro riêng)
+                        targetProt = (int) ((targetCalories * 0.25) / 4);
+                        targetCarb = (int) ((targetCalories * 0.50) / 4);
+                        targetFat = (int) ((targetCalories * 0.25) / 9);
+                    }
+
+                    if (profile.getBmr() != null) {
+                        bmr = profile.getBmr();
+                    }
+                    if (profile.getTdee() != null) {
+                        tdee = profile.getTdee();
+                    }
+
+                    // B. Lấy Macros Goal (Ưu tiên số user set trong DB)
+                    // (Đảm bảo bạn đã thêm các trường này vào Entity UserProfile như hướng dẫn trước)
+                    if (profile.getProteinGoal() != null) {
+                        targetProt = profile.getProteinGoal();
+                    }
+                    if (profile.getCarbsGoal() != null) {
+                        targetCarb = profile.getCarbsGoal();
+                    }
+                    if (profile.getFatGoal() != null) {
+                        targetFat = profile.getFatGoal();
+                    }
+                }
+            }
+
+            // --- 3. ĐẨY RA VIEW ---
+            model.addAttribute("targetCalories", targetCalories);
+            model.addAttribute("userBMR", bmr);
+            model.addAttribute("userTDEE", tdee);
+
+            // Thêm các biến này để View không cần tự tính toán
+            model.addAttribute("targetProt", targetProt);
+            model.addAttribute("targetCarb", targetCarb);
+            model.addAttribute("targetFat", targetFat);
+
+            return "mealplan/day-detail";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "redirect:/meal-plan/customize";
+        }
+    }
+
+    private BigDecimal parseDecimal(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        try {
+            // Regex tìm số thực (chấp nhận số nguyên và số thập phân 10.5)
+            // Group 1 sẽ bắt được số
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+(\\.\\d+)?)");
+            java.util.regex.Matcher matcher = pattern.matcher(input);
+
+            if (matcher.find()) {
+                String numberStr = matcher.group(1);
+                return new BigDecimal(numberStr);
+            }
+        } catch (Exception e) {
+            // Log lỗi nếu cần
+            System.err.println("Error parsing decimal: " + input);
+        }
+
+        // Trả về 0 nếu không tìm thấy số hoặc lỗi
+        return BigDecimal.ZERO;
+    }
+
+    @PostMapping("/api/meal-item/{itemId}/replace-with-ai")
+    public ResponseEntity<?> replaceMealWithAi(
+            @PathVariable Integer itemId,
+            @RequestParam("image") MultipartFile image,
+            @RequestParam(value = "description", required = false) String description) {
+
+        // 1. Gọi AI phân tích (Tận dụng AiFoodService có sẵn)
+        AiFoodResponse aiResult = aiFoodService.analyzeFood(description, image);
+
+        if (aiResult.getError() != null) {
+            return ResponseEntity.badRequest().body(aiResult.getError());
+        }
+
+        // 2. Cập nhật MealItem trong DB
+        MealItem item = itemRepo.findById(itemId).orElseThrow();
+
+        // Lưu ảnh (Cần service upload ảnh)
+        String imageUrl = fileStorageService.storeFile(image);
+
+        item.setCustomDishName(aiResult.getDishName());
+        item.setCalories(BigDecimal.valueOf(aiResult.getCalories()));
+        item.setProtein(parseDecimal(aiResult.getProtein())); // Cần hàm parse "30g" -> 30
+        item.setCarbs(parseDecimal(aiResult.getCarbs()));
+        item.setFat(parseDecimal(aiResult.getFat()));
+
+        item.setImageUrl(imageUrl);
+        item.setRecipeId(null);     // Món custom không có RecipeId
+        item.setIsCustomEntry(true);
+        item.setStatus("EATEN");    // Đánh dấu đã ăn
+
+        itemRepo.save(item);
+
+        // 3. Tính lại tổng dinh dưỡng ngày (DailyMealPlan)
+        // mealPlanService.recalculateDailyTotals(item.getMealPlanId());
+        return ResponseEntity.ok(Map.of("message", "Updated successfully", "data", item));
     }
 }

@@ -33,6 +33,21 @@ public class MealItem implements Serializable {
 
     @Column(name = "Calories")
     private BigDecimal calories;
+    
+    @Column(name = "Protein")
+    private BigDecimal protein;
+
+    @Column(name = "Carbs")
+    private BigDecimal carbs;
+
+    @Column(name = "Fat")
+    private BigDecimal fat;
+
+    @Column(name = "Status") // Enum: PENDING, EATEN, SKIPPED, REPLACED
+    private String status;
+    
+    @Column(name = "ImageUrl")
+    private String imageUrl;
 
     @Column(name = "MealTimeType")
     @Enumerated(EnumType.STRING)

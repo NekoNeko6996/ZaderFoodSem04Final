@@ -15,7 +15,7 @@
         <main class="flex h-full grow flex-col py-10 md:py-20">
             <div class="container mx-auto px-4">
                 <div class="mx-auto flex max-w-5xl flex-col gap-8">
-                    <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em] text-center">Account Settings</h1>
+                    <h1 class="text-dark-ink text-4xl font-black leading-tight tracking-[-0.033em] text-center">Personal Settings</h1>
 
                     <div th:if="${successMessage}" class="hidden p-4 mb-2 text-sm text-green-800 rounded-lg bg-green-50 flex items-center gap-2" role="alert">
                         <span class="material-symbols-outlined text-lg">check_circle</span>
@@ -27,15 +27,11 @@
                             <div class="flex flex-col gap-10">
 
                                 <div class="flex flex-col gap-6">
-                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-smart-mist pb-4">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
                                         <div>
                                             <h3 class="text-dark-ink text-xl font-bold leading-tight">Nutritional Goal & Overview</h3>
                                             <p class="text-soft-grey text-sm mt-1">Managed by our AI Calculator based on your body metrics.</p>
                                         </div>
-                                        <a href="/nutrition/calculator" class="flex items-center justify-center gap-2 rounded-lg bg-nutri-green/10 text-nutri-green border border-nutri-green px-4 py-2 text-sm font-bold hover:bg-nutri-green hover:text-white transition-all">
-                                            <span class="material-symbols-outlined text-lg">calculate</span>
-                                            Re-calculate Needs
-                                        </a>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -115,16 +111,6 @@
                                                 <option value="OTHER">Other</option>
                                             </select>
                                         </label>
-                                        <label class="flex flex-col gap-2">
-                                            <span class="text-dark-ink text-sm font-medium">Activity Level</span>
-                                            <select th:field="*{activityLevel}" class="form-select flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary">
-                                                <option value="SEDENTARY">Sedentary</option>
-                                                <option value="LIGHTLY_ACTIVE">Light Active</option>
-                                                <option value="MODERATELY_ACTIVE">Moderate</option>
-                                                <option value="VERY_ACTIVE">Very Active</option>
-                                                <option value="EXTRA_ACTIVE">Extra Active</option>
-                                            </select>
-                                        </label>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -159,23 +145,69 @@
                                 </div>
 
                                 <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
+                                    <div class="flex flex-col gap-2">
+                                        <h3 class="text-dark-ink text-lg font-bold leading-tight">Activity Level</h3>
+                                        <p class="text-soft-grey text-sm">
+                                            How active are you on a daily basis?
+                                        </p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-3">
+                                        <th:block th:each="level : ${allActivityLevels}">
+                                            <label class="cursor-pointer relative group"
+                                                   onmouseover="showDescription(this.getAttribute('data-type'), 'activity-helper')"
+                                                   onmouseout="clearDescription('activity-helper')"
+                                                   th:attr="data-type=${level.name()}">
+
+                                                <input type="radio" th:field="*{activityLevel}" th:value="${level}" class="peer sr-only"/>
+
+                                                <span class="flex items-center justify-center rounded-full border border-smart-mist bg-white px-4 py-2 text-sm font-medium text-soft-grey transition-all 
+                                                      peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-600 peer-checked:shadow-md
+                                                      group-hover:border-purple-600/50 group-hover:text-purple-600">
+                                                    <span th:text="${#strings.capitalize(#strings.toLowerCase(level.name().replace('_', ' ')))}">Level Name</span>
+                                                </span>
+                                            </label>
+                                        </th:block>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
+                                    <div class="flex flex-col gap-2">
+                                        <h3 class="text-dark-ink text-lg font-bold leading-tight">Primary Goal</h3>
+                                        <p class="text-soft-grey text-sm">Select your main objective to help AI calculate better plans.</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-3">
+                                        <th:block th:each="goalItem : ${allGoals}">
+                                            <label class="cursor-pointer relative group">
+                                                <input type="radio" th:field="*{goal}" th:value="${goalItem}" class="peer sr-only"/>
+
+                                                <span class="flex items-center justify-center rounded-full border border-smart-mist bg-white px-4 py-2 text-sm font-medium text-soft-grey transition-all 
+                                                      peer-checked:bg-chef-orange peer-checked:text-white peer-checked:border-chef-orange peer-checked:shadow-md
+                                                      group-hover:border-chef-orange/50">
+
+                                                    <span th:text="${#strings.capitalize(#strings.toLowerCase(goalItem.name().replace('_', ' ')))}">Goal Name</span>
+                                                </span>
+                                            </label>
+                                        </th:block>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
                                     <h3 class="text-dark-ink text-lg font-bold leading-tight">Allergies & Notes</h3>
                                     <label class="flex flex-col gap-2">
                                         <span class="text-dark-ink text-sm font-medium">Allergies (Separated by comma)</span>
                                         <textarea th:field="*{allergies}" rows="3" placeholder="e.g. Peanuts, Shellfish, Dairy..." 
                                                   class="form-input flex w-full rounded-lg text-dark-ink bg-card-white border border-smart-mist p-4 focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
                                     </label>
-                                </div>
 
-                                <div class="pt-8 flex flex-col sm:flex-row-reverse gap-4">
-                                    <button type="submit" class="flex w-full sm:w-auto min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-chef-orange text-white text-base font-bold shadow-lg shadow-chef-orange/20 hover:bg-chef-orange/90 hover:shadow-xl transition-all">
-                                        Save Changes
-                                    </button>
-                                    <button type="reset" class="flex w-full sm:w-auto min-w-[100px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-gray-100 text-soft-grey text-base font-bold hover:bg-gray-200 transition-all">
-                                        Cancel
-                                    </button>
+                                    <div class="pt-8 flex flex-col sm:flex-row-reverse gap-4">
+                                        <button type="submit" class="flex w-full sm:w-auto min-w-[120px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-chef-orange text-white text-base font-bold shadow-lg shadow-chef-orange/20 hover:bg-chef-orange/90 hover:shadow-xl transition-all">
+                                            Save Changes
+                                        </button>
+                                        <button type="reset" class="flex w-full sm:w-auto min-w-[100px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-gray-100 text-soft-grey text-base font-bold hover:bg-gray-200 transition-all">
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
                         </form>
 
                         <div id="security-section" class="border-t border-gray-200 pt-10 mt-10">
@@ -252,6 +284,41 @@
                 });
             }
         });
+
+        // --- TỪ ĐIỂN MÔ TẢ (DESCRIPTIONS) ---
+        const DESCRIPTIONS = {
+            // GOALS
+            'MAINTENANCE': 'Maintain your current weight. Best for staying fit without size changes.',
+            'WEIGHT_LOSS': 'Create a calorie deficit to lose body fat while retaining muscle.',
+            'MUSCLE_GAIN': 'Create a calorie surplus to build muscle mass (requires strength training).',
+            'WEIGHT_GAIN': 'Increase overall body weight (muscle + fat) for those who are underweight.',
+
+            // DIETS
+            'BALANCED': 'No food restrictions. Focus on variety and moderation.',
+            'VEGAN': 'Excludes all animal products (meat, dairy, eggs, honey).',
+            'VEGETARIAN': 'Excludes meat and fish but allows dairy and eggs.',
+            'KETO': 'High fat, very low carb. Forces body into ketosis to burn fat.',
+            'LOW_CARB': 'Reduces carbohydrate intake, focusing on protein and veggies.',
+            'EAT_CLEAN': 'Focus on whole, unprocessed foods. No added sugar or refined carbs.',
+            'HIGH_PROTEIN': 'Emphasizes protein intake for muscle repair and satiety.',
+            'GLUTEN_FREE': 'Excludes gluten (wheat, barley, rye). Essential for Celiac disease.',
+            'DAIRY_FREE': 'Excludes milk and dairy products. Good for lactose intolerance.'
+        };
+
+        function showDescription(type, elementId) {
+            const descElement = document.getElementById(elementId);
+            if (DESCRIPTIONS[type]) {
+                descElement.textContent = DESCRIPTIONS[type];
+                descElement.classList.remove('opacity-0');
+            }
+        }
+
+        function clearDescription(elementId) {
+            const descElement = document.getElementById(elementId);
+            // Có thể để trống hoặc reset về câu mặc định
+            descElement.textContent = 'Hover over an option to see details.';
+            descElement.classList.add('text-gray-400');
+        }
     </script>
 </body>
 </html>

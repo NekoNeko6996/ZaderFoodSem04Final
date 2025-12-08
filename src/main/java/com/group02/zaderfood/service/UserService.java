@@ -105,6 +105,7 @@ public class UserService {
         dto.setCalorieGoalPerDay(profile.getCalorieGoalPerDay());
         dto.setDietaryPreferences(dietTypes);
         dto.setAllergies(profile.getAllergies());
+        dto.setGoal(profile.getGoal());
 
         dto.setBmr(profile.getBmr());
         dto.setTdee(profile.getTdee());
@@ -146,6 +147,9 @@ public class UserService {
         profile.setCalorieGoalPerDay(dto.getCalorieGoalPerDay());
         profile.setAllergies(dto.getAllergies());
         profile.setUpdatedAt(LocalDateTime.now());
+        profile.setGoal(dto.getGoal());
+
+        recalculateBodyMetrics(profile, dto.getDietaryPreferences());
 
         userProfileRepository.save(profile);
         dietRepo.deleteByUserId(userId);
@@ -162,6 +166,162 @@ public class UserService {
             }
             dietRepo.saveAll(newDiets);
         }
+    }
+
+    /**
+     * Hàm tính toán chỉ số cơ thể tự động (Smart Calculator)
+     *
+     * @param profile Thông tin user (Cân nặng, chiều cao, tuổi...)
+     * @param diets Danh sách chế độ ăn user chọn (để override tỷ lệ Macros)
+     */
+    private void recalculateBodyMetrics(UserProfile profile, List<DietType> diets) {
+        // 1. VALIDATION: Kiểm tra dữ liệu đầu vào
+        if (profile.getWeightKg() == null || profile.getHeightCm() == null
+                || profile.getBirthDate() == null || profile.getGender() == null
+                || profile.getActivityLevel() == null) {
+            return; // Thiếu dữ liệu thì không tính, giữ nguyên giá trị cũ hoặc null
+        }
+
+        // 2. CHUẨN BỊ DỮ LIỆU SỐ
+        double weight = profile.getWeightKg().doubleValue();
+        double height = profile.getHeightCm().doubleValue();
+        int age = java.time.Period.between(profile.getBirthDate(), java.time.LocalDate.now()).getYears();
+
+        // 3. TÍNH BMR (Basal Metabolic Rate) - Công thức Mifflin-St Jeor
+        double bmrValue;
+        if (profile.getGender() == Gender.MALE) {
+            bmrValue = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        } else {
+            bmrValue = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        }
+        profile.setBmr(BigDecimal.valueOf(bmrValue).setScale(0, RoundingMode.HALF_UP));
+
+        // 4. TÍNH TDEE (Total Daily Energy Expenditure)
+        double multiplier = 1.2;
+        switch (profile.getActivityLevel()) {
+            case SEDENTARY:
+                multiplier = 1.2;
+                break;        // Ít vận động
+            case LIGHTLY_ACTIVE:
+                multiplier = 1.375;
+                break; // 1-3 ngày/tuần
+            case MODERATELY_ACTIVE:
+                multiplier = 1.55;
+                break; // 3-5 ngày/tuần
+            case VERY_ACTIVE:
+                multiplier = 1.725;
+                break;    // 6-7 ngày/tuần
+            case EXTRA_ACTIVE:
+                multiplier = 1.9;
+                break;     // VĐV chuyên nghiệp
+        }
+        double tdeeValue = bmrValue * multiplier;
+        profile.setTdee(BigDecimal.valueOf(tdeeValue).setScale(0, RoundingMode.HALF_UP));
+
+        // 5. TÍNH MỤC TIÊU CALO (CALORIE TARGET) - Dựa trên Goal
+        double targetCal = tdeeValue;
+
+        if (profile.getGoal() != null) {
+            switch (profile.getGoal()) {
+                case WEIGHT_LOSS:
+                    targetCal -= 500; // Thâm hụt để giảm cân (~0.5kg/tuần)
+                    break;
+                case MUSCLE_GAIN:
+                    targetCal += 300; // Dư calo vừa phải để nuôi cơ (Lean Bulk)
+                    break;
+                case WEIGHT_GAIN:
+                    targetCal += 500; // Dư nhiều calo để tăng cân nhanh (Dirty Bulk)
+                    break;
+                case MAINTENANCE:
+                default:
+                    // Giữ nguyên TDEE
+                    break;
+            }
+        }
+
+        // Safety Check: Không để Calo mục tiêu thấp hơn BMR (tránh suy nhược cơ thể)
+        if (targetCal < bmrValue) {
+            targetCal = bmrValue;
+        }
+
+        int finalCal = (int) targetCal;
+        profile.setCalorieGoalPerDay(finalCal);
+
+        // 6. TÍNH TỶ LỆ MACROS (PROTEIN - CARBS - FAT)
+        // Mặc định (Maintenance/Balanced): 25% Pro - 50% Carb - 25% Fat
+        double ratioProt = 0.25;
+        double ratioCarb = 0.50;
+        double ratioFat = 0.25;
+
+        boolean isDietOverridden = false;
+
+        // A. ƯU TIÊN 1: XÉT DIETARY PREFERENCES (Chế độ ăn đặc thù)
+        // Nếu user chọn chế độ ăn đặc biệt, tỷ lệ này sẽ đè lên tỷ lệ của Goal
+        if (diets != null && !diets.isEmpty()) {
+            if (diets.contains(DietType.KETO)) {
+                // Keto: Fat cực cao, Carb cực thấp
+                ratioCarb = 0.05; // 5%
+                ratioProt = 0.25; // 25%
+                ratioFat = 0.70;  // 70%
+                isDietOverridden = true;
+            } else if (diets.contains(DietType.LOW_CARB)) {
+                // Low Carb: Giảm Carb vừa phải, tăng Protein & Fat
+                ratioCarb = 0.20; // 20%
+                ratioProt = 0.40; // 40%
+                ratioFat = 0.40;  // 40%
+                isDietOverridden = true;
+            } else if (diets.contains(DietType.HIGH_PROTEIN)) {
+                // High Protein: Ưu tiên Protein
+                ratioProt = 0.45; // 45%
+                ratioCarb = 0.30; // 30%
+                ratioFat = 0.25;  // 25%
+                isDietOverridden = true;
+            }
+            // Các diet khác (Vegan, Dairy Free...) thường không ép buộc tỷ lệ Macro, 
+            // nên để nó rơi xuống logic theo Goal bên dưới.
+        }
+
+        // B. ƯU TIÊN 2: XÉT GOAL (Nếu không bị Diet override)
+        if (!isDietOverridden && profile.getGoal() != null) {
+            switch (profile.getGoal()) {
+                case WEIGHT_LOSS:
+                    // Giảm cân: Cần Protein cao để giữ cơ, giảm Carb/Fat
+                    ratioProt = 0.40;
+                    ratioCarb = 0.30;
+                    ratioFat = 0.30;
+                    break;
+
+                case MUSCLE_GAIN:
+                    // Tăng cơ: Cần Protein xây cơ + Carb để tập nặng, Fat vừa phải
+                    ratioProt = 0.35;
+                    ratioCarb = 0.45;
+                    ratioFat = 0.20;
+                    break;
+
+                case WEIGHT_GAIN:
+                    // Tăng cân: Tăng Fat (nhiều năng lượng), Carb & Pro cân bằng
+                    ratioProt = 0.30;
+                    ratioCarb = 0.35;
+                    ratioFat = 0.35;
+                    break;
+
+                case MAINTENANCE:
+                default:
+                    // Cân bằng (25-50-25)
+                    ratioProt = 0.25;
+                    ratioCarb = 0.50;
+                    ratioFat = 0.25;
+                    break;
+            }
+        }
+
+        // 7. QUY ĐỔI RA GAM (Grams) VÀ LƯU VÀO PROFILE
+        // 1g Protein = 4 kcal
+        // 1g Carbs   = 4 kcal
+        // 1g Fat     = 9 kcal
+        profile.setProteinGoal((int) ((finalCal * ratioProt) / 4));
+        profile.setCarbsGoal((int) ((finalCal * ratioCarb) / 4));
+        profile.setFatGoal((int) ((finalCal * ratioFat) / 9));
     }
 
     @Transactional

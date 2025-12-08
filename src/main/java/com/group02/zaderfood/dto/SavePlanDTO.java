@@ -12,6 +12,7 @@ public class SavePlanDTO {
     }
 
     public static class MealItemDTO {
+        public Integer mealItemId;
         public Integer recipeId;    // Có thể null nếu là món custom (tương lai)
         public String recipeName;
         public int calories;
