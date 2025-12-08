@@ -1,7 +1,9 @@
 package com.group02.zaderfood.service;
 
+import com.group02.zaderfood.dto.CalendarDayDTO;
 import com.group02.zaderfood.dto.DayDetailDTO;
 import com.group02.zaderfood.dto.SavePlanDTO;
+import com.group02.zaderfood.dto.StatsDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.*;
 import com.group02.zaderfood.entity.enums.MealType;
@@ -18,8 +20,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -294,5 +299,167 @@ public class MealPlanService {
         // Sắp xếp thứ tự bữa ăn
         // ... (Logic sort giống JavaScript) ...
         return dto;
+    }
+
+    public List<DailyMealPlan> getAllHistory(Integer userId) {
+        return dailyRepo.findByUserIdOrderByPlanDateDesc(userId);
+    }
+
+    // 2. Hàm nhóm các ngày ăn theo Tuần (Để hiển thị Sidebar đẹp)
+    public Map<String, List<DailyMealPlan>> groupPlansByWeek(List<DailyMealPlan> plans) {
+        // Dùng LinkedHashMap để giữ thứ tự (Tuần mới nhất hiển thị trước)
+        Map<String, List<DailyMealPlan>> grouped = new LinkedHashMap<>();
+
+        // Định dạng tuần theo chuẩn (Ví dụ: "Week 49, 2025")
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+
+        for (DailyMealPlan plan : plans) {
+            LocalDate date = plan.getPlanDate();
+            int weekNum = date.get(weekFields.weekOfWeekBasedYear());
+            int year = date.get(weekFields.weekBasedYear());
+
+            // Key đại diện cho nhóm: "Week 49 - 2025"
+            String key = "Week " + weekNum + " - " + year;
+
+            // Nếu chưa có key này thì tạo list mới, sau đó add plan vào
+            grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(plan);
+        }
+
+        return grouped;
+    }
+
+    public List<CalendarDayDTO> getMonthlyCalendar(Integer userId, int month, int year, int calorieGoal) {
+        List<CalendarDayDTO> calendarDays = new ArrayList<>();
+
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        int daysInMonth = firstDay.lengthOfMonth();
+
+        // 1. Lấy tất cả Plan trong tháng đó của User
+        LocalDate lastDay = firstDay.plusDays(daysInMonth - 1);
+        List<DailyMealPlan> monthPlans = dailyRepo.findByUserIdAndDateRange(userId, firstDay, lastDay);
+
+        // Map để tra cứu nhanh: Date -> Plan
+        Map<LocalDate, DailyMealPlan> planMap = monthPlans.stream()
+                .collect(Collectors.toMap(DailyMealPlan::getPlanDate, p -> p));
+
+        // 2. Tạo dữ liệu cho từng ngày
+        for (int i = 1; i <= daysInMonth; i++) {
+            LocalDate currentDate = LocalDate.of(year, month, i);
+            CalendarDayDTO dto = new CalendarDayDTO(i, currentDate);
+
+            if (currentDate.equals(LocalDate.now())) {
+                dto.isToday = true;
+            }
+
+            if (planMap.containsKey(currentDate)) {
+                DailyMealPlan plan = planMap.get(currentDate);
+                dto.hasPlan = true;
+                int actualCal = plan.getTotalCalories().intValue();
+                dto.totalCalories = actualCal;
+
+                // --- LOGIC TÔ MÀU (Dựa trên % so với Goal) ---
+                if (actualCal == 0) {
+                    dto.statusColor = "GRAY"; // Đã lên lịch nhưng chưa có món/chưa ăn
+                } else {
+                    double ratio = (double) actualCal / calorieGoal;
+
+                    if (ratio >= 0.9 && ratio <= 1.1) {
+                        // Chênh lệch +/- 10% -> Tốt (XANH)
+                        dto.statusColor = "GREEN";
+                    } else if (ratio >= 0.8 && ratio <= 1.2) {
+                        // Chênh lệch +/- 20% -> Khá (VÀNG)
+                        dto.statusColor = "YELLOW";
+                    } else {
+                        // Chênh lệch quá nhiều -> Cảnh báo (ĐỎ)
+                        dto.statusColor = "RED";
+                    }
+                }
+            }
+            calendarDays.add(dto);
+        }
+        return calendarDays;
+    }
+
+    // Hàm hỗ trợ tính số ô trống đầu tháng (Để lịch hiển thị đúng thứ)
+    public int getStartDayOffset(int month, int year) {
+        // Java: Monday=1 ... Sunday=7. 
+        // Lịch của bạn Chủ Nhật đứng đầu (Sunday=0 trong logic render grid)
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        int dayOfWeek = firstDay.getDayOfWeek().getValue(); // 1(Mon) -> 7(Sun)
+
+        // Nếu muốn Chủ Nhật là cột đầu tiên:
+        if (dayOfWeek == 7) {
+            return 0; // Chủ nhật không cần offset
+        }
+        return dayOfWeek; // Thứ 2 offset 1, Thứ 3 offset 2...
+    }
+    
+    public StatsDTO calculateStats(Integer userId, int calorieGoal) {
+        StatsDTO stats = new StatsDTO();
+        
+        // 1. Lấy dữ liệu 30 ngày gần nhất
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(29);
+        List<DailyMealPlan> plans = dailyRepo.findByUserIdAndDateRange(userId, startDate, endDate);
+        
+        stats.totalTrackedDays = plans.size();
+        stats.chartLabels = new ArrayList<>();
+        stats.chartDataCalories = new ArrayList<>();
+        stats.chartDataGoal = new ArrayList<>();
+        stats.insights = new ArrayList<>();
+        
+        if (plans.isEmpty()) {
+            stats.insights.add("Start tracking your meals to see analytics here!");
+            return stats;
+        }
+
+        long totalCal = 0;
+        long totalPro = 0, totalCarb = 0, totalFat = 0;
+        int goodDays = 0;
+
+        // 2. Duyệt qua từng ngày để xây dựng dữ liệu biểu đồ
+        // Lưu ý: plans từ DB có thể không liên tục, cần xử lý nếu muốn biểu đồ liên tục
+        // Ở đây ta làm đơn giản: chỉ vẽ những ngày có dữ liệu
+        for (DailyMealPlan p : plans) {
+            stats.chartLabels.add(p.getPlanDate().format(DateTimeFormatter.ofPattern("dd/MM")));
+            stats.chartDataCalories.add(p.getTotalCalories().intValue());
+            stats.chartDataGoal.add(calorieGoal); // Mục tiêu có thể đổi, nhưng lấy hiện tại cho đơn giản
+
+            totalCal += p.getTotalCalories().intValue();
+            totalPro += (p.getTotalProtein() != null) ? p.getTotalProtein().intValue() : 0;
+            totalCarb += (p.getTotalCarbs() != null) ? p.getTotalCarbs().intValue() : 0;
+            totalFat += (p.getTotalFat() != null) ? p.getTotalFat().intValue() : 0;
+
+            // Kiểm tra tuân thủ (+/- 15%)
+            double ratio = p.getTotalCalories().doubleValue() / calorieGoal;
+            if (ratio >= 0.85 && ratio <= 1.15) goodDays++;
+        }
+
+        // 3. Tính trung bình
+        stats.avgDailyCalories = (double) totalCal / plans.size();
+        stats.avgProtein = (int) (totalPro / plans.size());
+        stats.avgCarbs = (int) (totalCarb / plans.size());
+        stats.avgFat = (int) (totalFat / plans.size());
+        
+        stats.adherenceScore = (goodDays * 100) / plans.size();
+
+        // 4. Tạo Insights (Lời nhắc thông minh)
+        if (stats.adherenceScore > 80) {
+            stats.overallStatus = "Excellent";
+            stats.insights.add("🔥 You're on fire! Consistency is key.");
+        } else if (stats.adherenceScore > 50) {
+            stats.overallStatus = "Good";
+            stats.insights.add("👍 Doing well, but watch out for weekend spikes.");
+        } else {
+            stats.overallStatus = "Needs Focus";
+            stats.insights.add("⚠️ You are frequently missing your calorie targets.");
+        }
+
+        // Check Macro
+        if (stats.avgProtein < (calorieGoal * 0.2 / 4)) { // Ví dụ thấp hơn 20%
+            stats.insights.add("🥩 Your protein intake is low. Try adding more chicken or beans.");
+        }
+        
+        return stats;
     }
 }

@@ -144,10 +144,17 @@
             </div>
 
             <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm p-6 md:p-8 mt-4" th:if="${not #lists.isEmpty(planHistory)}">
-                <div class="flex items-center gap-2 mb-6">
-                    <span class="material-symbols-outlined text-gray-400">history</span>
-                    <h2 class="text-xl font-bold text-dark-ink dark:text-white">Saved Plans History</h2>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-gray-400">history</span>
+                        <h2 class="text-xl font-bold text-dark-ink dark:text-white">Recent Plans</h2>
+                    </div>
+
+                    <a href="/meal-plan/history" class="text-sm font-bold text-primary hover:underline flex items-center gap-1">
+                        View Full History <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </a>
                 </div>
+
                 <div class="grid gap-4">
                     <div th:each="plan : ${planHistory}" 
                          class="group flex justify-between items-center p-4 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 transition-all cursor-pointer"

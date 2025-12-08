@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}">
+        <title>Meal Plan History</title>
+    </head>
+    <body class="font-display bg-smart-white dark:bg-background-dark flex flex-col min-h-screen">
+
+    <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
+
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-dark-ink dark:text-white">Meal Plan History</h1>
+                <p class="text-gray-500">Track your nutritional journey week by week.</p>
+            </div>
+            <a href="/meal-plan/generate" class="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-bold rounded-lg hover:bg-primary hover:text-white transition-all">
+                <span class="material-symbols-outlined">add</span> New Plan
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+            <div class="lg:col-span-1 bg-white dark:bg-[#1a0e0a] rounded-xl shadow-soft border border-gray-100 dark:border-gray-800 p-4 md:p-6">
+
+                <div class="flex items-center justify-between mb-4">
+                    <a th:href="@{/meal-plan/history(month=${currentMonth == 1 ? 12 : currentMonth - 1}, year=${currentMonth == 1 ? currentYear - 1 : currentYear})}"
+                       class="flex size-8 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                        <span class="material-symbols-outlined text-dark-ink dark:text-white">chevron_left</span>
+                    </a>
+
+                    <span class="text-lg font-bold text-dark-ink dark:text-white">
+                        <span th:text="${#strings.capitalize(#strings.toLowerCase(monthName))}">December</span> 
+                        <span th:text="${currentYear}">2025</span>
+                    </span>
+
+                    <a th:href="@{/meal-plan/history(month=${currentMonth == 12 ? 1 : currentMonth + 1}, year=${currentMonth == 12 ? currentYear + 1 : currentYear})}"
+                       class="flex size-8 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                        <span class="material-symbols-outlined text-dark-ink dark:text-white">chevron_right</span>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 mb-2 text-center">
+                    <span class="text-xs font-bold text-gray-400">S</span>
+                    <span class="text-xs font-bold text-gray-400">M</span>
+                    <span class="text-xs font-bold text-gray-400">T</span>
+                    <span class="text-xs font-bold text-gray-400">W</span>
+                    <span class="text-xs font-bold text-gray-400">T</span>
+                    <span class="text-xs font-bold text-gray-400">F</span>
+                    <span class="text-xs font-bold text-gray-400">S</span>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1">
+
+                    <th:block th:if="${startOffset > 0}">
+                        <div th:each="i : ${#numbers.sequence(1, startOffset)}" class="aspect-square"></div>
+                    </th:block>
+
+                    <th:block th:each="day : ${calendarDays}">
+                        <button class="aspect-square relative flex items-center justify-center rounded-full text-sm font-medium transition-all group"
+                                th:classappend="${day.isToday} ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'text-dark-ink dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'"
+                                th:data-url="@{/meal-plan/day/{date}(date=${day.fullDate})}"
+                                onclick="window.location.href = this.getAttribute('data-url')">
+
+                            <span th:text="${day.dayValue}">1</span>
+
+                            <div th:if="${day.hasPlan}" 
+                                 class="absolute bottom-1 w-1.5 h-1.5 rounded-full"
+                                 th:classappend="${day.statusColor == 'GREEN'} ? 'bg-green-500' : 
+                                 (${day.statusColor == 'YELLOW'} ? 'bg-yellow-500' : 
+                                 (${day.statusColor == 'RED'} ? 'bg-red-500' : 'bg-gray-300'))">
+                            </div>
+                        </button>
+                    </th:block>
+                </div>
+
+                <div class="flex justify-center gap-4 mt-6 text-[10px] text-gray-400">
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Good</div>
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> Fair</div>
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Over</div>
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-300"></span> Planned</div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white dark:bg-[#1a0e0a] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-1">Tracked Days</p>
+                        <p class="text-2xl font-black text-dark-ink dark:text-white">
+                            [[${stats.totalTrackedDays}]] <span class="text-xs font-medium text-gray-400">days</span>
+                        </p>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1a0e0a] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-1">Current Streak</p>
+                        <p class="text-2xl font-black text-orange-500">
+                            [[${stats.currentStreak}]] <span class="text-xs font-medium text-gray-400">days 🔥</span>
+                        </p>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1a0e0a] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-1">Adherence</p>
+                        <p class="text-2xl font-black" 
+                           th:classappend="${stats.adherenceScore >= 80} ? 'text-green-500' : (${stats.adherenceScore >= 50} ? 'text-yellow-500' : 'text-red-500')">
+                            [[${stats.adherenceScore}]]%
+                        </p>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1a0e0a] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-1">Avg. Intake</p>
+                        <p class="text-2xl font-black text-blue-500">
+                            [[${#numbers.formatInteger(stats.avgDailyCalories, 0)}]]
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-[#1a0e0a] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-dark-ink dark:text-white">Calorie Trends</h3>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Actual</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-400"></span> Goal</span>
+                        </div>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="caloriesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div class="bg-white dark:bg-[#1a0e0a] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center">
+                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Average Macro Split</h3>
+                        <div class="relative h-48 w-48">
+                            <canvas id="macroChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-xs text-gray-400">Balance</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mt-4 text-xs font-bold text-gray-600 dark:text-gray-400">
+                            <span class="text-blue-500">Pro: [[${stats.avgProtein}]]g</span>
+                            <span class="text-green-500">Carb: [[${stats.avgCarbs}]]g</span>
+                            <span class="text-yellow-500">Fat: [[${stats.avgFat}]]g</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 p-6 rounded-xl border border-green-100 dark:border-green-800/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+                                <span class="material-symbols-outlined">psychology</span> AI Insights
+                            </h3>
+                            <span class="px-2 py-1 bg-white/50 dark:bg-black/20 rounded text-[10px] font-bold text-emerald-600 border border-emerald-200">
+                                [[${stats.overallStatus}]]
+                            </span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div th:if="${#lists.isEmpty(stats.insights)}" class="text-sm text-gray-500 italic">
+                                Not enough data to generate insights yet. Keep tracking!
+                            </div>
+
+                            <div th:each="insight : ${stats.insights}" class="flex gap-3 items-start bg-white dark:bg-black/20 p-3 rounded-lg border border-emerald-100/50">
+                                <span class="material-symbols-outlined text-emerald-500 text-lg mt-0.5">lightbulb</span>
+                                <p class="text-sm text-dark-ink dark:text-gray-200 leading-snug">[[${insight}]]</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>  
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:inline="javascript">
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        const labels = /*[[${stats.chartLabels}]]*/ [];
+                                        const dataCalories = /*[[${stats.chartDataCalories}]]*/ [];
+                                        const dataGoal = /*[[${stats.chartDataGoal}]]*/ [];
+                                        const avgPro = /*[[${stats.avgProtein}]]*/ 0;
+                                        const avgCarb = /*[[${stats.avgCarbs}]]*/ 0;
+                                        const avgFat = /*[[${stats.avgFat}]]*/ 0;
+
+                                        // 1. BIỂU ĐỒ CALO (Line Area Chart)
+                                        const ctxCal = document.getElementById('caloriesChart');
+                                        if (ctxCal) {
+                                            new Chart(ctxCal.getContext('2d'), {
+                                                type: 'line',
+                                                data: {
+                                                    labels: labels,
+                                                    datasets: [
+                                                        {
+                                                            label: 'Calories In',
+                                                            data: dataCalories,
+                                                            borderColor: '#F97316', // Orange-500
+                                                            backgroundColor: (context) => {
+                                                                const ctx = context.chart.ctx;
+                                                                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                                                gradient.addColorStop(0, 'rgba(249, 115, 22, 0.2)');
+                                                                gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+                                                                return gradient;
+                                                            },
+                                                            borderWidth: 2,
+                                                            pointBackgroundColor: '#fff',
+                                                            pointBorderColor: '#F97316',
+                                                            pointRadius: 4,
+                                                            pointHoverRadius: 6,
+                                                            fill: true,
+                                                            tension: 0.4
+                                                        },
+                                                        {
+                                                            label: 'Goal',
+                                                            data: dataGoal,
+                                                            borderColor: '#9CA3AF', // Gray-400
+                                                            borderWidth: 2,
+                                                            borderDash: [5, 5],
+                                                            pointRadius: 0,
+                                                            fill: false
+                                                        }
+                                                    ]
+                                                },
+                                                options: {
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    plugins: {
+                                                        legend: {position: 'top', align: 'end', labels: {usePointStyle: true, boxWidth: 8}},
+                                                        tooltip: {mode: 'index', intersect: false}
+                                                    },
+                                                    scales: {
+                                                        y: {beginAtZero: false, grid: {borderDash: [2, 4], color: '#f3f4f6'}},
+                                                        x: {grid: {display: false}}
+                                                    }
+                                                }
+                                            });
+                                        }
+
+                                        // 2. BIỂU ĐỒ MACRO (Doughnut)
+                                        const ctxMacro = document.getElementById('macroChart');
+                                        if (ctxMacro) {
+                                            new Chart(ctxMacro.getContext('2d'), {
+                                                type: 'doughnut',
+                                                data: {
+                                                    labels: ['Protein', 'Carbs', 'Fat'],
+                                                    datasets: [{
+                                                            data: [avgPro, avgCarb, avgFat],
+                                                            backgroundColor: ['#3B82F6', '#22C55E', '#EAB308'], // Blue, Green, Yellow
+                                                            borderWidth: 0,
+                                                            hoverOffset: 10
+                                                        }]
+                                                },
+                                                options: {
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    cutout: '75%',
+                                                    plugins: {legend: {display: false}}
+                                                }
+                                            });
+                                        }
+                                    });
+    </script>
+</body>
+</html>
