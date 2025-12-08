@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}"><title>Day Detail</title></head>
+    <body class="bg-smart-white dark:bg-background-dark font-display min-h-screen flex flex-col">
+
+    <th:block th:replace="~{fragments/navbar :: header_nav}"></th:block>
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-[1400px]"> 
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+                <a href="/meal-plan/customize" class="p-2 rounded-full bg-white hover:bg-gray-200 transition-colors shadow-sm border border-gray-200">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-dark-ink dark:text-white" th:text="${dayDetail.dayName}">Date</h1>
+                    <p class="text-sm text-gray-500">Daily Nutritional Breakdown</p>
+                </div>
+            </div>
+        </div>
+
+        <section class="mb-8 bg-white dark:bg-[#1e1e1e] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
+                 th:with="target=${(targetCalories != null and targetCalories > 0) ? targetCalories : 2000},
+                 safeCal=${dayDetail.totalCalories != null ? dayDetail.totalCalories : 0},
+                 safeProt=${dayDetail.totalProtein != null ? dayDetail.totalProtein : 0},
+                 safeCarb=${dayDetail.totalCarbs != null ? dayDetail.totalCarbs : 0},
+                 safeFat=${dayDetail.totalFat != null ? dayDetail.totalFat : 0}">
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <h2 class="text-lg font-bold text-dark-ink dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-500">monitoring</span>
+                    Daily Nutrition Goals
+                </h2>
+
+                <div class="flex gap-3 text-xs font-medium">
+                    <div class="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 border border-gray-100 dark:border-gray-700" title="Basal Metabolic Rate">
+                        BMR: <span class="font-bold text-dark-ink dark:text-gray-300">[[${#numbers.formatDecimal(userBMR, 0, 0)}]]</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 border border-gray-100 dark:border-gray-700" title="Total Daily Energy Expenditure">
+                        TDEE: <span class="font-bold text-dark-ink dark:text-gray-300">[[${#numbers.formatDecimal(userTDEE, 0, 0)}]]</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 border border-orange-100 dark:border-orange-800">
+                        Target: <span class="font-black">[[${target}]] kcal</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
+                        <span>Protein</span>
+                        <span th:with="tProt=${targetProt ?: 1}">
+                            [[${safeProt}]]g <span class="text-gray-400 font-normal">/ [[${tProt}]]g</span>
+                        </span>
+                    </div>
+                    <div class="w-full bg-blue-50 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2.5 rounded-full shadow-sm transition-all duration-1000"
+                             th:with="tProt=${targetProt ?: 1}"
+                             th:style="'width: ' + ${T(java.lang.Math).min(safeProt * 100.0 / tProt, 100.0)} + '%'"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between text-xs font-bold text-green-600 dark:text-green-400">
+                        <span>Carbs</span>
+                        <span th:with="tCarb=${targetCarb ?: 1}">
+                            [[${safeCarb}]]g <span class="text-gray-400 font-normal">/ [[${tCarb}]]g</span>
+                        </span>
+                    </div>
+                    <div class="w-full bg-green-50 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-green-400 to-green-600 h-2.5 rounded-full shadow-sm transition-all duration-1000"
+                             th:with="tCarb=${targetCarb ?: 1}"
+                             th:style="'width: ' + ${T(java.lang.Math).min(safeCarb * 100.0 / tCarb, 100.0)} + '%'"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between text-xs font-bold text-yellow-600 dark:text-yellow-400">
+                        <span>Fat</span>
+                        <span th:with="tFat=${targetFat ?: 1}">
+                            [[${safeFat}]]g <span class="text-gray-400 font-normal">/ [[${tFat}]]g</span>
+                        </span>
+                    </div>
+                    <div class="w-full bg-yellow-50 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2.5 rounded-full shadow-sm transition-all duration-1000"
+                             th:with="tFat=${targetFat ?: 1}"
+                             th:style="'width: ' + ${T(java.lang.Math).min(safeFat * 100.0 / tFat, 100.0)} + '%'"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+            <div class="flex flex-col gap-4">
+                <div class="sticky top-20 z-10 bg-gray-100/90 backdrop-blur-sm p-3 rounded-xl flex justify-between items-center border border-gray-200">
+                    <span class="font-black text-gray-500 uppercase tracking-wider text-sm pl-2">Breakfast</span>
+                    <div class="flex gap-2">
+                        <button onclick="skipMeal('Breakfast')" title="I didn't eat breakfast" class="p-2 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors shadow-sm border border-gray-200">
+                            <span class="material-symbols-outlined text-lg">block</span>
+                        </button>
+                        <button onclick="openReplaceModal(null, 'Breakfast')" title="I ate something else" class="p-2 bg-white hover:bg-orange-50 text-gray-400 hover:text-orange-500 rounded-lg transition-colors shadow-sm border border-gray-200">
+                            <span class="material-symbols-outlined text-lg">edit_note</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4 min-h-[200px]">
+                    <th:block th:each="meal : ${dayDetail.meals}">
+                        <th:block th:if="${meal != null and (meal.type == 'Breakfast' or meal.type == 'BREAKFAST')}">
+                            <div th:replace="~{::mealCardFragment(${meal})}"></div>
+                        </th:block>
+                    </th:block>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <div class="sticky top-20 z-10 bg-gray-100/90 backdrop-blur-sm p-3 rounded-xl flex justify-between items-center border border-gray-200">
+                    <span class="font-black text-gray-500 uppercase tracking-wider text-sm pl-2">Lunch</span>
+                    <div class="flex gap-2">
+                        <button onclick="skipMeal('Lunch')" title="I didn't eat lunch" class="p-2 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors shadow-sm border border-gray-200">
+                            <span class="material-symbols-outlined text-lg">block</span>
+                        </button>
+                        <button onclick="openReplaceModal(null, 'Lunch')" title="I ate something else" class="p-2 bg-white hover:bg-orange-50 text-gray-400 hover:text-orange-500 rounded-lg transition-colors shadow-sm border border-gray-200">
+                            <span class="material-symbols-outlined text-lg">edit_note</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4 min-h-[200px]">
+                    <th:block th:each="meal : ${dayDetail.meals}">
+                        <th:block th:if="${meal != null and (meal.type == 'Lunch' or meal.type == 'LUNCH')}">
+                            <div th:replace="~{::mealCardFragment(${meal})}"></div>
+                        </th:block>
+                    </th:block>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <div class="sticky top-20 z-10 bg-gray-100/90 backdrop-blur-sm p-3 rounded-xl flex justify-between items-center border border-gray-200">
+                    <span class="font-black text-gray-500 uppercase tracking-wider text-sm pl-2">Dinner</span>
+                    <div class="flex gap-2">
+                        <button onclick="skipMeal('Dinner')" title="I didn't eat dinner" class="p-2 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors shadow-sm border border-gray-200">
+                            <span class="material-symbols-outlined text-lg">block</span>
+                        </button>
+                        <button onclick="openReplaceModal(null, 'Dinner')" title="I ate something else" class="p-2 bg-white hover:bg-orange-50 text-gray-400 hover:text-orange-500 rounded-lg transition-colors shadow-sm border border-gray-200">
+                            <span class="material-symbols-outlined text-lg">edit_note</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4 min-h-[200px]">
+                    <th:block th:each="meal : ${dayDetail.meals}">
+                        <th:block th:if="${meal != null and (meal.type == 'Dinner' or meal.type == 'DINNER')}">
+                            <div th:replace="~{::mealCardFragment(${meal})}"></div>
+                        </th:block>
+                    </th:block>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <th:block th:fragment="mealCardFragment(meal)">
+        <div th:if="${meal != null}" 
+             class="bg-white dark:bg-[#1e1e1e] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col gap-3 transition-all hover:shadow-md group relative"
+             th:classappend="${meal?.status == 'EATEN'} ? 'opacity-60 bg-green-50 border-green-200' : (${meal?.status == 'SKIPPED'} ? 'opacity-40 grayscale bg-gray-50' : '')">
+
+            <div class="w-full h-32 rounded-lg overflow-hidden relative">
+                <img th:src="${meal?.imageUrl}" onerror="this.src='https://placehold.co/150x150?text=No+Img'" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+
+                <div th:if="${meal?.status == 'EATEN'}" class="absolute inset-0 bg-green-500/20 flex items-center justify-center backdrop-blur-[1px]">
+                    <div class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                        <span class="material-symbols-outlined text-sm">check</span> DONE
+                    </div>
+                </div>
+
+                <div th:if="${meal?.status == 'SKIPPED'}" class="absolute inset-0 bg-gray-500/20 flex items-center justify-center backdrop-blur-[1px]">
+                    <div class="bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">SKIPPED</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between items-start">
+                    <h3 class="text-sm font-bold text-dark-ink dark:text-white line-clamp-2" th:text="${meal?.recipeName}">Name</h3>
+                    <span class="text-xs font-bold text-primary whitespace-nowrap" th:text="${meal?.calories} + ' kcal'">Cal</span>
+                </div>
+                <p class="text-[10px] text-gray-400" th:text="${meal?.prepTime + meal?.cookTime} + ' mins • Easy'">Time</p>
+            </div>
+
+            <div class="mt-2" th:if="${meal?.status != 'EATEN' and meal?.status != 'SKIPPED'}">
+                <button th:onclick="'markAsEaten(' + ${meal?.mealItemId} + ')'"
+                        class="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-700 py-2 rounded-lg text-xs font-bold transition-all">
+                    <span class="material-symbols-outlined text-base">check</span> Mark as Eaten
+                </button>
+            </div>
+
+            <div class="mt-2 text-center" th:if="${meal?.status == 'EATEN' or meal?.status == 'SKIPPED'}">
+                <button th:onclick="'undoStatus(' + ${meal?.mealItemId} + ')'" class="text-[10px] text-gray-400 hover:text-red-500 underline">Undo</button>
+            </div>
+        </div>
+    </th:block>
+
+    <div id="replaceModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+                <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-black text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">edit_note</span> Update Meal
+                    </h3>
+                    <button onclick="closeModal()" class="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1 transition-colors"><span class="material-symbols-outlined">close</span></button>
+                </div>
+
+                <div class="px-6 py-6 flex flex-col gap-5">
+                    <input type="hidden" id="modalMealType"> <div class="w-full">
+                        <label for="replaceImage" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-orange-50 hover:border-orange-300 transition-all group overflow-hidden relative">
+                            <img id="previewImg" class="absolute inset-0 w-full h-full object-cover hidden opacity-90">
+                            <div id="uploadPlaceholder" class="flex flex-col items-center justify-center pt-5 pb-6 group-hover:scale-105 transition-transform">
+                                <span class="material-symbols-outlined text-4xl text-gray-400 group-hover:text-orange-500 mb-2">add_a_photo</span>
+                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Upload photo</span></p>
+                            </div>
+                            <input id="replaceImage" type="file" class="hidden" accept="image/*" onchange="previewFile()">
+                        </label>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Dish Name</label>
+                            <input type="text" id="replaceName" class="w-full rounded-lg border-gray-200 bg-gray-50 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                            <textarea id="replaceDesc" rows="2" class="w-full rounded-lg border-gray-200 bg-gray-50 text-sm resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="aiResultArea" class="hidden p-4 bg-orange-50 rounded-xl border border-orange-100">
+                        <p class="text-xs font-bold text-orange-600 mb-2">AI Estimated:</p>
+                        <div class="grid grid-cols-4 gap-2 text-center">
+                            <div><span class="block font-black" id="aiCalVal">0</span><span class="text-[10px]">KCAL</span></div>
+                            <div><span class="block font-bold text-blue-600" id="aiProtVal">0</span><span class="text-[10px]">PROT</span></div>
+                            <div><span class="block font-bold text-green-600" id="aiCarbVal">0</span><span class="text-[10px]">CARB</span></div>
+                            <div><span class="block font-bold text-yellow-600" id="aiFatVal">0</span><span class="text-[10px]">FAT</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-2 border-t border-gray-100">
+                    <button type="button" id="btnConfirm" onclick="confirmReplace()" class="hidden w-full inline-flex justify-center items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-500 sm:w-auto">Confirm</button>
+                    <button type="button" id="btnAnalyze" onclick="analyzeFood()" class="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-600 sm:w-auto">
+                        Analyze <svg id="aiSpinner" class="animate-spin ml-1 h-4 w-4 hidden text-white" ...>...</svg>
+                    </button>
+                    <button onclick="closeModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+
+    <script>
+        let currentItemId = null;
+        let currentMealType = null; // Lưu loại bữa ăn khi bấm nút trên Header
+
+        function openReplaceModal(itemId, mealType) {
+            // Nếu itemId = null, nghĩa là user bấm nút trên header => Thêm món mới cho bữa đó
+            currentMealType = mealType;
+            resetModal();
+            document.getElementById('replaceModal').classList.remove('hidden');
+
+            // Có thể thêm logic: Nếu có itemId, fetch thông tin cũ điền vào form
+        }
+
+        function closeModal() {
+            document.getElementById('replaceModal').classList.add('hidden');
+        }
+
+        // Logic Skip Meal
+        function skipMeal(type) {
+            Swal.fire({
+                title: `Skip ${type}?`,
+                text: "All planned items for this meal will be marked as skipped.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, I skipped it'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Gọi API Backend: /api/meal-plan/skip?date=...&type=Breakfast
+                    ZaderToast.success("Meal skipped.");
+                    setTimeout(() => location.reload(), 1000);
+                }
+            });
+        }
+
+        function markAsEaten(id) {
+            // API Update
+            ZaderToast.success("Marked as eaten!");
+            setTimeout(() => location.reload(), 500);
+        }
+
+        function undoStatus(id) {
+            // API revert status -> PENDING
+            ZaderToast.info("Status reverted.");
+            setTimeout(() => location.reload(), 500);
+        }
+
+        // 2. Preview Ảnh khi chọn file
+        function previewFile() {
+            const preview = document.getElementById('previewImg');
+            const file = document.getElementById('replaceImage').files[0];
+            const placeholder = document.getElementById('uploadPlaceholder');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    preview.src = reader.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('opacity-0'); // Ẩn placeholder đi
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function resetModal() {
+            document.getElementById('replaceImage').value = "";
+            document.getElementById('previewImg').classList.add('hidden');
+            document.getElementById('uploadPlaceholder').classList.remove('opacity-0');
+            document.getElementById('replaceName').value = "";
+            document.getElementById('replaceDesc').value = "";
+
+            // Ẩn kết quả cũ
+            document.getElementById('aiResultArea').classList.add('hidden');
+            document.getElementById('btnConfirm').classList.add('hidden');
+            document.getElementById('btnAnalyze').classList.remove('hidden');
+            document.getElementById('btnAnalyze').disabled = false;
+            document.getElementById('aiSpinner').classList.add('hidden');
+        }
+
+        // 3. Gửi ảnh cho AI Phân tích
+        async function analyzeFood() {
+            const file = document.getElementById('replaceImage').files[0];
+            const name = document.getElementById('replaceName').value;
+            const desc = document.getElementById('replaceDesc').value;
+
+            if (!file && !name) {
+                ZaderToast.error("Please upload a photo or enter a dish name.");
+                return;
+            }
+
+            // Loading UI
+            const btnAnalyze = document.getElementById('btnAnalyze');
+            const spinner = document.getElementById('aiSpinner');
+            btnAnalyze.disabled = true;
+            spinner.classList.remove('hidden');
+            btnAnalyze.innerHTML = `Analyzing... <svg class="animate-spin ml-1 h-4 w-4 text-white" ...>...`; // Copy lại svg
+
+            // Giả lập gọi API (Bạn thay bằng fetch thật)
+            // const res = await fetch(...)
+
+            // --- MÔ PHỎNG DỮ LIỆU ĐỂ TEST UI ---
+            setTimeout(() => {
+                // Kết quả giả định từ AI trả về
+                aiAnalysisData = {
+                    calories: 450,
+                    protein: 25,
+                    carbs: 40,
+                    fat: 15
+                };
+
+                // Hiển thị kết quả
+                document.getElementById('aiCalVal').innerText = aiAnalysisData.calories;
+                document.getElementById('aiProtVal').innerText = aiAnalysisData.protein;
+                document.getElementById('aiCarbVal').innerText = aiAnalysisData.carbs;
+                document.getElementById('aiFatVal').innerText = aiAnalysisData.fat;
+
+                document.getElementById('aiResultArea').classList.remove('hidden');
+
+                // Đổi nút Analyze -> Confirm
+                document.getElementById('btnAnalyze').classList.add('hidden');
+                document.getElementById('btnConfirm').classList.remove('hidden');
+
+            }, 1500);
+        }
+
+        // 4. Lưu vào Database (Confirm)
+        async function confirmReplace() {
+            // Gọi API update MealItem với dữ liệu từ aiAnalysisData
+            // const res = await fetch(`/api/meal-item/${currentItemId}/replace-with-ai` ... )
+
+            ZaderToast.success("Meal updated successfully!");
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // 5. Check món ăn nhanh
+        function markAsEaten(id) {
+            // Fetch API update status = EATEN
+            // fetch(`/api/meal-item/${id}/status?status=EATEN`) ...
+
+            ZaderToast.success("Great job staying on track!");
+            setTimeout(() => location.reload(), 500);
+        }
+    </script>
+</body>
+</html>

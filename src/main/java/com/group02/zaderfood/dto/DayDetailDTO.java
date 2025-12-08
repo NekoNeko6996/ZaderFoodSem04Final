@@ -19,6 +19,8 @@ public class DayDetailDTO {
     public Map<String, String> shoppingList; // Tên nguyên liệu -> Số lượng (VD: "Trứng" -> "2 quả")
 
     public static class MealDetail {
+        public Integer mealItemId; // [THÊM] ID để gửi request
+        public String status;
         public String type;       // Breakfast, Lunch...
         public String recipeName;
         public int calories;

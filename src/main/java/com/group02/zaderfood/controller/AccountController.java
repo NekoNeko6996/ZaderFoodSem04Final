@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import com.group02.zaderfood.entity.enums.DietType;
-
+import com.group02.zaderfood.entity.enums.*;
 @Controller
 public class AccountController {
 
@@ -35,6 +34,8 @@ public class AccountController {
             model.addAttribute("userProfileDTO", userProfileDTO);
             model.addAttribute("changePasswordDTO", new ChangePasswordDTO());
             model.addAttribute("allDietTypes", DietType.values());
+            model.addAttribute("allGoals", UserGoal.values());
+            model.addAttribute("allActivityLevels", ActivityLevel.values());
 
             return "user/accountSetting";
         } catch (Exception e) {

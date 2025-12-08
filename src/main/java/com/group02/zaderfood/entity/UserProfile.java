@@ -2,6 +2,7 @@ package com.group02.zaderfood.entity;
 
 import com.group02.zaderfood.entity.enums.ActivityLevel;
 import com.group02.zaderfood.entity.enums.Gender;
+import com.group02.zaderfood.entity.enums.UserGoal;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -51,6 +52,19 @@ public class UserProfile implements Serializable {
 
     @Column(name = "CalorieGoalPerDay")
     private Integer calorieGoalPerDay;
+    
+    @Column(name = "Goal")
+    @Enumerated(EnumType.STRING)
+    private UserGoal goal;
+
+    @Column(name = "ProteinGoal")
+    private Integer proteinGoal;
+
+    @Column(name = "CarbsGoal")
+    private Integer carbsGoal;
+
+    @Column(name = "FatGoal")
+    private Integer fatGoal;
 
     // [DELETED] Đã xóa dietaryPreference vì chuyển sang bảng UserDietaryPreferences
     @Column(name = "Allergies")

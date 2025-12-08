@@ -1,5 +1,6 @@
 package com.group02.zaderfood.service;
 
+import com.group02.zaderfood.dto.DayDetailDTO;
 import com.group02.zaderfood.dto.SavePlanDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.*;
@@ -212,6 +213,7 @@ public class MealPlanService {
             dayDto.dayName = dp.getPlanDate().format(DateTimeFormatter.ofPattern("EEEE dd/MM"));
             dayDto.totalCalories = dp.getTotalCalories().intValue();
             dayDto.meals = new ArrayList<>();
+            dayDto.dateString = dp.getPlanDate().toString();
 
             // [FIX 1: ĐƯA RA NGOÀI VÒNG LẶP]
             // Gán giá trị mặc định cho ngày, kể cả khi ngày đó chưa có món ăn nào
@@ -241,6 +243,56 @@ public class MealPlanService {
             }
             dto.days.add(dayDto);
         }
+        return dto;
+    }
+
+    public DayDetailDTO getDayDetail(Integer userId, LocalDate date) {
+        // 1. Tìm Plan của ngày
+        DailyMealPlan dailyPlan = dailyRepo.findByUserIdAndPlanDate(userId, date).orElse(null);
+        if (dailyPlan == null) {
+            return null;
+        }
+
+        DayDetailDTO dto = new DayDetailDTO();
+        dto.date = date;
+        dto.dayName = date.format(DateTimeFormatter.ofPattern("EEEE dd/MM"));
+        dto.totalCalories = dailyPlan.getTotalCalories().intValue();
+        // Lấy macros (xử lý null an toàn)
+        dto.totalProtein = dailyPlan.getTotalProtein() != null ? dailyPlan.getTotalProtein().intValue() : 0;
+        dto.totalCarbs = dailyPlan.getTotalCarbs() != null ? dailyPlan.getTotalCarbs().intValue() : 0;
+        dto.totalFat = dailyPlan.getTotalFat() != null ? dailyPlan.getTotalFat().intValue() : 0;
+
+        // 2. Lấy danh sách món ăn
+        List<MealItem> items = itemRepo.findByMealPlanId(dailyPlan.getMealPlanId());
+        dto.meals = new ArrayList<>();
+
+        // Map tạm để cộng dồn nguyên liệu đi chợ (Optional - làm sau nếu phức tạp)
+        // Map<String, String> shoppingMap = new HashMap<>(); 
+        for (MealItem item : items) {
+            DayDetailDTO.MealDetail mealDetail = new DayDetailDTO.MealDetail();
+            mealDetail.type = item.getMealTimeType().name();
+            mealDetail.recipeName = item.getCustomDishName();
+            mealDetail.calories = item.getCalories().intValue();
+
+            // Nếu có Recipe ID, lấy thêm ảnh và hướng dẫn
+            if (item.getRecipeId() != null) {
+                Recipe r = recipeRepo.findById(item.getRecipeId()).orElse(null);
+                if (r != null) {
+                    mealDetail.imageUrl = r.getImageUrl();
+                    mealDetail.prepTime = r.getPrepTimeMin() != null ? r.getPrepTimeMin() : 0;
+                    mealDetail.cookTime = r.getCookTimeMin() != null ? r.getCookTimeMin() : 0;
+
+                    // Lấy Steps (Cần RecipeStepRepository hoặc truy cập qua quan hệ OneToMany nếu đã fetch EAGER/Transactional)
+                    // mealDetail.steps = r.getRecipeSteps().stream().map(RecipeStep::getInstruction).collect(Collectors.toList());
+                }
+            } else {
+                mealDetail.imageUrl = "/images/default-food.png";
+            }
+            dto.meals.add(mealDetail);
+        }
+
+        // Sắp xếp thứ tự bữa ăn
+        // ... (Logic sort giống JavaScript) ...
         return dto;
     }
 }
