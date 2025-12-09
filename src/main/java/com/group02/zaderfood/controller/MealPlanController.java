@@ -9,7 +9,6 @@ import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.DailyMealPlan;
 import com.group02.zaderfood.entity.MealItem;
 import com.group02.zaderfood.entity.RecipeCollection;
-import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
 import com.group02.zaderfood.repository.DailyMealPlanRepository;
 import com.group02.zaderfood.repository.MealItemRepository;
@@ -123,6 +122,16 @@ public class MealPlanController {
             }
         }
 
+        UserProfile profile = userProfileRepository.findById(currentUser.getUserId()).orElse(null);
+        model.addAttribute("userProfile", profile);
+
+        // Logic kiểm tra nhanh để biến này có sẵn cho View dùng
+        boolean isProfileMissing = profile == null
+                || profile.getBmr() == null
+                || profile.getTdee() == null
+                || profile.getCalorieGoalPerDay() == null;
+        model.addAttribute("isProfileMissing", isProfileMissing);
+
         // Đẩy dữ liệu ra View
         model.addAttribute("userProfile", userProfileDTO); // [QUAN TRỌNG] Gửi object này sang generate.html mới
         model.addAttribute("currentCalories", defaultCalories); // Giữ lại để tương thích logic cũ nếu cần
@@ -208,6 +217,17 @@ public class MealPlanController {
                 targetCalories = profile.getCalorieGoalPerDay();
             }
         }
+        
+        UserProfile profile = userProfileRepository.findById(user.getUserId()).orElse(null);
+        model.addAttribute("userProfile", profile);
+
+        // Logic kiểm tra nhanh để biến này có sẵn cho View dùng
+        boolean isProfileMissing = profile == null
+                || profile.getBmr() == null
+                || profile.getTdee() == null
+                || profile.getCalorieGoalPerDay() == null;
+        model.addAttribute("isProfileMissing", isProfileMissing);
+        
         // [QUAN TRỌNG] Dòng này bị thiếu trong code cũ của bạn
         model.addAttribute("targetCalories", targetCalories);
         // -----------------------
@@ -399,7 +419,7 @@ public class MealPlanController {
         return "redirect:/meal-plan/customize";
     }
 
-    @GetMapping("/day/{dateStr}")
+    @GetMapping("/day/{dateStr:\\d{4}-\\d{2}-\\d{2}}")
     public String showDayDetail(@PathVariable String dateStr,
             @AuthenticationPrincipal CustomUserDetails user,
             Model model) {
