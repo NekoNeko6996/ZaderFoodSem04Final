@@ -1,6 +1,8 @@
 package com.group02.zaderfood.service;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group02.zaderfood.dto.AiFoodResponse;
@@ -37,7 +39,11 @@ public class AiFoodService {
     private String ollamaUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
+            .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
+            .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private RestTemplate getRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -88,8 +94,10 @@ public class AiFoodService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
+            System.out.println("--- SENDING PROMPT TO AI ---");
             // Nhận về String thô để xử lý an toàn
             String rawResponse = restTemplate.postForObject(ollamaUrl, entity, String.class);
+            System.err.println(rawResponse);
 
             // 5. Xử lý kết quả
             return parseOllamaResponse(rawResponse);
@@ -110,8 +118,9 @@ public class AiFoodService {
                 String aiText = root.get("response").asText();
 
                 // Làm sạch: Xóa markdown ```json và ``` nếu AI lỡ thêm vào
-                String cleanJson = aiText.replaceAll("```json", "")
-                        .replaceAll("```", "")
+                String cleanJson = aiText
+                        .replaceAll("(?i)```json", "") // Xóa ```json (không phân biệt hoa thường)
+                        .replaceAll("```", "") // Xóa ```
                         .trim();
 
                 // Tìm điểm bắt đầu '{' và kết thúc '}' để lấy đúng phần JSON

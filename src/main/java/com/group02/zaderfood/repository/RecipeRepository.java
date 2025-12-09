@@ -2,6 +2,7 @@ package com.group02.zaderfood.repository;
 
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.entity.enums.RecipeStatus;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,4 +36,9 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
     
     @Query(value = "SELECT TOP 50 * FROM Recipes ORDER BY NEWID()", nativeQuery = true)
     List<Recipe> findRandomRecipes();
+    
+    List<Recipe> findTop50ByStatusAndTotalCaloriesLessThanEqual(RecipeStatus status, BigDecimal maxCalories);
+
+    // Nếu TotalCalories trong DB chưa chuẩn (bằng 0 hoặc null), ta lấy 50 món bất kỳ để tính toán lại:
+    List<Recipe> findTop50ByStatus(RecipeStatus status);
 }

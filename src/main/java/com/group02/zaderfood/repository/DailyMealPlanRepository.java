@@ -21,4 +21,6 @@ public interface DailyMealPlanRepository extends JpaRepository<DailyMealPlan, In
 
     // 3. Tìm chính xác 1 ngày để check tồn tại khi lưu đè
     Optional<DailyMealPlan> findByUserIdAndPlanDate(Integer userId, LocalDate planDate);
+    
+    List<DailyMealPlan> findByUserIdOrderByPlanDateDesc(Integer userId);
 }
