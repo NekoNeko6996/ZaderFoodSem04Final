@@ -179,7 +179,54 @@
         </div>
     </main>
 
+    <div th:if="${isProfileMissing}" id="profileBlockingModal" 
+         class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm p-4 transition-all duration-300">
+
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-100 transition-all border border-gray-100 dark:border-gray-700">
+
+            <div class="bg-orange-50 dark:bg-orange-900/20 p-8 flex justify-center items-center">
+                <div class="relative">
+                    <span class="absolute inset-0 bg-orange-400 rounded-full opacity-20 animate-ping"></span>
+                    <div class="relative bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm text-primary">
+                        <span class="material-symbols-outlined !text-5xl">health_metrics</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 text-center">
+                <h2 class="text-2xl font-black text-dark-ink dark:text-white mb-3">Setup Required</h2>
+                <p class="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                    To generate a personalized meal plan, ZaderFood needs your body metrics (<strong>BMR, TDEE</strong>) and <strong>Calorie Goal</strong>.
+                </p>
+
+                <p class="text-xs text-orange-600 bg-orange-50 dark:bg-orange-900/10 py-2 px-3 rounded-lg mb-8 font-bold border border-orange-100 dark:border-orange-800/30">
+                    ⚠ Please update your settings to continue using the app.
+                </p>
+
+                <a th:href="@{/user/settings}" class="block w-full py-4 bg-primary hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1">
+                    Update Profile Now
+                </a>
+                
+                <a th:href="@{/user/settings}" class="block w-full py-4 bg-white text-black font-bold rounded-xl mt-3">
+                    Back to home page
+                </a>
+            </div>
+        </div>
+    </div>
+
     <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
+
+    <script th:inline="javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            // Kiểm tra xem modal có tồn tại không (tức là isProfileMissing = true)
+            const modal = document.getElementById('profileBlockingModal');
+            if (modal) {
+                // Khóa cuộn của body
+                document.body.style.overflow = 'hidden';
+                document.body.style.height = '100vh';
+            }
+        });
+    </script>
 
     <script th:inline="javascript">
         let abortController = null;

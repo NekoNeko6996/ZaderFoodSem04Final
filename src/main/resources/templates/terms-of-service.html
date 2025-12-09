@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}"><title>Terms of Service - ZaderFood</title></head>
+    <body class="bg-smart-white dark:bg-background-dark font-display min-h-screen flex flex-col">
+
+        <div class="fixed top-0 z-50 w-full bg-white/90 dark:bg-[#211511]/90 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800"> 
+            <div th:replace="~{fragments/navbar :: header_nav}"></div>
+        </div>
+
+        <main class="flex-grow pt-28 pb-16">
+            <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+                <div class="text-center mb-12">
+                    <h1 class="text-3xl md:text-4xl font-black text-dark-ink dark:text-white mb-4">Terms of Service</h1>
+                    <p class="text-soft-grey dark:text-gray-400">Effective Date: December 14, 2025</p>
+                </div>
+
+                <div class="bg-white dark:bg-[#1e1e1e] p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+
+                    <div class="space-y-8 text-dark-ink dark:text-gray-300 leading-relaxed">
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">1. Acceptance of Terms</h2>
+                            <p>By accessing or using the ZaderFood website ("Service"), you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the Service.</p>
+                        </section>
+
+                        <section class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border-l-4 border-orange-500">
+                            <h2 class="text-lg font-bold text-orange-700 dark:text-orange-400 mb-2">2. Medical Disclaimer</h2>
+                            <p class="text-sm">
+                                ZaderFood is a tool for meal planning and information purposes only. <strong>We are not a medical organization.</strong> The content, calorie calculations, and nutritional suggestions provided by our system (including AI-generated plans) should not be considered as medical advice, diagnosis, or treatment. Always consult with a physician or qualified healthcare professional before making significant changes to your diet or exercise routine.
+                            </p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">3. Use of Services</h2>
+                            <p>You agree to use ZaderFood only for lawful purposes. You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">4. AI Features</h2>
+                            <p>Our Service includes features powered by Artificial Intelligence (AI), such as food recognition and automated meal planning. While we strive for accuracy, AI predictions may vary or be incorrect. You acknowledge that ZaderFood does not guarantee 100% accuracy of nutritional data derived from AI analysis.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">5. Intellectual Property</h2>
+                            <p>The Service and its original content, features, and functionality are and will remain the exclusive property of ZADER Technology Solutions and its licensors. Our content is protected by copyright and other laws of Vietnam and foreign countries.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">6. Termination</h2>
+                            <p>We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">7. Changes</h2>
+                            <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.</p>
+                        </section>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer th:replace="~{fragments/footer :: footer_section}"></footer>
+    </body>
+</html>

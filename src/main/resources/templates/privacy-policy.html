@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}"><title>Privacy Policy - ZaderFood</title></head>
+    <body class="bg-smart-white dark:bg-background-dark font-display min-h-screen flex flex-col">
+
+        <div class="fixed top-0 z-50 w-full bg-white/90 dark:bg-[#211511]/90 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800"> 
+            <div th:replace="~{fragments/navbar :: header_nav}"></div>
+        </div>
+
+        <main class="flex-grow pt-28 pb-16">
+            <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+                <div class="text-center mb-12">
+                    <h1 class="text-3xl md:text-4xl font-black text-dark-ink dark:text-white mb-4">Privacy Policy</h1>
+                    <p class="text-soft-grey dark:text-gray-400">Last updated: December 14, 2025</p>
+                </div>
+
+                <div class="bg-white dark:bg-[#1e1e1e] p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+
+                    <div class="space-y-8 text-dark-ink dark:text-gray-300 leading-relaxed">
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">1. Introduction</h2>
+                            <p>Welcome to ZaderFood ("we," "our," or "us"). We are committed to protecting your privacy and ensuring your personal data is handled in a safe and responsible manner. This Privacy Policy explains how we collect, use, and protect your information when you use our website and smart meal planning services.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">2. Information We Collect</h2>
+                            <ul class="list-disc pl-5 space-y-2 text-sm md:text-base">
+                                <li><strong>Personal Identification Information:</strong> Name, email address, and login credentials when you register.</li>
+                                <li><strong>Health & Dietary Data:</strong> Information you provide for meal planning, such as age, gender, weight, height, activity level, dietary preferences, and food allergies.</li>
+                                <li><strong>User Content:</strong> Images of food uploaded for AI analysis, recipes you create, and meal logs.</li>
+                                <li><strong>Usage Data:</strong> Information on how you interact with the site, including traffic data and logs.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">3. How We Use Your Information</h2>
+                            <p>We use the collected data for specific purposes:</p>
+                            <ul class="list-disc pl-5 space-y-2 mt-2 text-sm md:text-base">
+                                <li>To generate personalized meal plans and calculate nutritional needs (TDEE/BMR).</li>
+                                <li>To provide AI-based food recognition services.</li>
+                                <li>To improve our algorithms and user experience.</li>
+                                <li>To send you shopping lists, updates, or essential account notifications.</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">4. AI Processing</h2>
+                            <p>Our application uses AI models (such as Ollama) to process text and images. When you use features like "AI Food Scanner" or "Generate Meal Plan," relevant data (e.g., food images, diet constraints) is processed to provide the service. We do not use your personal health data for purposes other than providing the requested functionality.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">5. Data Security</h2>
+                            <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. Your passwords are hashed, and sensitive connections are secured via SSL/TLS.</p>
+                        </section>
+
+                        <section>
+                            <h2 class="text-xl font-bold text-primary mb-3">6. Contact Us</h2>
+                            <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+                            <p class="mt-2 font-medium">ZADER Technology Solutions</p>
+                            <p>Email: support@zaderfood.com</p>
+                            <p>Address: Hanoi, Vietnam</p>
+                        </section>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer th:replace="~{fragments/footer :: footer_section}"></footer>
+    </body>
+</html>

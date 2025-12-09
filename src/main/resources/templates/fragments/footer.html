@@ -1,15 +1,49 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<body>
+<div th:fragment="footer_section">
+    <style>
+        :root {
+            --footer-bg: #F5F5F5;
+            --footer-border: #F17950;
+        }
+        /* Dark mode overrides */
+        .dark {
+            --footer-bg: #211511; 
+        }
+    </style>
 
-    <footer th:fragment="footer_section" class="flex w-full flex-col gap-6 bg-smart-white px-5 py-10 text-center border-t border-smart-mist">
-        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-4">
-            <a class="text-soft-grey text-sm font-medium leading-normal min-w-40 hover:text-nutri-green transition-colors" href="#">Privacy Policy</a>
-            <a class="text-soft-grey text-sm font-medium leading-normal min-w-40 hover:text-nutri-green transition-colors" href="#">Terms of Service</a>
-            <a class="text-soft-grey text-sm font-medium leading-normal min-w-40 hover:text-nutri-green transition-colors" href="#">Contact Us</a>
+    <footer class="w-full bg-[var(--footer-bg)] dark:bg-background-dark/95 border-t border-[var(--footer-border)] mt-auto">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-start justify-between gap-y-8 gap-x-8 py-10">
+                
+                <div class="flex max-w-md flex-col items-start gap-4">
+                    <span class="text-xl font-semibold text-primary">Zader Food</span>
+                    <p class="text-sm text-soft-grey dark:text-gray-400">Your journey to healthier eating starts here. Smart tools to plan meals, balance nutrition, and enjoy everyday food better.</p>
+                    <p class="text-xs text-soft-grey dark:text-gray-400">© 2025 Zader Food. All rights reserved.</p>
+                </div>
+
+                <div class="flex-shrink-0">
+                    <nav class="flex items-center justify-start gap-x-6">
+                        <a class="text-sm text-soft-grey dark:text-gray-400 transition-colors hover:text-primary dark:hover:text-primary" href="/about">About Us</a>
+                        <a class="text-sm text-soft-grey dark:text-gray-400 transition-colors hover:text-primary dark:hover:text-primary" href="/feedback">Contact</a>
+                        <a class="text-sm text-soft-grey dark:text-gray-400 transition-colors hover:text-primary dark:hover:text-primary" href="/privacy-policy">Privacy Policy</a>
+                        <a class="text-sm text-soft-grey dark:text-gray-400 transition-colors hover:text-primary dark:hover:text-primary" href="/terms-of-service">Terms of Service</a>
+                    </nav>
+                </div>
+
+                <div class="flex items-center gap-5">
+                    <a class="text-soft-grey hover:text-primary transition-colors" href="#">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path></svg>
+                    </a>
+                    <a class="text-soft-grey hover:text-primary transition-colors" href="#">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.585-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.058 1.644-.07 4.85-.07zm0-2.163C8.84 0 8.424.012 7.148.07 2.827.225.225 2.828.07 7.148.012 8.424 0 8.84 0 12s.012 3.576.07 4.85c.155 4.32 2.757 6.923 7.078 7.078 1.274.058 1.69.07 4.852.07s3.578-.012 4.852-.07c4.32-.155 6.923-2.757 7.078-7.078.058-1.274.07-1.69.07-4.852s-.012-3.578-.07-4.852c-.155-4.32-2.757-6.923-7.078-7.078C15.576.012 15.16 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"></path></svg>
+                    </a>
+                    <a class="text-soft-grey hover:text-primary transition-colors" href="#">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                    </a>
+                    <a class="text-soft-grey hover:text-primary transition-colors" href="#">
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M21.75 2.25H2.25A2.25 2.25 0 000 4.5v15A2.25 2.25 0 002.25 21.75h19.5A2.25 2.25 0 0024 19.5V4.5A2.25 2.25 0 0021.75 2.25zM8.25 18.75H5.25v-9h3v9zM6.75 8.25a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM18.75 18.75h-3v-4.34c0-1.04-.02-2.38-1.45-2.38s-1.67 1.13-1.67 2.3v4.42h-3v-9h2.88v1.31h.04c.4-.76 1.38-1.55 2.84-1.55 3.04 0 3.6 2 3.6 4.6v5.33z"></path></svg>
+                    </a>
+                </div>
+            </div>
         </div>
-        <p class="text-soft-grey text-sm font-normal leading-normal">© 2024 Zader Food. All rights reserved.</p>
     </footer>
-
-</body>
-</html>
+</div>
