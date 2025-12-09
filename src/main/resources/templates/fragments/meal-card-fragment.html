@@ -1,0 +1,71 @@
+<div th:fragment="mealCardFragment(meal)" 
+     th:if="${meal != null}" 
+     class="relative p-4 rounded-xl shadow-sm border transition-all hover:shadow-md group flex flex-col gap-3"
+     th:classappend="${meal.status == 'EATEN'} ? 'bg-green-50/50 border-green-500 ring-1 ring-green-500' : 'bg-white dark:bg-[#1e1e1e] border-gray-100 dark:border-gray-700'">
+
+    <div class="absolute top-3 right-3 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button th:data-id="${meal.mealItemId}"
+                th:data-type="${meal.type}"
+                onclick="openReplaceModal(this.getAttribute('data-id'), this.getAttribute('data-type'))" 
+                class="p-1.5 bg-white text-gray-400 hover:text-blue-500 rounded-lg shadow-sm border border-gray-200 hover:border-blue-300" title="Edit">
+            <span class="material-symbols-outlined text-base">edit</span>
+        </button>
+
+        <button th:data-id="${meal.mealItemId}"
+                onclick="deleteMealItem(this.getAttribute('data-id'))" 
+                class="p-1.5 bg-white text-gray-400 hover:text-red-500 rounded-lg shadow-sm border border-gray-200 hover:border-red-300" title="Delete">
+            <span class="material-symbols-outlined text-base">delete</span>
+        </button>
+    </div>
+
+    <div class="w-full h-32 rounded-lg overflow-hidden relative">
+        <img th:src="${meal.imageUrl != null ? (meal.imageUrl.startsWith('http') or meal.imageUrl.startsWith('/uploads') ? meal.imageUrl : '/images/' + meal.imageUrl) : 'https://placehold.co/150x150?text=No+Img'}" 
+             onerror="this.src='https://placehold.co/150x150?text=Err'" 
+             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+
+        <div th:if="${meal.status == 'EATEN'}" class="absolute top-2 left-2">
+            <span class="px-2 py-1 bg-green-500 text-white text-[10px] font-bold rounded shadow-lg flex items-center gap-1">
+                <span class="material-symbols-outlined text-[12px]">check</span> EATEN
+            </span>
+        </div>
+
+        <div th:if="${meal.status == 'EATEN'}" class="absolute inset-0 bg-green-500/10 pointer-events-none"></div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <div class="flex justify-between items-start">
+            <h3 class="text-sm font-bold text-dark-ink dark:text-white line-clamp-2 pr-6" th:text="${meal.recipeName}">Name</h3>
+            <span class="text-xs font-bold text-primary whitespace-nowrap" th:text="${meal.calories} + ' kcal'">Cal</span>
+        </div>
+        <div class="flex justify-between items-center mt-1">
+            <p class="text-[10px] text-gray-400" th:text="${meal.prepTime + meal.cookTime} + ' mins'">Time</p>
+            <div class="flex gap-3 text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg">
+                <span title="Protein" class="flex items-center gap-1 text-blue-500">
+                    P <span class="text-dark-ink dark:text-gray-300">[[${meal.protein}]]</span>
+                </span>
+                <span title="Carbs" class="flex items-center gap-1 text-green-500">
+                    C <span class="text-dark-ink dark:text-gray-300">[[${meal.carbs}]]</span>
+                </span>
+                <span title="Fat" class="flex items-center gap-1 text-yellow-500">
+                    F <span class="text-dark-ink dark:text-gray-300">[[${meal.fat}]]</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-auto">
+        <button th:if="${meal.status != 'EATEN'}"
+                th:data-id="${meal.mealItemId}"
+                onclick="markAsEaten(this.getAttribute('data-id'))"
+                class="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-green-100 text-gray-600 hover:text-green-700 py-2 rounded-lg text-xs font-bold transition-all border border-gray-100 hover:border-green-200">
+            <span class="material-symbols-outlined text-base">check</span> Mark as Eaten
+        </button>
+
+        <button th:if="${meal.status == 'EATEN'}"
+                th:data-id="${meal.mealItemId}"
+                onclick="undoStatus(this.getAttribute('data-id'))" 
+                class="w-full flex items-center justify-center gap-2 text-gray-400 hover:text-orange-500 py-2 text-xs font-medium transition-colors">
+            <span class="material-symbols-outlined text-base">undo</span> Undo
+        </button>
+    </div>
+</div>

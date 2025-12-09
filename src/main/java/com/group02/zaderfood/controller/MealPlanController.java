@@ -399,7 +399,7 @@ public class MealPlanController {
         return "redirect:/meal-plan/customize";
     }
 
-    @GetMapping("/day/{dateStr}")
+    @GetMapping("/day/{dateStr:\\d{4}-\\d{2}-\\d{2}}")
     public String showDayDetail(@PathVariable String dateStr,
             @AuthenticationPrincipal CustomUserDetails user,
             Model model) {

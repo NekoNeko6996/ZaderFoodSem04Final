@@ -8,9 +8,16 @@ import com.group02.zaderfood.dto.WeeklyPlanDTO;
 import com.group02.zaderfood.entity.*;
 import com.group02.zaderfood.entity.enums.MealType;
 import com.group02.zaderfood.entity.enums.PlanStatus;
+import com.group02.zaderfood.entity.enums.RecipeStatus;
 import com.group02.zaderfood.repository.DailyMealPlanRepository;
+import com.group02.zaderfood.repository.IngredientRepository;
 import com.group02.zaderfood.repository.MealItemRepository;
+import com.group02.zaderfood.repository.RecipeIngredientRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
+import com.group02.zaderfood.repository.ShoppingListItemRepository;
+import com.group02.zaderfood.repository.ShoppingListRepository;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +37,14 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class MealPlanService {
@@ -46,6 +61,19 @@ public class MealPlanService {
     // Inject RecipeService để dùng lại hàm tính toán (Nếu RecipeService là Bean)
     @Autowired
     private RecipeService recipeService;
+
+    @Autowired
+    private ShoppingListRepository shoppingListRepo;
+    @Autowired
+    private ShoppingListItemRepository shoppingItemRepo;
+    @Autowired
+    private RecipeIngredientRepository recipeIngRepo;
+
+    @Autowired
+    private IngredientRepository ingredientRepo;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Transactional
     public void saveWeeklyPlan(Integer userId, SavePlanDTO dto) {
@@ -271,33 +299,191 @@ public class MealPlanService {
         List<MealItem> items = itemRepo.findByMealPlanId(dailyPlan.getMealPlanId());
         dto.meals = new ArrayList<>();
 
-        // Map tạm để cộng dồn nguyên liệu đi chợ (Optional - làm sau nếu phức tạp)
-        // Map<String, String> shoppingMap = new HashMap<>(); 
+        int consumedCal = 0;
+        int consumedPro = 0, consumedCarb = 0, consumedFat = 0;
+        int eatenCount = 0, skippedCount = 0;
+
+        List<DayDetailDTO.IngredientSummary> ingredientList = new ArrayList<>();
+
         for (MealItem item : items) {
             DayDetailDTO.MealDetail mealDetail = new DayDetailDTO.MealDetail();
+            mealDetail.mealItemId = item.getMealItemId();
             mealDetail.type = item.getMealTimeType().name();
             mealDetail.recipeName = item.getCustomDishName();
             mealDetail.calories = item.getCalories().intValue();
+            mealDetail.status = item.getStatus();
 
-            // Nếu có Recipe ID, lấy thêm ảnh và hướng dẫn
+            Recipe r = null;
+
+            // 1. Lấy thông tin Recipe và Tự động tính Macros
             if (item.getRecipeId() != null) {
-                Recipe r = recipeRepo.findById(item.getRecipeId()).orElse(null);
+                r = recipeRepo.findById(item.getRecipeId()).orElse(null);
+
+                // Lấy danh sách nguyên liệu (để làm Shopping List)
+                List<RecipeIngredient> recipeIngredients = recipeIngRepo.findByRecipeId(item.getRecipeId());
+
+                // --- SHOPPING LIST LOGIC (Giữ nguyên) ---
+                for (RecipeIngredient ri : recipeIngredients) {
+                    Ingredient ing = ingredientRepo.findById(ri.getIngredientId()).orElse(null);
+                    String ingName = (ing != null) ? ing.getName() : "Unknown";
+                    String ingImg = (ing != null && ing.getImageUrl() != null) ? ing.getImageUrl() : "/images/ingredients/default.png";
+                    String category = "Pantry";
+
+                    BigDecimal qty = (ri.getQuantity() != null) ? ri.getQuantity() : BigDecimal.ZERO;
+                    if (item.getQuantityMultiplier() != null) {
+                        qty = qty.multiply(item.getQuantityMultiplier());
+                    }
+                    String quantityStr = qty.stripTrailingZeros().toPlainString() + " " + ri.getUnit();
+
+                    ingredientList.add(new DayDetailDTO.IngredientSummary(ingName, quantityStr, ingImg, category));
+                }
+                // ----------------------------------------
+
                 if (r != null) {
+                    // [QUAN TRỌNG] Gán danh sách nguyên liệu vào Recipe để Service có dữ liệu tính toán
+                    r.setRecipeIngredients(recipeIngredients);
+
+                    // [NEW] GỌI HÀM TÍNH TOÁN CỦA RECIPE SERVICE
+                    // Hàm này sẽ điền giá trị vào r.protein, r.carbs, r.fat (Transient fields)
+                    recipeService.calculateRecipeMacros(r);
+
                     mealDetail.imageUrl = r.getImageUrl();
                     mealDetail.prepTime = r.getPrepTimeMin() != null ? r.getPrepTimeMin() : 0;
                     mealDetail.cookTime = r.getCookTimeMin() != null ? r.getCookTimeMin() : 0;
-
-                    // Lấy Steps (Cần RecipeStepRepository hoặc truy cập qua quan hệ OneToMany nếu đã fetch EAGER/Transactional)
-                    // mealDetail.steps = r.getRecipeSteps().stream().map(RecipeStep::getInstruction).collect(Collectors.toList());
                 }
+
+                // --- TÍNH TOÁN MACROS CHO TỪNG MÓN ---
+                // 1. Protein
+                BigDecimal p = item.getProtein();
+                if (p == null && r != null) {
+                    p = r.getProtein(); // Lấy từ Recipe nếu Item null
+                }
+                mealDetail.protein = (p != null) ? p.intValue() : 0;
+
+                // 2. Carbs
+                BigDecimal c = item.getCarbs();
+                if (c == null && r != null) {
+                    c = r.getCarbs();
+                }
+                mealDetail.carbs = (c != null) ? c.intValue() : 0;
+
+                // 3. Fat
+                BigDecimal f = item.getFat();
+                if (f == null && r != null) {
+                    f = r.getFat();
+                }
+                mealDetail.fat = (f != null) ? f.intValue() : 0;
             } else {
-                mealDetail.imageUrl = "/images/default-food.png";
+                mealDetail.imageUrl = item.getImageUrl() != null ? item.getImageUrl() : "/images/default-food.png";
             }
+
+            // 2. TÍNH TOÁN DINH DƯỠNG THỰC TẾ (ĐÃ ĂN)
+            if ("EATEN".equals(item.getStatus())) {
+                eatenCount++;
+
+                // CALORIES
+                consumedCal += mealDetail.calories;
+
+                // PROTEIN
+                BigDecimal p = item.getProtein();
+                // Nếu item không có, lấy từ Recipe (đã được calculateRecipeMacros điền số)
+                if (p == null && r != null) {
+                    p = r.getProtein();
+                }
+                consumedPro += (p != null) ? p.intValue() : 0;
+
+                // CARBS
+                BigDecimal c = item.getCarbs();
+                if (c == null && r != null) {
+                    c = r.getCarbs();
+                }
+                consumedCarb += (c != null) ? c.intValue() : 0;
+
+                // FAT
+                BigDecimal f = item.getFat();
+                if (f == null && r != null) {
+                    f = r.getFat();
+                }
+                consumedFat += (f != null) ? f.intValue() : 0;
+
+            } else if ("SKIPPED".equals(item.getStatus())) {
+                skippedCount++;
+            }
+
             dto.meals.add(mealDetail);
         }
 
-        // Sắp xếp thứ tự bữa ăn
-        // ... (Logic sort giống JavaScript) ...
+        dto.consumedCalories = consumedCal;
+        dto.consumedProtein = consumedPro;
+        dto.consumedCarbs = consumedCarb;
+        dto.consumedFat = consumedFat;
+
+        dto.totalMeals = items.size();
+        dto.eatenMeals = eatenCount;
+        dto.skippedMeals = skippedCount;
+
+        dto.totalCalories = dailyPlan.getTotalCalories().intValue();
+        dto.dailyIngredients = ingredientList;
+        
+        dto.suggestions = new ArrayList<>();
+
+        int remainingCal = dto.totalCalories - consumedCal;
+        
+        // Chỉ gợi ý nếu còn thiếu năng lượng đáng kể (> 100kcal)
+        if (remainingCal > 100) {
+
+            // 1. Lấy danh sách ứng viên (Lấy 50 món Active bất kỳ)
+            List<Recipe> candidates = recipeRepo.findTop50ByStatus(RecipeStatus.ACTIVE);
+
+            List<Recipe> validRecipes = new ArrayList<>();
+
+            // 2. Tính toán & Lọc
+            for (Recipe r : candidates) {
+                // Tự động tính toán Macros (điền vào @Transient protein, carbs, fat, totalCalories)
+                // Lưu ý: Cần gán recipeIngredients trước nếu hàm calculate chưa tự fetch (như đã sửa ở bước trước)
+                // Tuy nhiên hàm calculateRecipeMacros trong RecipeService của bạn đã có dòng recipe.getRecipeIngredients()
+                // Do Hibernate Lazy Loading, nếu r lấy từ Repo thì list này có thể chưa load.
+                // An toàn nhất là fetch Eager hoặc Transactional. Ở đây ta giả định Service có @Transactional.
+
+                recipeService.calculateRecipeMacros(r);
+
+                int rCal = (r.getTotalCalories() != null) ? r.getTotalCalories().intValue() : 0;
+
+                // Điều kiện: Calo món ăn phải nhỏ hơn hoặc bằng số còn thiếu (cho phép lố tí xíu +50)
+                if (rCal > 0 && rCal <= (remainingCal + 50)) {
+                    validRecipes.add(r);
+                }
+            }
+
+            // 3. Sắp xếp theo Protein giảm dần (Java Stream)
+            List<Recipe> topPicks = validRecipes.stream()
+                    .sorted((r1, r2) -> {
+                        BigDecimal p1 = r1.getProtein() != null ? r1.getProtein() : BigDecimal.ZERO;
+                        BigDecimal p2 = r2.getProtein() != null ? r2.getProtein() : BigDecimal.ZERO;
+                        return p2.compareTo(p1); // Giảm dần
+                    })
+                    .limit(3) // Lấy 3 món tốt nhất
+                    .collect(Collectors.toList());
+
+            // 4. Map sang DTO
+            for (Recipe r : topPicks) {
+                DayDetailDTO.MealDetail suggestion = new DayDetailDTO.MealDetail();
+                suggestion.recipeName = r.getName();
+                suggestion.calories = r.getTotalCalories().intValue();
+                suggestion.protein = r.getProtein() != null ? r.getProtein().intValue() : 0;
+                suggestion.carbs = r.getCarbs() != null ? r.getCarbs().intValue() : 0;
+                suggestion.fat = r.getFat() != null ? r.getFat().intValue() : 0;
+                suggestion.imageUrl = r.getImageUrl();
+                suggestion.prepTime = r.getPrepTimeMin();
+
+                // Set type đặc biệt để Frontend nhận biết
+                suggestion.type = "RECIPE_SUGGESTION";
+                suggestion.mealItemId = r.getRecipeId(); // Mượn trường ID để chứa RecipeId
+
+                dto.suggestions.add(suggestion);
+            }
+        }
+
         return dto;
     }
 
@@ -393,21 +579,21 @@ public class MealPlanService {
         }
         return dayOfWeek; // Thứ 2 offset 1, Thứ 3 offset 2...
     }
-    
+
     public StatsDTO calculateStats(Integer userId, int calorieGoal) {
         StatsDTO stats = new StatsDTO();
-        
+
         // 1. Lấy dữ liệu 30 ngày gần nhất
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(29);
         List<DailyMealPlan> plans = dailyRepo.findByUserIdAndDateRange(userId, startDate, endDate);
-        
+
         stats.totalTrackedDays = plans.size();
         stats.chartLabels = new ArrayList<>();
         stats.chartDataCalories = new ArrayList<>();
         stats.chartDataGoal = new ArrayList<>();
         stats.insights = new ArrayList<>();
-        
+
         if (plans.isEmpty()) {
             stats.insights.add("Start tracking your meals to see analytics here!");
             return stats;
@@ -432,7 +618,9 @@ public class MealPlanService {
 
             // Kiểm tra tuân thủ (+/- 15%)
             double ratio = p.getTotalCalories().doubleValue() / calorieGoal;
-            if (ratio >= 0.85 && ratio <= 1.15) goodDays++;
+            if (ratio >= 0.85 && ratio <= 1.15) {
+                goodDays++;
+            }
         }
 
         // 3. Tính trung bình
@@ -440,7 +628,7 @@ public class MealPlanService {
         stats.avgProtein = (int) (totalPro / plans.size());
         stats.avgCarbs = (int) (totalCarb / plans.size());
         stats.avgFat = (int) (totalFat / plans.size());
-        
+
         stats.adherenceScore = (goodDays * 100) / plans.size();
 
         // 4. Tạo Insights (Lời nhắc thông minh)
@@ -459,7 +647,245 @@ public class MealPlanService {
         if (stats.avgProtein < (calorieGoal * 0.2 / 4)) { // Ví dụ thấp hơn 20%
             stats.insights.add("🥩 Your protein intake is low. Try adding more chicken or beans.");
         }
-        
+
         return stats;
+    }
+
+    // --- 1. LOGIC MARK AS EATEN ---
+    @Transactional
+    public void updateMealItemStatus(Integer itemId, String status) {
+        MealItem item = itemRepo.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        // Kiểm tra status hợp lệ
+        if (!status.equals("EATEN") && !status.equals("SKIPPED") && !status.equals("PENDING")) {
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        item.setStatus(status);
+        item.setUpdatedAt(LocalDateTime.now());
+        itemRepo.save(item);
+
+        // (Optional) Tính lại tổng thực tế của DailyPlan nếu cần thiết kế cache
+    }
+
+    // --- 2. LOGIC TẠO SHOPPING LIST ---
+    @Transactional
+    public void createShoppingListForDate(Integer userId, LocalDate date) {
+        // A. Tìm Plan của ngày đó
+        DailyMealPlan dailyPlan = dailyRepo.findByUserIdAndPlanDate(userId, date)
+                .orElseThrow(() -> new RuntimeException("No meal plan found for this date"));
+
+        // B. Tạo Shopping List Header
+        ShoppingList list = new ShoppingList();
+        list.setUserId(userId);
+        list.setName("Shopping for " + date.toString());
+        list.setFromDate(date);
+        list.setToDate(date);
+        list.setStatus("PENDING");
+        list.setCreatedAt(LocalDateTime.now());
+        list = shoppingListRepo.save(list);
+
+        // C. Lấy tất cả món ăn trong ngày
+        List<MealItem> mealItems = itemRepo.findByMealPlanId(dailyPlan.getMealPlanId());
+
+        // D. Duyệt từng món -> Lấy công thức -> Lấy nguyên liệu -> Lưu vào Shopping List
+        for (MealItem meal : mealItems) {
+            if (meal.getRecipeId() != null) {
+                List<RecipeIngredient> ingredients = recipeIngRepo.findByRecipeId(meal.getRecipeId());
+
+                for (RecipeIngredient ri : ingredients) {
+                    ShoppingListItem shopItem = new ShoppingListItem();
+                    shopItem.setListId(list.getListId());
+                    shopItem.setIngredientId(ri.getIngredientId());
+                    shopItem.setQuantity(ri.getQuantity()); // Có thể nhân với meal.getQuantityMultiplier()
+                    shopItem.setUnit(ri.getUnit());
+                    shopItem.setIsBought(false);
+
+                    shoppingItemRepo.save(shopItem);
+                }
+            }
+        }
+    }
+
+    // --- 3. LOGIC THÊM SNACK (SMART ADD) ---
+    @Transactional
+    public boolean addSmartSnack(Integer userId, LocalDate date) {
+        DailyMealPlan dailyPlan = dailyRepo.findByUserIdAndPlanDate(userId, date).orElse(null);
+        if (dailyPlan == null) {
+            return false;
+        }
+
+        // A. Tìm một công thức Snack ngẫu nhiên (hoặc logic AI phức tạp hơn)
+        // Giả sử có hàm tìm Recipe theo Type
+        // List<Recipe> snacks = recipeRepo.findByMealType("SNACK");
+        // Recipe randomSnack = ...
+        // Demo: Hardcode tìm recipe có ID cụ thể hoặc món đầu tiên là snack
+        // Bạn cần viết query: SELECT * FROM Recipes WHERE Description LIKE '%snack%' hoặc có category snack
+        // Ở đây tôi giả lập tạo một món Snack nhanh
+        MealItem snack = new MealItem();
+        snack.setMealPlanId(dailyPlan.getMealPlanId());
+        snack.setCustomDishName("Healthy Yogurt & Nuts"); // Tên món
+        snack.setCalories(BigDecimal.valueOf(150));       // Calo
+        snack.setProtein(BigDecimal.valueOf(10));
+        snack.setCarbs(BigDecimal.valueOf(15));
+        snack.setFat(BigDecimal.valueOf(5));
+        snack.setMealTimeType(MealType.SNACK);
+        snack.setStatus("PENDING");
+        snack.setCreatedAt(LocalDateTime.now());
+
+        itemRepo.save(snack);
+        return true;
+    }
+
+    public ByteArrayInputStream exportShoppingListToExcel(Integer userId, LocalDate date) throws Exception {
+        // Lấy dữ liệu (Tái sử dụng logic getDayDetail hoặc tách hàm lấy ingredient riêng)
+        DayDetailDTO dayDetail = getDayDetail(userId, date);
+        List<DayDetailDTO.IngredientSummary> ingredients = dayDetail.dailyIngredients;
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Shopping List");
+
+            // Header Row
+            Row headerRow = sheet.createRow(0);
+            String[] columns = {"Ingredient", "Category", "Quantity"};
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+                CellStyle style = workbook.createCellStyle();
+                Font font = workbook.createFont();
+                font.setBold(true);
+                style.setFont(font);
+                cell.setCellStyle(style);
+            }
+
+            // Data Rows
+            int rowIdx = 1;
+            for (DayDetailDTO.IngredientSummary item : ingredients) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(item.name);
+                row.createCell(1).setCellValue(item.category);
+                row.createCell(2).setCellValue(item.quantity);
+            }
+
+            // Auto size cột
+            sheet.autoSizeColumn(0);
+            sheet.autoSizeColumn(1);
+            sheet.autoSizeColumn(2);
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        }
+    }
+
+    @Transactional
+    public void updateMealItemDetails(Integer itemId, String name, BigDecimal cal, BigDecimal pro, BigDecimal carb, BigDecimal fat, MultipartFile image) {
+        MealItem item = itemRepo.findById(itemId).orElseThrow(() -> new RuntimeException("Item not found"));
+
+        item.setCustomDishName(name);
+        item.setCalories(cal);
+        item.setProtein(pro);
+        item.setCarbs(carb);
+        item.setFat(fat);
+
+        // Nếu có ảnh mới thì update, không thì giữ nguyên
+        if (image != null && !image.isEmpty()) {
+            String imgUrl = fileStorageService.storeFile(image);
+            item.setImageUrl(imgUrl);
+        }
+
+        // Ngắt kết nối với Recipe cũ vì giờ nó là món custom
+        item.setRecipeId(null);
+        item.setIsCustomEntry(true);
+        item.setStatus("EATEN"); // Mặc định update xong coi như đã ăn (hoặc tùy logic bạn)
+        item.setUpdatedAt(LocalDateTime.now());
+
+        itemRepo.save(item);
+    }
+
+    @Transactional
+    public void addCustomMealItem(Integer userId, LocalDate date, String mealTypeStr, String name, BigDecimal cal, BigDecimal pro, BigDecimal carb, BigDecimal fat, MultipartFile image) {
+        // 1. Tìm hoặc tạo DailyPlan cho ngày đó
+        DailyMealPlan dailyPlan = dailyRepo.findByUserIdAndPlanDate(userId, date)
+                .orElseGet(() -> {
+                    DailyMealPlan newPlan = new DailyMealPlan();
+                    newPlan.setUserId(userId);
+                    newPlan.setPlanDate(date);
+                    newPlan.setTotalCalories(BigDecimal.ZERO);
+                    newPlan.setStatus(PlanStatus.PLANNED);
+                    newPlan.setCreatedAt(LocalDateTime.now());
+                    return dailyRepo.save(newPlan);
+                });
+
+        // 2. Tạo MealItem mới
+        MealItem item = new MealItem();
+        item.setMealPlanId(dailyPlan.getMealPlanId());
+        item.setCustomDishName(name);
+        item.setCalories(cal);
+        item.setProtein(pro);
+        item.setCarbs(carb);
+        item.setFat(fat);
+        item.setMealTimeType(MealType.valueOf(mealTypeStr.toUpperCase()));
+        item.setStatus("EATEN");
+        item.setIsCustomEntry(true);
+        item.setCreatedAt(LocalDateTime.now());
+        item.setQuantityMultiplier(BigDecimal.ONE);
+
+        if (image != null && !image.isEmpty()) {
+            String imgUrl = fileStorageService.storeFile(image);
+            item.setImageUrl(imgUrl);
+        } else {
+            item.setImageUrl("/images/default-food.png");
+        }
+
+        itemRepo.save(item);
+    }
+
+    public MealItem getMealItemById(Integer itemId) {
+        return itemRepo.findById(itemId).orElseThrow(() -> new RuntimeException("Not found"));
+    }
+
+    @Transactional
+    public void deleteMealItem(Integer itemId) {
+        itemRepo.deleteById(itemId);
+    }
+    
+    @Transactional
+    public void addRecipeToPlan(Integer userId, LocalDate date, Integer recipeId, String typeStr) {
+        // 1. Tìm/Tạo Plan
+        DailyMealPlan dailyPlan = dailyRepo.findByUserIdAndPlanDate(userId, date)
+                .orElseGet(() -> {
+                    DailyMealPlan newPlan = new DailyMealPlan();
+                    newPlan.setUserId(userId);
+                    newPlan.setPlanDate(date);
+                    newPlan.setTotalCalories(BigDecimal.ZERO);
+                    newPlan.setStatus(PlanStatus.PLANNED);
+                    newPlan.setCreatedAt(LocalDateTime.now());
+                    return dailyRepo.save(newPlan);
+                });
+
+        // 2. Lấy thông tin Recipe
+        Recipe r = recipeRepo.findById(recipeId).orElseThrow(() -> new RuntimeException("Recipe not found"));
+        // Tính toán lại để chắc chắn có calo
+        recipeService.calculateRecipeMacros(r);
+
+        // 3. Tạo MealItem
+        MealItem item = new MealItem();
+        item.setMealPlanId(dailyPlan.getMealPlanId());
+        item.setRecipeId(recipeId);
+        item.setCustomDishName(r.getName()); // Lưu tên để hiển thị nhanh
+        item.setCalories(r.getTotalCalories());
+        item.setProtein(r.getProtein());
+        item.setCarbs(r.getCarbs());
+        item.setFat(r.getFat());
+        item.setImageUrl(r.getImageUrl());
+        
+        item.setMealTimeType(MealType.valueOf(typeStr.toUpperCase()));
+        item.setStatus("PENDING");
+        item.setQuantityMultiplier(BigDecimal.ONE);
+        item.setIsCustomEntry(false); // Đây là món từ Recipe, không phải custom
+        item.setCreatedAt(LocalDateTime.now());
+
+        itemRepo.save(item);
     }
 }
