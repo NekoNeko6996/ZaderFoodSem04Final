@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller // QUAN TRỌNG: Dùng @Controller để trả về View (HTML), KHÔNG dùng @RestController
 @RequestMapping("/admin/recipes") // URL gốc cho trang quản trị
@@ -16,7 +17,7 @@ public class AdminRecipeController {
 
     @Autowired
     private AdminRecipeService adminRecipeService;
-    
+
     @Autowired
     private RecipeService recipeService;
 
@@ -42,23 +43,37 @@ public class AdminRecipeController {
     // 3. POST: Xử lý cập nhật thông tin (Khi bấm nút Lưu)
     // Dùng @ModelAttribute để hứng dữ liệu từ Form HTML gửi lên
     @PostMapping("/{id}/update")
-    public String updateRecipe(@PathVariable Integer id, @ModelAttribute Recipe recipe) {
+    public String updateRecipe(@PathVariable Integer id, @ModelAttribute Recipe recipe, RedirectAttributes ra) {
         adminRecipeService.updateRecipeContent(id, recipe);
-        return "redirect:/admin/recipes/" + id; // Load lại trang hiện tại để thấy thay đổi
+
+        ra.addFlashAttribute("message", "Recipe updated successfully!");
+        ra.addFlashAttribute("messageType", "success");
+
+        return "redirect:/admin/recipes/" + id;
     }
 
     // 4. POST: Duyệt công thức
     @PostMapping("/{id}/approve")
-    public String approveRecipe(@PathVariable Integer id) {
+    public String approveRecipe(@PathVariable Integer id, RedirectAttributes ra) {
         adminRecipeService.approveRecipe(id);
-        return "redirect:/admin/recipes/pending"; // Duyệt xong quay về danh sách
+
+        // Thêm thông báo
+        ra.addFlashAttribute("message", "Recipe has been approved and published!");
+        ra.addFlashAttribute("messageType", "success");
+
+        return "redirect:/admin/recipes/pending";
     }
 
     // 5. POST: Từ chối công thức
     @PostMapping("/{id}/reject")
-    public String rejectRecipe(@PathVariable Integer id) {
+    public String rejectRecipe(@PathVariable Integer id, RedirectAttributes ra) {
         adminRecipeService.rejectRecipe(id);
-        return "redirect:/admin/recipes/pending"; // Xóa xong quay về danh sách
+
+        // Thêm thông báo
+        ra.addFlashAttribute("message", "Recipe has been rejected and removed.");
+        ra.addFlashAttribute("messageType", "success"); // Hoặc dùng 'error' nếu muốn hiện màu đỏ
+
+        return "redirect:/admin/recipes/pending";
     }
 
     // 6
@@ -73,7 +88,7 @@ public class AdminRecipeController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-    
+
     @PostMapping("/{id}/api/update-general")
     @ResponseBody // Trả về JSON
     public ResponseEntity<?> updateRecipeGeneralApi(@PathVariable Integer id, @ModelAttribute Recipe recipe) {

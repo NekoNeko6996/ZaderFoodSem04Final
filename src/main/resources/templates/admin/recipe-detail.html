@@ -31,7 +31,6 @@
     </script>
 </head>
 <body class="font-display bg-background-light text-dark-ink">
-
     <div class="relative flex min-h-screen w-full flex-col">
         <div th:replace="~{fragments/navbar :: header_nav}"></div>
 
@@ -218,7 +217,8 @@
                                     <div th:if="${!ri.ingredient.isActive}" class="absolute top-0 right-0">
                                         <span class="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg">NEW</span>
                                     </div>
-                                    <img th:src="${ri.ingredient.imageUrl != null ? ri.ingredient.imageUrl : 'https://placehold.co/48x48?text=Ing'}" 
+                                    <img th:src="${ri.ingredient.imageUrl}" 
+                                         onerror="this.src='https://placehold.co/48x48?text=404'"
                                          class="w-10 h-10 rounded object-cover border border-gray-200 bg-white mr-3 shrink-0">
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-bold text-dark-ink truncate group-hover/ing:text-primary transition-colors" th:text="${ri.ingredient.name}">Ingredient Name</p>

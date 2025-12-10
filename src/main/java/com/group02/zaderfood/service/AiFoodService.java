@@ -148,7 +148,7 @@ public class AiFoodService {
     public WeeklyPlanDTO generateWeeklyPlan(int calories, String dietType, String goal) {
         try {
             // 1. Lấy dữ liệu: Giới hạn 40 món để giảm tải và tránh AI bị "ngáo" vì quá nhiều text
-            List<Recipe> candidates = recipeRepository.findRandomRecipes();
+            List<Recipe> candidates = recipeRepository.findRandomNutritionistRecipes();
             if (candidates.size() > 40) {
                 candidates = candidates.subList(0, 40);
             }

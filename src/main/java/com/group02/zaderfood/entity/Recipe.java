@@ -49,6 +49,9 @@ public class Recipe implements Serializable {
 
     @Column(name = "ImageUrl")
     private String imageUrl;
+    
+    @Column(name = "IsNutritionist")
+    private boolean isNutritionist;
 
     @Column(name = "Status")
     @Enumerated(EnumType.STRING)
@@ -89,4 +92,9 @@ public class Recipe implements Serializable {
     @ManyToOne
     @JoinColumn(name = "CreatedByUserId", insertable = false, updatable = false)
     private User user;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RecipeId", insertable = false, updatable = false)
+    @ToString.Exclude
+    private Recipe recipe;
 }

@@ -43,5 +43,10 @@ public class Review implements Serializable {
 
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
-
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RecipeId", insertable = false, updatable = false)
+    @ToString.Exclude
+    private Recipe recipe;
+    
 }

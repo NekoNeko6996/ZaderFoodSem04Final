@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Ingredients - Zader Admin</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        </style>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {"primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "nutri-green": "#4CAF50"},
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light text-dark-ink">
+        <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
+
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
+                <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-extrabold text-dark-ink">Ingredients Database</h2>
+                        <button onclick="document.getElementById('addModal').showModal()" 
+                                class="flex items-center rounded-lg h-10 px-5 bg-nutri-green text-white font-bold gap-2 hover:bg-green-600 shadow-sm">
+                            <span class="material-symbols-outlined text-sm">add</span> Add Ingredient
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+                        <form th:action="@{/admin/ingredients}" method="get" class="flex gap-4 items-center">
+                            <div class="relative flex-1">
+                                <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+                                <input name="keyword" th:value="${keyword}" class="w-full rounded-lg border-gray-200 pl-10 h-10 text-sm focus:ring-nutri-green" placeholder="Search ingredients..."/>
+                            </div>
+                            <select name="categoryId" class="rounded-lg border-gray-200 h-10 text-sm focus:ring-nutri-green" onchange="this.form.submit()">
+                                <option value="">All Categories</option>
+                                <option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.name}" th:selected="${c.categoryId == categoryId}"></option>
+                            </select>
+                            <select name="status" class="rounded-lg border-gray-200 h-10 text-sm focus:ring-nutri-green" onchange="this.form.submit()">
+                                <option value="">All Status</option>
+                                <option value="true" th:selected="${status == true}">Active</option>
+                                <option value="false" th:selected="${status == false}">Inactive</option>
+                            </select>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase">
+                                <tr>
+                                    <th class="p-4">Ingredient</th>
+                                    <th class="p-4">Macros (per 100g)</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr th:each="ing : ${ingredients}" class="hover:bg-gray-50">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img th:src="${ing.imageUrl}"
+                                                 class="w-10 h-10 rounded-md object-cover bg-gray-100"
+                                                 onerror="this.src='https://placehold.co/100x100?text=404'" >
+                                            <div>
+                                                <p class="font-bold text-dark-ink" th:text="${ing.name}">Apple</p>
+                                                <span class="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded" 
+                                                      th:text="${ing.ingredientCategory != null ? ing.ingredientCategory.name : 'Uncategorized'}">Fruit</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-gray-600">
+                                        <div class="flex gap-4 text-xs">
+                                            <div><span class="font-bold text-orange-600" th:text="${ing.caloriesPer100g}">52</span> kcal</div>
+                                            <div>P: <span th:text="${ing.protein}">0.3</span>g</div>
+                                            <div>C: <span th:text="${ing.carbs}">14</span>g</div>
+                                            <div>F: <span th:text="${ing.fat}">0.2</span>g</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <form th:action="@{/admin/ingredients/toggle/{id}(id=${ing.ingredientId})}" method="post">
+                                            <button type="submit" 
+                                                    th:classappend="${ing.isActive} ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                                                    class="px-2 py-1 rounded-full text-xs font-bold w-20">
+                                                <span th:text="${ing.isActive} ? 'ACTIVE' : 'INACTIVE'">ACTIVE</span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <form th:id="'delete-ing-' + ${ing.ingredientId}" 
+                                              th:action="@{/admin/ingredients/delete/{id}(id=${ing.ingredientId})}" 
+                                              method="post" style="display: none;">
+                                        </form>
+                                        <button type="button" 
+                                                th:onclick="confirmAction('delete-ing-[[${ing.ingredientId}]]', 'Delete Ingredient?', 'This action cannot be undone.', 'Yes, Delete')"
+                                                class="text-red-500 hover:bg-red-50 p-1 rounded">
+                                            <span class="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+            <dialog id="addModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-2xl">
+                <form th:action="@{/admin/ingredients/add}" method="post" enctype="multipart/form-data" th:object="${newIngredient}">
+                    <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                        <h3 class="text-lg font-bold">Add New Ingredient</h3>
+                        <button type="button" onclick="document.getElementById('addModal').close()" class="text-gray-400"><span class="material-symbols-outlined">close</span></button>
+                    </div>
+                    <div class="p-6 grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-bold mb-1">Name</label>
+                            <input type="text" th:field="*{newName}" required class="w-full rounded-lg border-gray-300">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1">Category</label>
+                            <select th:field="*{categoryId}" class="w-full rounded-lg border-gray-300">
+                                <option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.name}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1">Base Unit</label>
+                            <input type="text" th:field="*{baseUnit}" placeholder="g, ml, pcs" class="w-full rounded-lg border-gray-300">
+                        </div>
+                        <div><label class="block text-sm font-bold">Calories (kcal)</label><input type="number" step="0.1" th:field="*{caloriesPer100g}" class="w-full rounded-lg border-gray-300"></div>
+                        <div><label class="block text-sm font-bold">Protein (g)</label><input type="number" step="0.1" th:field="*{protein}" class="w-full rounded-lg border-gray-300"></div>
+                        <div><label class="block text-sm font-bold">Carbs (g)</label><input type="number" step="0.1" th:field="*{carbs}" class="w-full rounded-lg border-gray-300"></div>
+                        <div><label class="block text-sm font-bold">Fat (g)</label><input type="number" step="0.1" th:field="*{fat}" class="w-full rounded-lg border-gray-300"></div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-bold mb-1">Image</label>
+                            <input type="file" th:field="*{newIngredientImage}" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t flex justify-end gap-3 bg-gray-50">
+                        <button type="button" onclick="document.getElementById('addModal').close()" class="px-4 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-200">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-nutri-green text-white font-bold hover:bg-green-600">Save Ingredient</button>
+                    </div>
+                </form>
+            </dialog>
+        </div>
+
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+        <script>
+            function confirmAction(formId, title = 'Are you sure?', text = "You won't be able to revert this!", confirmBtnText = 'Yes, do it!') {
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#111827',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: confirmBtnText,
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Hiển thị loading trước khi submit
+                        ZaderToast.loading('Processing...');
+                        const form = document.getElementById(formId);
+                        if (form) {
+                            form.submit();
+                        } else {
+                            console.error('Form not found: ' + formId);
+                            ZaderToast.error('Error: Form ID not found');
+                        }
+                    }
+                }
+                );
+            }
+        </script>
+    </body>
+</html>
