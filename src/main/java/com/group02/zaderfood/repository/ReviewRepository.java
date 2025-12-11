@@ -20,4 +20,8 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             + "ORDER BY avgRating DESC, totalReviews DESC "
             + "LIMIT 5")
     List<Object[]> findTopRatedRecipes();
+
+    List<Review> findByRecipeIdOrderByCreatedAtDesc(Integer recipeId);
+
+    long countByRecipeId(Integer recipeId);
 }

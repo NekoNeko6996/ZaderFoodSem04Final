@@ -5,18 +5,20 @@ import com.group02.zaderfood.dto.RecipeCreationDTO;
 import com.group02.zaderfood.dto.RecipeMatchDTO;
 import com.group02.zaderfood.entity.Ingredient;
 import com.group02.zaderfood.entity.Recipe;
+import com.group02.zaderfood.entity.Review;
 import com.group02.zaderfood.repository.IngredientRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
+import com.group02.zaderfood.repository.ReviewRepository;
 import com.group02.zaderfood.service.CustomUserDetails;
 import com.group02.zaderfood.service.IngredientService;
 import com.group02.zaderfood.service.RecipeService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -42,6 +44,8 @@ public class RecipeController {
     private RecipeRepository recipeRepository;
     @Autowired
     private IngredientRepository ingredientRepository;
+    @Autowired
+    private ReviewRepository reviewRepository;
 
     @GetMapping("/create")
     public String showCreateForm(Model model) {
@@ -78,7 +82,7 @@ public class RecipeController {
          * 4. Save RecipeIngredients (Connect Recipe ID and Ingredient ID)
          */
         recipeService.createFullRecipe(form, currentUser.getUserId());
-        return "redirect:/recipes/my-recipes";
+        return "redirect:/recipes/thank-you";
     }
 
     @GetMapping("/detail/{id}")
@@ -86,9 +90,43 @@ public class RecipeController {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Recipe ID: " + id));
 
-        recipeService.calculateRecipeMacros(recipe);
+        List<Review> reviews = reviewRepository.findByRecipeIdOrderByCreatedAtDesc(id);
+
+        // Tính điểm trung bình (nếu thích hiển thị số sao trung bình)
+        double averageRating = reviews.stream()
+                .mapToInt(Review::getRating)
+                .average()
+                .orElse(0.0);
+
         model.addAttribute("recipe", recipe);
+        model.addAttribute("reviews", reviews); // Danh sách comment
+        model.addAttribute("averageRating", String.format("%.1f", averageRating)); // Điểm TB
+        model.addAttribute("totalReviews", reviews.size()); // Tổng số đánh giá
+        model.addAttribute("newReview", new Review()); // Object cho form
+        model.addAttribute("recipe", recipe);
+
         return "recipe/recipeDetail";
+    }
+
+    @PostMapping("/detail/{id}/review")
+    public String submitReview(@PathVariable Integer id,
+            @ModelAttribute("newReview") Review review,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        if (currentUser == null) {
+            return "redirect:/login"; // Bắt buộc login mới được review
+        }
+
+        // Set các thông tin cần thiết
+        review.setRecipeId(id);
+        review.setUserId(currentUser.getUserId());
+        review.setCreatedAt(LocalDateTime.now());
+
+        // Lưu vào DB
+        reviewRepository.save(review);
+
+        // Redirect lại trang chi tiết để thấy comment vừa đăng
+        return "redirect:/recipes/detail/" + id;
     }
 
     @GetMapping("/search")
@@ -202,5 +240,10 @@ public class RecipeController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/thank-you")
+    public String showThankYouPage() {
+        return "recipe-thank-you";
     }
 }

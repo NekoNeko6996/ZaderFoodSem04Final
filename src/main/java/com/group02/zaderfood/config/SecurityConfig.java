@@ -38,6 +38,7 @@ public class SecurityConfig {
                         "/default/**",
                         "/uploads/**",
                         "/recipes/suggestions",
+                        "/recipes/detail/**",
                         "/recipes/search",
                         "/ai-tools/calorie-estimator",
                         "/collections/view/**"

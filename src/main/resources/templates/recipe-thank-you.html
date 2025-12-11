@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head th:replace="~{fragments/head :: common-head}"></head>
+
+    <body class="font-display bg-gray-50 text-dark-ink flex flex-col min-h-screen">
+
+        <div class="fixed top-0 z-50 w-full bg-white/90 dark:bg-[#211511]/90 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800"> 
+            <div th:replace="~{fragments/navbar :: header_nav}"></div>
+        </div>
+
+        <main class="flex-grow flex items-center justify-center w-full p-4 pt-24 pb-10">
+
+            <div class="bg-white max-w-lg w-full rounded-2xl shadow-xl p-8 md:p-12 text-center border border-gray-100 relative overflow-hidden">
+
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-emerald-600"></div>
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-50 rounded-full opacity-50"></div>
+                <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-yellow-50 rounded-full opacity-50"></div>
+
+                <div class="relative z-10 w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pop">
+                    <span class="material-symbols-outlined text-6xl text-nutri-green">volunteer_activism</span>
+                </div>
+
+                <div class="relative z-10">
+                    <h1 class="text-3xl font-extrabold text-dark-ink mb-2">Thank You!</h1>
+                    <p class="text-lg font-medium text-gray-600 mb-6">For sharing your passion with us.</p>
+
+                    <div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm mb-8 text-left border border-blue-100 flex items-start gap-3">
+                        <span class="material-symbols-outlined text-xl mt-0.5">info</span>
+                        <div>
+                            <span class="font-bold block mb-1">What happens next?</span>
+                            Your recipe has been submitted for review. Once our nutrition experts approve it, it will be visible to the entire community!
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <a th:href="@{/}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
+                            <span class="material-symbols-outlined text-xl">home</span>
+                            Go Home
+                        </a>
+
+                        <a th:href="@{/recipes/create}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-nutri-green text-white font-bold hover:bg-green-600 shadow-lg shadow-green-200 transition-all">
+                            <span class="material-symbols-outlined text-xl">add_circle</span>
+                            Add Another
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer th:replace="~{fragments/footer :: footer_section}"></footer>
+    </body>
+
+</html>

@@ -14,6 +14,21 @@
                 }
             }
         </script>
+        <style>
+            /* Style cho nút phân trang */
+            .pagination-btn {
+                @apply px-4 py-2 mx-1 border rounded-lg text-sm font-bold transition-colors duration-200;
+            }
+            .pagination-btn.active {
+                @apply bg-nutri-green text-white border-nutri-green;
+            }
+            .pagination-btn:not(.active) {
+                @apply bg-white text-dark-ink border-gray-200 hover:bg-gray-50;
+            }
+            .pagination-btn:disabled {
+                @apply opacity-50 cursor-not-allowed bg-gray-100;
+            }
+        </style>
     </head>
     <body class="font-display bg-background-light dark:bg-background-dark">
         <div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
@@ -133,9 +148,9 @@
                                 No recipes found matching your criteria. Try adjusting the filters or search keywords.
                             </p>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" id="recipe-grid">
 
-                                <div th:each="match : ${recipeMatches}" class="flex flex-col bg-white dark:bg-dark-ink/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-shadow hover:shadow-lg group relative">
+                                <div th:each="match : ${recipeMatches}" class="recipe-item flex flex-col bg-white dark:bg-dark-ink/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-shadow hover:shadow-lg group relative">
 
                                     <button 
                                         th:data-id="${match.recipe.recipeId}"
@@ -152,9 +167,11 @@
                                         <span th:text="${match.matchPercentage} + '% Match'"></span>
                                     </div>
 
-                                    <div class="w-full bg-center bg-no-repeat aspect-video bg-cover group-hover:scale-105 transition-transform duration-500"
-                                         th:style="|background-image: url('${match.recipe.imageUrl != null ? match.recipe.imageUrl : 'https://via.placeholder.com/400'}');|">
-                                    </div>
+                                    <img th:src="${match.recipe.imageUrl}" 
+                                         class="w-full bg-center bg-no-repeat  aspect-video group-hover:scale-105 transition-transform duration-500" 
+                                         style="object-fit: cover"
+                                         onerror="this.src='https://placehold.co/400x400?text=No_Image'"
+                                         alt="alt"/>
 
                                     <div class="p-4 flex flex-col gap-3 flex-1">
                                         <div class="flex-1">
@@ -201,6 +218,9 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="p-3 bg-white flex justify-center items-center">
+                                <div id="pagination-controls" class="flex justify-center items-center gap-2" th:if="${not #lists.isEmpty(recipeMatches)}"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -212,6 +232,89 @@
     </body>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const itemsPerPage = 9; // Số lượng món trên mỗi trang
+            const recipeContainer = document.getElementById('recipe-grid');
+            const items = recipeContainer.querySelectorAll('.recipe-item');
+            const paginationContainer = document.getElementById('pagination-controls');
+
+            if (items.length <= itemsPerPage)
+                return; // Nếu ít món quá thì không cần phân trang
+
+            const totalPages = Math.ceil(items.length / itemsPerPage);
+            let currentPage = 1;
+
+            function showPage(page) {
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+
+                items.forEach((item, index) => {
+                    if (index >= start && index < end) {
+                        item.style.display = 'flex'; // Hiển thị (dùng flex vì class gốc là flex)
+                    } else {
+                        item.style.display = 'none'; // Ẩn
+                    }
+                });
+                renderPaginationButtons();
+                // Scroll lên đầu danh sách khi chuyển trang cho mượt
+                if (page > 1)
+                    recipeContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }
+
+            function renderPaginationButtons() {
+                paginationContainer.innerHTML = ''; // Xóa nút cũ
+
+                // Nút Previous
+                const prevBtn = document.createElement('button');
+                prevBtn.innerText = 'Prev';
+                prevBtn.className = 'pagination-btn';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.onclick = () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        showPage(currentPage);
+                    }
+                };
+                paginationContainer.appendChild(prevBtn);
+
+                // Các nút số trang (1, 2, 3...)
+                // Logic thông minh: Chỉ hiện 5 trang xung quanh trang hiện tại để tránh bị dài quá
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const btn = document.createElement('button');
+                    btn.innerText = i;
+                    btn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                    btn.onclick = () => {
+                        currentPage = i;
+                        showPage(currentPage);
+                    };
+                    paginationContainer.appendChild(btn);
+                }
+
+                // Nút Next
+                const nextBtn = document.createElement('button');
+                nextBtn.innerText = 'Next';
+                nextBtn.className = 'pagination-btn';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.onclick = () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        showPage(currentPage);
+                    }
+                };
+                paginationContainer.appendChild(nextBtn);
+            }
+
+            // Khởi chạy trang đầu tiên
+            showPage(1);
+        });
+
         // Hàm xử lý khi click trái tim (ĐÃ SỬA)
         function toggleHeart(event, btnElement) {
             event.preventDefault();

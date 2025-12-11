@@ -34,15 +34,6 @@ public class Review implements Serializable {
 
     @Column(name = "CreatedAt")
     private LocalDateTime createdAt;
-
-    @Column(name = "UpdatedAt")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "IsDeleted")
-    private Boolean isDeleted;
-
-    @Column(name = "DeletedAt")
-    private LocalDateTime deletedAt;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "RecipeId", insertable = false, updatable = false)
