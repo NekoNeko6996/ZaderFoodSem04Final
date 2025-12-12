@@ -33,12 +33,34 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
 
     @Query("SELECT r FROM Recipe r WHERE r.status = :status AND (r.isDeleted IS NULL OR r.isDeleted = false)")
     List<Recipe> findByStatusAndIsDeletedFalse(@Param("status") RecipeStatus status);
-    
+
     @Query(value = "SELECT TOP 50 * FROM Recipes ORDER BY NEWID()", nativeQuery = true)
     List<Recipe> findRandomRecipes();
-    
+
     List<Recipe> findTop50ByStatusAndTotalCaloriesLessThanEqual(RecipeStatus status, BigDecimal maxCalories);
 
     // Nếu TotalCalories trong DB chưa chuẩn (bằng 0 hoặc null), ta lấy 50 món bất kỳ để tính toán lại:
     List<Recipe> findTop50ByStatus(RecipeStatus status);
+
+    @Query(value = "SELECT TOP 50 * FROM Recipes "
+            + "WHERE IsNutritionist = 1 "
+            + "AND Status = 'ACTIVE' "
+            + "AND (IsDeleted = 0 OR IsDeleted IS NULL) "
+            + "ORDER BY NEWID()", nativeQuery = true)
+    List<Recipe> findRandomNutritionistRecipes();
+
+    long countByStatus(RecipeStatus status);
+
+    @Query("SELECT r.difficulty, COUNT(r) FROM Recipe r WHERE r.status = 'ACTIVE' GROUP BY r.difficulty")
+    List<Object[]> countRecipesByDifficulty();
+
+    @Query("SELECT r FROM Recipe r WHERE "
+            + "(:keyword IS NULL OR :keyword = '' OR r.name LIKE %:keyword%) "
+            + "AND (:status IS NULL OR r.status = :status) "
+            + "AND (:maxCalories IS NULL OR r.totalCalories <= :maxCalories) "
+            + "AND (r.isDeleted = false OR r.isDeleted IS NULL) "
+            + "ORDER BY r.createdAt DESC")
+    List<Recipe> searchRecipes(@Param("keyword") String keyword,
+            @Param("status") RecipeStatus status,
+            @Param("maxCalories") Integer maxCalories);
 }

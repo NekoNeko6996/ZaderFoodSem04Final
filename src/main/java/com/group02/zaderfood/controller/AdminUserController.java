@@ -61,8 +61,9 @@ public class AdminUserController {
 
     @PostMapping("/add")
     public String addUser(@ModelAttribute User newUser,
-            @RequestParam("rawPassword") String rawPassword, // Hứng password từ form
+            @RequestParam("rawPassword") String rawPassword,
             RedirectAttributes redirectAttributes) {
+        System.err.println("Create User");
         try {
             // Truyền rawPassword vào service
             adminUserService.createUser(newUser, rawPassword);

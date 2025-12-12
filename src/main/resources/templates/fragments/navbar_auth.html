@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <head>
+    </head>
+    <body>
+        <header th:fragment="header_nav" 
+                class="flex flex-col border-b border-solid border-border-color bg-white dark:bg-background-dark dark:border-dark-ink/20 sticky top-0 z-50">
+
+            <div class="flex items-center px-6 sm:px-10 lg:px-20 py-3">
+                <a href="/" class="flex items-center gap-4 text-dark-ink dark:text-background-light hover:opacity-80 transition-opacity shrink-0">
+                    <h2 class="text-dark-ink dark:text-background-light text-xl font-bold leading-tight tracking-[-0.015em]">Zader Food</h2>
+                </a>
+
+                <nav class="hidden md:flex gap-6 lg:gap-8 items-center ml-8 lg:ml-12">
+                    <a th:href="@{/}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Home</a>
+                    <a th:href="@{/recipes/suggestions}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Recipes</a>
+                </nav>
+            </div>
+
+            <div id="mobileMenu" class="hidden md:hidden border-t border-border-color bg-card-white dark:bg-background-dark animate-fade-in-down">
+                <div class="flex flex-col p-4 gap-2">
+
+                    <div sec:authorize="isAuthenticated()" class="mb-2 pb-3 border-b border-border-color flex items-center gap-3">
+                        <img th:src="'https://ui-avatars.com/api/?name=' + ${#authentication.principal.fullName} + '&background=4cae4f&color=fff'"
+                             alt="User" class="h-10 w-10 rounded-full object-cover">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-dark-ink dark:text-white" sec:authentication="principal.fullName">User Name</span>
+                            <span class="text-[10px] font-bold text-primary uppercase tracking-wider">
+                                <th:block th:each="auth : ${#authentication.authorities}">
+                                    <span th:if="${auth.authority.startsWith('ROLE_')}" 
+                                          th:text="${auth.authority.replace('ROLE_', '')}">Role</span>
+                                </th:block>
+                            </span>
+                        </div>
+                    </div>
+
+                    <a th:href="@{/}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Home</a>
+                    <a th:href="@{/recipes/suggestions}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Recipes</a>
+
+                    <div sec:authorize="!isAuthenticated()" class="grid grid-cols-2 gap-3 mt-2 pt-3 border-t border-border-color">
+                        <a th:href="@{/login}" class="text-center p-2.5 rounded-lg border border-border-color font-bold text-dark-ink">Log In</a>
+                        <a th:href="@{/register/step1}" class="text-center p-2.5 rounded-lg bg-primary text-white font-bold">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function toggleUserMenu() {
+                    const menu = document.getElementById('userDropdownContent');
+                    menu.classList.toggle('hidden');
+                }
+
+                function toggleMobileMenu() {
+                    const menu = document.getElementById('mobileMenu');
+                    menu.classList.toggle('hidden');
+                }
+
+                window.onclick = function (event) {
+                    const dropdown = document.getElementById('userDropdownContent');
+                    const button = document.getElementById('userMenuDropdown');
+                    if (dropdown && !dropdown.classList.contains('hidden')) {
+                        if (!button.contains(event.target)) {
+                            dropdown.classList.add('hidden');
+                        }
+                    }
+                };
+            </script>
+        </header>
+    </body>
+</html>

@@ -4,66 +4,16 @@
     <head>
     </head>
     <body>
-        <header th:fragment="header_nav" 
+        <header th:fragment="header_nav_admin" 
                 class="flex flex-col border-b border-solid border-border-color bg-white dark:bg-background-dark dark:border-dark-ink/20 sticky top-0 z-50">
 
-            <div class="flex items-center px-6 sm:px-10 lg:px-20 py-3">
-
-                <a href="/" class="flex items-center gap-4 text-dark-ink dark:text-background-light hover:opacity-80 transition-opacity shrink-0">
-                    <h2 class="text-dark-ink dark:text-background-light text-xl font-bold leading-tight tracking-[-0.015em]">Zader Food</h2>
-                </a>
-
-                <nav class="hidden md:flex gap-6 lg:gap-8 items-center ml-8 lg:ml-12">
-                    <a th:href="@{/}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Home</a>
-                    <a th:href="@{/recipes/suggestions}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Recipes</a>
-
-                    <div class="relative group">
-                        <button class="flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-bold uppercase tracking-wider">
-                            Meal Plan
-                            <span class="material-symbols-outlined text-sm">expand_more</span>
-                        </button>
-                        <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
-                            <a th:href="@{/meal-plan/generate}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">New Meal Plan</a>
-                            <a th:href="@{/meal-plan/history}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Meal Plan History</a>
-                        </div>
-                    </div>
-
-
-                    <a th:href="@{/recipes/search}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Ingredients</a>
-                    <a th:href="@{/ai-tools/calorie-estimator}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">AI Tools</a>
-
-                    <div sec:authorize="hasAnyAuthority('ADMIN', 'ROLE_ADMIN')" class="relative group">
-                        <a href="/admin/dashboard">
-                            <button class="flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-bold uppercase tracking-wider">
-                                Admin
-                                <span class="material-symbols-outlined text-sm">expand_more</span>
-                            </button>
-                        </a>
-                        <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
-                            <a th:href="@{/admin/users}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Manage Users</a>
-                            <a th:href="@{/admin/ingredients/create}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">System Ingredients</a>
-                            <a th:href="@{/admin/recipes/pending}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Peding Recipes</a>
-                        </div>
-                    </div>
+            <div class="flex items-center px-6 sm:px-10 lg:px-6 py-3">
+                <nav class="hidden md:flex gap-6 lg:gap-8 items-center">
+                    <a th:href="@{/}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">To Home Page</a>
                 </nav>
 
                 <div class="flex items-center gap-4 ml-auto">
-
-                    <div sec:authorize="!isAuthenticated()" class="hidden md:flex gap-3">
-                        <a th:href="@{/login}" class="flex items-center justify-center rounded-lg h-10 px-4 text-sm font-bold text-dark-ink hover:bg-gray-100 transition-colors">
-                            Log In
-                        </a>
-                        <a th:href="@{/register/step1}" class="flex items-center justify-center rounded-lg h-10 bg-primary text-white px-4 text-sm font-bold hover:bg-primary/90 transition-colors shadow-sm">
-                            Sign Up
-                        </a>
-                    </div>
-
                     <div sec:authorize="isAuthenticated()" class="flex items-center gap-3 pl-4"> 
-                        <a th:href="@{/recipes/create}" class="hidden md:flex items-center gap-2 rounded-lg h-10 bg-primary/10 text-primary px-4 text-sm font-bold hover:bg-primary/20 transition-colors">
-                            <span class="material-symbols-outlined text-lg">add</span>
-                            <span class="hidden lg:inline">Request Recipe</span>
-                        </a>
-
                         <div class="relative flex items-center gap-3" id="userMenuDropdown">
 
                             <div class="hidden lg:flex flex-col items-end cursor-pointer" onclick="toggleUserMenu()">
@@ -92,7 +42,7 @@
                                 <a th:href="@{/user/favorites}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">favorite</span> My Favorites
                                 </a>
-
+                                
                                 <a th:href="@{/user/settings}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">settings</span> Personal Settings
                                 </a>
@@ -135,15 +85,6 @@
                     </div>
 
                     <a th:href="@{/}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Home</a>
-                    <a th:href="@{/recipes/suggestions}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Recipes</a>
-                    <a th:href="@{/meal-plan/generate}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">MealPlan</a>
-                    <a th:href="@{/recipes/search}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Find by Ingredients</a>
-                    <a th:href="@{/ai-tools/calorie-estimator}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">AI Calories</a>
-
-                    <div sec:authorize="!isAuthenticated()" class="grid grid-cols-2 gap-3 mt-2 pt-3 border-t border-border-color">
-                        <a th:href="@{/login}" class="text-center p-2.5 rounded-lg border border-border-color font-bold text-dark-ink">Log In</a>
-                        <a th:href="@{/register/step1}" class="text-center p-2.5 rounded-lg bg-primary text-white font-bold">Sign Up</a>
-                    </div>
 
                     <div sec:authorize="isAuthenticated()" class="mt-2 pt-2 border-t border-border-color">
                         <a th:href="@{/recipes/create}" class="flex items-center gap-2 p-3 text-primary font-bold">

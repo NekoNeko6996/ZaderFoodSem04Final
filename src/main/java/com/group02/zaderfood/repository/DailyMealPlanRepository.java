@@ -6,8 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface DailyMealPlanRepository extends JpaRepository<DailyMealPlan, Integer> {
@@ -23,4 +25,13 @@ public interface DailyMealPlanRepository extends JpaRepository<DailyMealPlan, In
     Optional<DailyMealPlan> findByUserIdAndPlanDate(Integer userId, LocalDate planDate);
     
     List<DailyMealPlan> findByUserIdOrderByPlanDateDesc(Integer userId);
+    
+    @Query("SELECT COUNT(d) FROM DailyMealPlan d WHERE d.createdAt >= :startDate")
+    long countNewMealPlans(@Param("startDate") LocalDateTime startDate);
+
+    // [Biểu đồ] Đếm Meal Plan theo ngày (cho Line Chart)
+    @Query("SELECT CAST(d.createdAt AS date), COUNT(d) FROM DailyMealPlan d " +
+           "WHERE d.createdAt >= :startDate " +
+           "GROUP BY CAST(d.createdAt AS date) ORDER BY CAST(d.createdAt AS date)")
+    List<Object[]> countMealPlansByDate(@Param("startDate") LocalDateTime startDate);
 }
