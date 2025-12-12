@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 @Controller
@@ -30,27 +33,24 @@ public class AdminIngredientController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Boolean status,
-            @RequestParam(defaultValue = "1") int page,
             Authentication authentication) {
 
-        Page<Ingredient> pageData = adminService.getIngredients(keyword, categoryId, status, page, 10);
+        // THAY ĐỔI: Lấy size lớn (ví dụ 500 hoặc 1000) để JS xử lý phân trang dưới Client
+        Page<Ingredient> pageData = adminService.getIngredients(keyword, categoryId, status, 1, 1000);
 
         boolean isNutritionist = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_NUTRITIONIST") || a.getAuthority().equals("NUTRITIONIST"));
 
         model.addAttribute("isNutritionist", isNutritionist);
-
         model.addAttribute("ingredients", pageData.getContent());
-        model.addAttribute("categories", adminService.getAllCategories()); // Cho dropdown
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", pageData.getTotalPages());
+        model.addAttribute("categories", adminService.getAllCategories());
 
-        // Giữ lại giá trị filter trên form
+        // Các biến page, totalPages cũ không còn cần thiết cho server-side pagination nữa
+        // nhưng giữ lại keyword/filter để form search hoạt động
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("status", status);
 
-        // DTO cho form thêm mới
         model.addAttribute("newIngredient", new IngredientInputDTO());
 
         return "admin/ingredients";
@@ -94,7 +94,7 @@ public class AdminIngredientController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_NUTRITIONIST") || a.getAuthority().equals("NUTRITIONIST"));
 
         String sidebarFragment = isNutritionist ? "sidebar_nutritionist" : "sidebar";
-        
+
         model.addAttribute("isNutritionist", isNutritionist);
         model.addAttribute("categories", adminService.getAllCategories());
         return "admin/categories";
@@ -145,5 +145,47 @@ public class AdminIngredientController {
             ra.addFlashAttribute("messageType", "error");
         }
         return "redirect:/admin/categories";
+    }
+
+    @PostMapping("/ingredients/api/update")
+    @ResponseBody
+    public ResponseEntity<?> updateIngredientApi(@ModelAttribute IngredientInputDTO input) {
+        try {
+            Ingredient updated = adminService.updateIngredient(input);
+
+            // [FIX QUAN TRỌNG] 
+            // Không trả về Entity 'updated' trực tiếp để tránh lỗi JSON/Hibernate Proxy
+            // Thay vào đó, tạo một Map thủ công chỉ chứa dữ liệu cần thiết cho JS
+            Map<String, Object> data = new HashMap<>();
+            data.put("ingredientId", updated.getIngredientId());
+            data.put("name", updated.getName());
+            data.put("categoryId", updated.getCategoryId());
+            data.put("baseUnit", updated.getBaseUnit());
+            data.put("caloriesPer100g", updated.getCaloriesPer100g());
+            data.put("protein", updated.getProtein());
+            data.put("carbs", updated.getCarbs());
+            data.put("fat", updated.getFat());
+            data.put("imageUrl", updated.getImageUrl());
+
+            // Xử lý tên Category an toàn
+            String categoryName = "Uncategorized";
+            // Lưu ý: Cần kiểm tra null kỹ vì Hibernate Proxy có thể gây lỗi nếu truy cập sâu
+            if (updated.getIngredientCategory() != null) {
+                try {
+                    categoryName = updated.getIngredientCategory().getName();
+                } catch (Exception e) {
+                    // Nếu lỗi proxy thì kệ nó, giữ default
+                }
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "data", data, // Trả về Map đơn giản này
+                    "categoryName", categoryName
+            ));
+        } catch (Exception e) { // In lỗi ra console server để debug
+            // In lỗi ra console server để debug
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
 }

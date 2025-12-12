@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class AdminIngredientService {
@@ -25,6 +26,8 @@ public class AdminIngredientService {
     private IngredientCategoryRepository categoryRepository;
     @Autowired
     private IngredientService ingredientService; // Tái sử dụng logic thêm mới
+    @Autowired
+    private FileStorageService fileStorageService;
 
     // 1. Tìm kiếm và phân trang
     public Page<Ingredient> getIngredients(String keyword, Integer categoryId, Boolean isActive, int page, int size) {
@@ -103,5 +106,48 @@ public class AdminIngredientService {
         cat.setUpdatedAt(LocalDateTime.now());
 
         categoryRepository.save(cat);
+    }
+
+    @Transactional
+    public Ingredient updateIngredient(IngredientInputDTO input) {
+        // 1. Kiểm tra ID
+        if (input.getIngredientId() == null) {
+            throw new RuntimeException("Ingredient ID is required for update");
+        }
+
+        // 2. Tìm nguyên liệu cũ
+        Ingredient existing = ingredientRepository.findById(input.getIngredientId())
+                .orElseThrow(() -> new RuntimeException("Ingredient not found"));
+
+        // 3. Cập nhật thông tin cơ bản
+        // Ưu tiên lấy 'name' (từ form edit), nếu null thì lấy 'newName' (dự phòng)
+        String nameToUpdate = (input.getName() != null && !input.getName().isEmpty())
+                ? input.getName()
+                : input.getNewName();
+        existing.setName(nameToUpdate);
+
+        existing.setCategoryId(input.getCategoryId());
+        existing.setBaseUnit(input.getBaseUnit());
+
+        // Cập nhật Macros
+        existing.setCaloriesPer100g(input.getCaloriesPer100g());
+        existing.setProtein(input.getProtein());
+        existing.setCarbs(input.getCarbs());
+        existing.setFat(input.getFat());
+
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        // 4. Xử lý ảnh (nếu có upload ảnh mới)
+        // Kiểm tra cả 2 trường file (do sự khác biệt tên giữa form add/edit)
+        MultipartFile fileToSave = (input.getImageFile() != null && !input.getImageFile().isEmpty())
+                ? input.getImageFile()
+                : input.getNewIngredientImage();
+
+        if (fileToSave != null && !fileToSave.isEmpty()) {
+            String newImageUrl = fileStorageService.storeFile(fileToSave);
+            existing.setImageUrl(newImageUrl);
+        }
+
+        return ingredientRepository.save(existing);
     }
 }

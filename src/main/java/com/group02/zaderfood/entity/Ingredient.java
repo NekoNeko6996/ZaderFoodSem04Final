@@ -1,5 +1,6 @@
 package com.group02.zaderfood.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -64,6 +65,7 @@ public class Ingredient implements Serializable {
     @Column(name = "DeletedAt")
     private LocalDateTime deletedAt;
     
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CategoryId", insertable = false, updatable = false)
     private IngredientCategory ingredientCategory; // <--- Biến này sẽ tạo ra getter: getIngredientCategory()

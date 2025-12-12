@@ -62,8 +62,10 @@
                                         <th scope="col" class="relative px-6 py-4 text-right font-bold text-xs text-gray-500 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-100">
-                                    <tr th:each="recipe : ${recipes}" class="group hover:bg-gray-50 transition-colors duration-200">
+
+                                <tbody id="tableBody" class="bg-white divide-y divide-gray-100">
+
+                                    <tr th:each="recipe : ${recipes}" class="item-row group hover:bg-gray-50 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="h-12 w-12 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
@@ -104,6 +106,7 @@
                                             </a>
                                         </td>
                                     </tr>
+
                                     <tr th:if="${recipes.empty}">
                                         <td colspan="5" class="px-6 py-12 text-center">
                                             <div class="flex flex-col items-center justify-center">
@@ -118,6 +121,29 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <div id="pagination-controls" class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white hidden">
+                            <div class="text-sm text-gray-500">
+                                Showing <span id="start-index" class="font-bold text-dark-ink">0</span> 
+                                to <span id="end-index" class="font-bold text-dark-ink">0</span> 
+                                of <span id="total-rows" class="font-bold text-dark-ink">0</span> entries
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevPage()" id="btn-prev" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                                    <span class="material-symbols-outlined text-base">chevron_left</span> Prev
+                                </button>
+
+                                <div class="bg-nutri-green/10 text-nutri-green px-3 py-1.5 rounded-lg text-sm font-bold">
+                                    Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+                                </div>
+
+                                <button onclick="nextPage()" id="btn-next" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                                    Next <span class="material-symbols-outlined text-base">chevron_right</span>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </main>
@@ -125,6 +151,80 @@
 
         <div th:replace="~{fragments/toast :: toast-system}"></div>
         <script>
+            // --- JS PHÂN TRANG ---
+            const rowsPerPage = 5; // Số dòng hiển thị
+            let currentPage = 1;
+            let rows = [];
+
+            document.addEventListener("DOMContentLoaded", function () {
+                initPagination();
+            });
+
+            function initPagination() {
+                const tableBody = document.getElementById('tableBody');
+                // Lấy tất cả dòng có class item-row (Bỏ qua dòng "All caught up")
+                rows = Array.from(tableBody.querySelectorAll('tr.item-row'));
+
+                const controlDiv = document.getElementById('pagination-controls');
+
+                if (rows.length === 0) {
+                    controlDiv.classList.add('hidden');
+                    return;
+                }
+
+                controlDiv.classList.remove('hidden');
+
+                document.getElementById('total-rows').innerText = rows.length;
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+                document.getElementById('total-pages').innerText = totalPages;
+
+                showPage(1);
+            }
+
+            function showPage(page) {
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+                if (page < 1)
+                    page = 1;
+                if (page > totalPages && totalPages > 0)
+                    page = totalPages;
+
+                currentPage = page;
+
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                // Logic ẩn hiện
+                rows.forEach((row, index) => {
+                    if (index >= start && index < end) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Cập nhật text UI
+                document.getElementById('start-index').innerText = rows.length > 0 ? start + 1 : 0;
+                document.getElementById('end-index').innerText = Math.min(end, rows.length);
+                document.getElementById('current-page').innerText = currentPage;
+
+                // Trạng thái nút bấm
+                document.getElementById('btn-prev').disabled = (currentPage === 1);
+                document.getElementById('btn-next').disabled = (currentPage === totalPages || totalPages === 0);
+            }
+
+            function prevPage() {
+                if (currentPage > 1)
+                    showPage(currentPage - 1);
+            }
+
+            function nextPage() {
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+                if (currentPage < totalPages)
+                    showPage(currentPage + 1);
+            }
+
+            // --- CONFIRM ACTION (Code cũ) ---
             function confirmAction(formId, title = 'Are you sure?', text = "You won't be able to revert this!", confirmBtnText = 'Yes, do it!') {
                 Swal.fire({
                     title: title,
@@ -137,18 +237,13 @@
                     reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Hiển thị loading trước khi submit
-                        ZaderToast.loading('Processing...');
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.loading('Processing...');
                         const form = document.getElementById(formId);
-                        if (form) {
+                        if (form)
                             form.submit();
-                        } else {
-                            console.error('Form not found: ' + formId);
-                            ZaderToast.error('Error: Form ID not found');
-                        }
                     }
-                }
-                );
+                });
             }
         </script>
     </body>
