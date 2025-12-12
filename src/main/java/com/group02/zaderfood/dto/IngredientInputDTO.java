@@ -8,6 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Data
 public class IngredientInputDTO {
     
+    private Integer ingredientId; 
+    private String name;        
+    private MultipartFile imageFile;
+    
     private String newName;
     private Integer categoryId;
 

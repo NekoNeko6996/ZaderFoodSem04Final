@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Admin Dashboard - ZaderFood</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        </style>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary": "#4bbe4f", "background-light": "#FAFAFA", "background-dark": "#141e15", "dark-ink": "#263238", "soft-grey": "#78909C", "card-white": "#FFFFFF", "nutri-green": "#4CAF50", "alert-red": "#EF4444", "warning-yellow": "#F59E0B"
+                        },
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light dark:bg-background-dark text-dark-ink">
+        <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
+
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
+                <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                <div class="p-8">
+                    <header class="flex justify-between items-center mb-8">
+                        <div>
+                            <h2 class="text-3xl font-extrabold text-dark-ink">Dashboard Overview</h2>
+                            <p class="text-soft-grey mt-1">Welcome back! Here's what's happening with ZaderFood today.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="window.print()" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 text-dark-ink font-medium transition">
+                                <span class="material-symbols-outlined text-sm">print</span> Print Report
+                            </button>
+                        </div>
+                    </header>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-soft-grey text-sm font-medium">Total Users</p>
+                                    <h3 class="text-3xl font-bold text-dark-ink mt-2" th:text="${stats.totalUsers}">0</h3>
+                                </div>
+                                <div class="p-2 bg-blue-50 rounded-lg"><span class="material-symbols-outlined text-blue-600">group</span></div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm">
+                                <span class="text-green-600 flex items-center font-bold">
+                                    <span class="material-symbols-outlined text-sm mr-1">trending_up</span>
+                                    <span th:text="${stats.newUsersThisMonth}">0</span> new
+                                </span>
+                                <span class="text-gray-400 ml-2">this month</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-soft-grey text-sm font-medium">Active Recipes</p>
+                                    <h3 class="text-3xl font-bold text-dark-ink mt-2" th:text="${stats.activeRecipes}">0</h3>
+                                </div>
+                                <div class="p-2 bg-green-50 rounded-lg"><span class="material-symbols-outlined text-green-600">restaurant_menu</span></div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm"><span class="text-gray-500">Ready to serve</span></div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden hover:shadow-md transition cursor-pointer" 
+                             onclick="window.location.href = '/admin/recipes?status=PENDING'">
+                            <div class="absolute right-0 top-0 h-full w-1 bg-alert-red"></div>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-soft-grey text-sm font-medium">Pending Approval</p>
+                                    <h3 class="text-3xl font-bold text-alert-red mt-2" th:text="${stats.pendingRecipes}">0</h3>
+                                </div>
+                                <div class="p-2 bg-red-50 rounded-lg"><span class="material-symbols-outlined text-alert-red">gavel</span></div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm"><span class="text-red-500 font-medium">Requires attention</span></div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-soft-grey text-sm font-medium">AI Tokens Used</p>
+                                    <h3 class="text-3xl font-bold text-dark-ink mt-2" th:text="${#numbers.formatInteger(stats.totalAiTokens, 1, 'COMMA')}">0</h3>
+                                </div>
+                                <div class="p-2 bg-purple-50 rounded-lg"><span class="material-symbols-outlined text-purple-600">memory</span></div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm"><span class="text-gray-400">Total usage lifetime</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 class="text-lg font-bold text-dark-ink">Growth Analytics (Last 7 Days)</h3>
+                                    <p class="text-sm text-gray-500">New users vs. Meal plans generated</p>
+                                </div>
+                            </div>
+                            <div class="h-80 w-full"><canvas id="growthChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-dark-ink mb-1">User Diet Trends</h3>
+                            <p class="text-sm text-gray-500 mb-6">Distribution by preference</p>
+                            <div class="h-64 flex justify-center"><canvas id="dietChart"></canvas></div>
+                            <div class="mt-6 flex flex-wrap gap-2 justify-center text-sm text-gray-600">
+                                <span class="px-2 py-1 bg-gray-100 rounded">KETO</span>
+                                <span class="px-2 py-1 bg-gray-100 rounded">VEGAN</span>
+                                <span class="px-2 py-1 bg-gray-100 rounded">EAT CLEAN</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-dark-ink mb-4">User Goals Distribution</h3>
+                            <div class="h-64"><canvas id="goalChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-dark-ink mb-4">Top Rated Recipes</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-gray-500">
+                                        <tr><th class="px-4 py-2">Dish Name</th><th class="px-4 py-2">Rating</th><th class="px-4 py-2">Reviews</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr th:each="recipe : ${stats.topRecipes}" class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 font-medium" th:text="${recipe.name}">Dish Name</td>
+                                            <td class="px-4 py-3 text-yellow-500 font-bold"><span th:text="${#numbers.formatDecimal(recipe.rating, 1, 1)}">4.5</span> ★</td>
+                                            <td class="px-4 py-3 text-gray-500" th:text="${recipe.reviewCount}">10</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const labels = /*[[${stats.chartLabels}]]*/ [];
+            const newUserData = /*[[${stats.chartNewUserData}]]*/ [];
+            const mealPlanData = /*[[${stats.chartMealPlanData}]]*/ [];
+            const dietLabels = /*[[${stats.dietLabels}]]*/ [];
+            const dietData = /*[[${stats.dietData}]]*/ [];
+
+            const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+            new Chart(ctxGrowth, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {label: 'New Users', data: newUserData, borderColor: '#4bbe4f', backgroundColor: 'rgba(75, 190, 79, 0.1)', tension: 0.4, fill: true, pointRadius: 4},
+                        {label: 'Meal Plans', data: mealPlanData, borderColor: '#263238', borderDash: [5, 5], tension: 0.4, fill: false, pointRadius: 4}
+                    ]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}, scales: {y: {beginAtZero: true}, x: {grid: {display: false}}}}
+            });
+
+            const ctxDiet = document.getElementById('dietChart').getContext('2d');
+            new Chart(ctxDiet, {
+                type: 'doughnut',
+                data: {
+                    labels: dietLabels,
+                    datasets: [{data: dietData, backgroundColor: ['#4bbe4f', '#3b82f6', '#eab308', '#ec4899', '#8b5cf6', '#64748b'], borderWidth: 0, hoverOffset: 10}]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, cutout: '70%'}
+            });
+            /*]]>*/
+        </script>
+        <script th:inline="javascript">
+            const goalLabels = /*[[${stats.goalLabels}]]*/ [];
+            const goalData = /*[[${stats.goalData}]]*/ [];
+            new Chart(document.getElementById('goalChart'), {
+                type: 'bar',
+                data: {labels: goalLabels, datasets: [{label: 'Users', data: goalData, backgroundColor: '#4bbe4f', borderRadius: 4}]},
+                options: {indexAxis: 'y', responsive: true, maintainAspectRatio: false}
+            });
+        </script>
+
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+    </body>
+</html>

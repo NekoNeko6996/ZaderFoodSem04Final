@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Ingredients - Zader Admin</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        </style>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {"primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "nutri-green": "#4CAF50"},
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light text-dark-ink">
+        <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
+            <div th:replace="${isNutritionist} ? ~{fragments/sidebar_nutritionist :: sidebar} : ~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
+                <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-extrabold text-dark-ink">Ingredients Database</h2>
+                        <button onclick="document.getElementById('addModal').showModal()" 
+                                class="flex items-center rounded-lg h-10 px-5 bg-nutri-green text-white font-bold gap-2 hover:bg-green-600 shadow-sm transition">
+                            <span class="material-symbols-outlined text-sm">add</span> Add Ingredient
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+                        <form th:action="@{/admin/ingredients}" method="get" class="flex gap-4 items-center">
+                            <div class="relative flex-1">
+                                <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+                                <input name="keyword" th:value="${keyword}" class="w-full rounded-lg border-gray-200 pl-10 h-10 text-sm focus:ring-nutri-green" placeholder="Search ingredients..."/>
+                            </div>
+                            <select name="categoryId" class="rounded-lg border-gray-200 h-10 text-sm focus:ring-nutri-green" onchange="this.form.submit()">
+                                <option value="">All Categories</option>
+                                <option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.name}" th:selected="${c.categoryId == categoryId}"></option>
+                            </select>
+                            <select name="status" class="rounded-lg border-gray-200 h-10 text-sm focus:ring-nutri-green" onchange="this.form.submit()">
+                                <option value="">All Status</option>
+                                <option value="true" th:selected="${status == true}">Active</option>
+                                <option value="false" th:selected="${status == false}">Inactive</option>
+                            </select>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase">
+                                <tr>
+                                    <th class="p-4">Ingredient</th>
+                                    <th class="p-4">Macros (per 100g)</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-gray-100">
+                                <tr th:each="ing : ${ingredients}" th:id="'row-ing-' + ${ing.ingredientId}" class="hover:bg-gray-50 item-row group">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img th:src="${ing.imageUrl}"
+                                                 th:id="'img-ing-' + ${ing.ingredientId}"
+                                                 class="w-10 h-10 rounded-md object-cover bg-gray-100 border border-gray-200"
+                                                 onerror="this.src='https://placehold.co/100x100?text=404'" >
+                                            <div>
+                                                <p class="font-bold text-dark-ink" th:id="'name-ing-' + ${ing.ingredientId}" th:text="${ing.name}">Apple</p>
+
+                                                <span class="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200" 
+                                                      th:id="'cat-ing-' + ${ing.ingredientId}"
+                                                      th:text="${ing.ingredientCategory != null ? ing.ingredientCategory.name : 'Uncategorized'}">Fruit</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-gray-600">
+                                        <div class="flex gap-4 text-xs font-medium">
+                                            <div><span class="font-bold text-orange-600 val-cal" th:text="${ing.caloriesPer100g}">52</span> kcal</div>
+                                            <div>P: <span class="val-pro" th:text="${ing.protein}">0.3</span>g</div>
+                                            <div>C: <span class="val-carb" th:text="${ing.carbs}">14</span>g</div>
+                                            <div>F: <span class="val-fat" th:text="${ing.fat}">0.2</span>g</div>
+                                        </div>
+                                    </td>
+
+                                    <td class="p-4">
+                                        <form th:action="@{/admin/ingredients/toggle/{id}(id=${ing.ingredientId})}" method="post">
+                                            <button type="submit" 
+                                                    th:classappend="${ing.isActive} ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'"
+                                                    class="px-3 py-1 rounded-full text-xs font-bold w-20 border transition hover:opacity-80">
+                                                <span th:text="${ing.isActive} ? 'ACTIVE' : 'INACTIVE'">ACTIVE</span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="flex justify-end gap-2 opacity-100"> 
+                                            <button type="button"
+                                                    onclick="openEditModal(this)"
+                                                    th:data-id="${ing.ingredientId}"
+                                                    th:data-name="${ing.name}"
+                                                    th:data-cat="${ing.categoryId}"
+                                                    th:data-unit="${ing.baseUnit}"
+                                                    th:data-cal="${ing.caloriesPer100g}"
+                                                    th:data-pro="${ing.protein}"
+                                                    th:data-carb="${ing.carbs}"
+                                                    th:data-fat="${ing.fat}"
+                                                    th:data-img="${ing.imageUrl}"
+                                                    class="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition" title="Edit">
+                                                <span class="material-symbols-outlined text-lg">edit</span>
+                                            </button>
+                                            <form th:id="'delete-ing-' + ${ing.ingredientId}" 
+                                                  th:action="@{/admin/ingredients/delete/{id}(id=${ing.ingredientId})}" 
+                                                  method="post" style="display: none;">
+                                            </form>
+                                            <button type="button" 
+                                                    th:onclick="confirmAction('delete-ing-[[${ing.ingredientId}]]', 'Delete Ingredient?', 'This action cannot be undone.', 'Yes, Delete')"
+                                                    class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition">
+                                                <span class="material-symbols-outlined text-lg">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div th:if="${ingredients.empty}" class="p-8 text-center text-gray-500">
+                            No ingredients found matching your criteria.
+                        </div>
+
+                        <div id="pagination-controls" class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white hidden">
+                            <div class="text-sm text-gray-500">
+                                Showing <span id="start-index" class="font-bold text-dark-ink">0</span> 
+                                to <span id="end-index" class="font-bold text-dark-ink">0</span> 
+                                of <span id="total-rows" class="font-bold text-dark-ink">0</span> entries
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevPage()" id="btn-prev" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                                    <span class="material-symbols-outlined text-base">chevron_left</span> Prev
+                                </button>
+
+                                <div class="bg-nutri-green/10 text-nutri-green px-3 py-1.5 rounded-lg text-sm font-bold">
+                                    Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+                                </div>
+
+                                <button onclick="nextPage()" id="btn-next" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                                    Next <span class="material-symbols-outlined text-base">chevron_right</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <dialog id="addModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-2xl">
+                <form th:action="@{/admin/ingredients/add}" method="post" enctype="multipart/form-data" th:object="${newIngredient}">
+                    <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                        <h3 class="text-lg font-bold text-dark-ink">Add New Ingredient</h3>
+                        <button type="button" onclick="document.getElementById('addModal').close()" class="text-gray-400 hover:text-dark-ink"><span class="material-symbols-outlined">close</span></button>
+                    </div>
+                    <div class="p-6 grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-bold mb-1 text-gray-600">Name</label>
+                            <input type="text" th:field="*{newName}" required class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-gray-600">Category</label>
+                            <select th:field="*{categoryId}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm">
+                                <option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.name}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-gray-600">Base Unit</label>
+                            <input type="text" th:field="*{baseUnit}" placeholder="g, ml, pcs" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm">
+                        </div>
+                        <div><label class="block text-sm font-bold mb-1 text-gray-600">Calories (kcal)</label><input type="number" step="0.1" th:field="*{caloriesPer100g}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm"></div>
+                        <div><label class="block text-sm font-bold mb-1 text-gray-600">Protein (g)</label><input type="number" step="0.1" th:field="*{protein}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm"></div>
+                        <div><label class="block text-sm font-bold mb-1 text-gray-600">Carbs (g)</label><input type="number" step="0.1" th:field="*{carbs}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm"></div>
+                        <div><label class="block text-sm font-bold mb-1 text-gray-600">Fat (g)</label><input type="number" step="0.1" th:field="*{fat}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm"></div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-bold mb-1 text-gray-600">Image</label>
+                            <input type="file" th:field="*{newIngredientImage}" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer"/>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t flex justify-end gap-3 bg-gray-50">
+                        <button type="button" onclick="document.getElementById('addModal').close()" class="px-4 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-200 transition">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-nutri-green text-white font-bold hover:bg-green-600 transition shadow-sm">Save Ingredient</button>
+                    </div>
+                </form>
+            </dialog>
+        </div>
+
+        <dialog id="editModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-2xl open:animate-fade-in">
+            <form id="editForm" onsubmit="submitEditForm(event)"> <input type="hidden" name="ingredientId" id="edit-id"> <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                    <h3 class="text-lg font-bold text-dark-ink">Edit Ingredient</h3>
+                    <button type="button" onclick="document.getElementById('editModal').close()" class="text-gray-400 hover:text-dark-ink"><span class="material-symbols-outlined">close</span></button>
+                </div>
+
+                <div class="p-6 grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold mb-1 text-gray-600">Name</label>
+                        <input type="text" name="name" id="edit-name" required class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-gray-600">Category</label>
+                        <select name="categoryId" id="edit-cat" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm">
+                            <option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.name}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-gray-600">Base Unit</label>
+                        <input type="text" name="baseUnit" id="edit-unit" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green text-sm">
+                    </div>
+                    <div><label class="block text-sm font-bold mb-1 text-gray-600">Calories</label><input type="number" step="0.01" name="caloriesPer100g" id="edit-cal" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green text-sm"></div>
+                    <div><label class="block text-sm font-bold mb-1 text-gray-600">Protein</label><input type="number" step="0.01" name="protein" id="edit-pro" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green text-sm"></div>
+                    <div><label class="block text-sm font-bold mb-1 text-gray-600">Carbs</label><input type="number" step="0.01" name="carbs" id="edit-carb" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green text-sm"></div>
+                    <div><label class="block text-sm font-bold mb-1 text-gray-600">Fat</label><input type="number" step="0.01" name="fat" id="edit-fat" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green text-sm"></div>
+
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold mb-1 text-gray-600">Change Image (Optional)</label>
+                        <div class="flex items-center gap-4">
+                            <img id="edit-img-preview" src="" class="w-12 h-12 rounded bg-gray-100 object-cover border">
+                            <input type="file" name="imageFile" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t flex justify-end gap-3 bg-gray-50">
+                    <button type="button" onclick="document.getElementById('editModal').close()" class="px-4 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-200 transition">Cancel</button>
+                    <button type="submit" id="btn-save-edit" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition shadow-sm flex items-center gap-2">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </dialog>
+
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+
+        <script>
+            // --- 1. CONFIG PAGINATION ---
+            const rowsPerPage = 8; // Số lượng hiển thị mỗi trang
+            let currentPage = 1;
+            let rows = [];
+
+            document.addEventListener("DOMContentLoaded", function () {
+                initPagination();
+            });
+
+            function initPagination() {
+                const tableBody = document.getElementById('tableBody');
+                if (!tableBody)
+                    return;
+
+                // Lấy tất cả dòng có class 'item-row'
+                rows = Array.from(tableBody.querySelectorAll('tr.item-row'));
+
+                const controlDiv = document.getElementById('pagination-controls');
+
+                if (rows.length === 0) {
+                    controlDiv.classList.add('hidden');
+                    return;
+                }
+
+                controlDiv.classList.remove('hidden');
+
+                document.getElementById('total-rows').innerText = rows.length;
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+                document.getElementById('total-pages').innerText = totalPages;
+
+                showPage(1);
+            }
+
+            function showPage(page) {
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+                if (page < 1)
+                    page = 1;
+                if (page > totalPages && totalPages > 0)
+                    page = totalPages;
+
+                currentPage = page;
+
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                // Ẩn/Hiện dòng
+                rows.forEach((row, index) => {
+                    if (index >= start && index < end) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Update UI
+                document.getElementById('start-index').innerText = rows.length > 0 ? start + 1 : 0;
+                document.getElementById('end-index').innerText = Math.min(end, rows.length);
+                document.getElementById('current-page').innerText = currentPage;
+
+                // Nút Disable
+                document.getElementById('btn-prev').disabled = (currentPage === 1);
+                document.getElementById('btn-next').disabled = (currentPage === totalPages || totalPages === 0);
+            }
+
+            function prevPage() {
+                if (currentPage > 1)
+                    showPage(currentPage - 1);
+            }
+
+            function nextPage() {
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+                if (currentPage < totalPages)
+                    showPage(currentPage + 1);
+            }
+
+            // --- 2. CONFIRM ACTION ---
+            function confirmAction(formId, title = 'Are you sure?', text = "You won't be able to revert this!", confirmBtnText = 'Yes, do it!') {
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#111827',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: confirmBtnText,
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.loading('Processing...');
+                        const form = document.getElementById(formId);
+                        if (form)
+                            form.submit();
+                    }
+                });
+            }
+        </script>
+        <script>
+            function openEditModal(btn) {
+                const modal = document.getElementById('editModal');
+
+                // Lấy data từ attribute của nút
+                document.getElementById('edit-id').value = btn.getAttribute('data-id');
+                document.getElementById('edit-name').value = btn.getAttribute('data-name');
+                document.getElementById('edit-cat').value = btn.getAttribute('data-cat'); // Select option sẽ tự chọn nếu value khớp
+                document.getElementById('edit-unit').value = btn.getAttribute('data-unit');
+                document.getElementById('edit-cal').value = btn.getAttribute('data-cal');
+                document.getElementById('edit-pro').value = btn.getAttribute('data-pro');
+                document.getElementById('edit-carb').value = btn.getAttribute('data-carb');
+                document.getElementById('edit-fat').value = btn.getAttribute('data-fat');
+
+                // Preview ảnh cũ
+                const currentImg = btn.getAttribute('data-img');
+                document.getElementById('edit-img-preview').src = currentImg;
+                document.getElementById('edit-img-preview').onerror = () => {
+                    document.getElementById('edit-img-preview').src = 'https://placehold.co/50';
+                }
+
+                modal.showModal();
+            }
+
+            // Hàm submit form bằng AJAX Fetch
+            async function submitEditForm(event) {
+                event.preventDefault(); // Chặn reload trang
+
+                const form = event.target;
+                const formData = new FormData(form);
+                const btnSave = document.getElementById('btn-save-edit');
+
+                // Hiệu ứng loading
+                const originalText = btnSave.innerHTML;
+                btnSave.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Saving...';
+                btnSave.disabled = true;
+
+                try {
+                    const response = await fetch('/admin/ingredients/api/update', {// URL API bạn tạo ở Bước 1
+                        method: 'POST',
+                        body: formData
+                                // Lưu ý: Không set Content-Type header khi dùng FormData, trình duyệt tự làm
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 1. Cập nhật giao diện bảng ngay lập tức (DOM Manipulation)
+                        updateTableRow(result.data, result.categoryName);
+
+                        // 2. Cập nhật lại data attribute cho nút Edit (để lần sau mở lên là data mới)
+                        updateEditButtonData(result.data);
+
+                        // 3. Đóng modal & Thông báo
+                        document.getElementById('editModal').close();
+                        if (typeof ZaderToast !== 'undefined') {
+                            ZaderToast.success("Ingredient updated successfully!");
+                        } else {
+                            Swal.fire("Success", "Ingredient updated!", "success");
+                        }
+                    } else {
+                        Swal.fire("Error", result.message || "Failed to update", "error");
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    Swal.fire("Error", "Network error occurred", "error");
+                } finally {
+                    // Reset nút save
+                    btnSave.innerHTML = originalText;
+                    btnSave.disabled = false;
+                }
+            }
+
+            // Hàm cập nhật dòng trong bảng (DOM)
+            function updateTableRow(data, catName) {
+                const id = data.ingredientId;
+                const row = document.getElementById('row-ing-' + id);
+                if (!row)
+                    return;
+
+                // Cập nhật text cơ bản
+                document.getElementById('name-ing-' + id).innerText = data.name;
+                document.getElementById('cat-ing-' + id).innerText = catName;
+
+                // Cập nhật Macros (tìm theo class trong dòng đó)
+                row.querySelector('.val-cal').innerText = data.caloriesPer100g;
+                row.querySelector('.val-pro').innerText = data.protein;
+                row.querySelector('.val-carb').innerText = data.carbs;
+                row.querySelector('.val-fat').innerText = data.fat;
+
+                // Cập nhật ảnh (nếu có thay đổi ảnh, server trả về URL mới)
+                if (data.imageUrl) {
+                    const img = document.getElementById('img-ing-' + id);
+                    img.src = data.imageUrl;
+                    // Reset cache ảnh bằng cách thêm timestamp nếu cần: data.imageUrl + '?t=' + new Date().getTime()
+                }
+            }
+
+            // Hàm cập nhật data attribute cho nút Edit (quan trọng để sửa tiếp không bị cũ)
+            function updateEditButtonData(data) {
+                const btn = document.querySelector(`button[onclick="openEditModal(this)"][data-id="${data.ingredientId}"]`);
+                if (btn) {
+                    btn.setAttribute('data-name', data.name);
+                    btn.setAttribute('data-cat', data.categoryId); // hoặc data.ingredientCategory.categoryId tùy cấu trúc JSON
+                    btn.setAttribute('data-unit', data.baseUnit);
+                    btn.setAttribute('data-cal', data.caloriesPer100g);
+                    btn.setAttribute('data-pro', data.protein);
+                    btn.setAttribute('data-carb', data.carbs);
+                    btn.setAttribute('data-fat', data.fat);
+                    if (data.imageUrl)
+                        btn.setAttribute('data-img', data.imageUrl);
+                }
+            }
+        </script>
+    </body>
+</html>

@@ -14,9 +14,13 @@
             <div class="w-full max-w-5xl">
                 <div class="bg-card-white rounded-xl shadow-soft overflow-hidden border border-border-color">
 
-                    <div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end min-h-[320px] md:min-h-[400px]"
-                         th:style="|background-image: url('${recipe.imageUrl != null ? recipe.imageUrl : 'https://via.placeholder.com/800x400'}');|">
+                    <div 
+                        th:style="|background-image: url('${recipe.imageUrl != null ? recipe.imageUrl : 'https://via.placeholder.com/800x400'}');|">
                     </div>
+
+                    <img th:src="${recipe.imageUrl}" 
+                         class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end min-h-[320px] md:min-h-[400px]"  
+                         onerror="this.src='https://placehold.co/800x400?text=No_Image'" />
 
                     <div class="p-6 md:p-10">
                         <div class="flex flex-col gap-4 md:gap-6">
@@ -110,16 +114,67 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <!--review-->
+                    <div class="border-t border-border-color p-6 md:p-10 mt-8">
+                        <h2 class="text-dark-ink text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">
+                            Reviews & Ratings 
+                            <span class="text-base font-normal text-soft-grey" th:text="'(' + ${totalReviews} + ')'"></span>
+                            <span class="text-chef-orange text-lg ml-2">★ <span th:text="${averageRating}"></span></span>
+                        </h2>
 
-                            <div class="border-t border-border-color pt-8 mt-8">
-                                <h2 class="text-dark-ink text-[22px] font-bold leading-tight pb-4">Ask AI about Nutrition</h2>
-                                <div class="relative mt-2">
-                                    <input type="hidden" id="recipeId" th:value="${recipe.recipeId}" />
-                                    <input id="aiQuestionInput" class="w-full h-12 px-4 pr-12 text-dark-ink bg-white border border-border-color rounded-lg focus:ring-2 focus:ring-chef-orange/50 focus:border-chef-orange placeholder:text-soft-grey" placeholder="Example: How much protein is in this dish?" type="text"/>
-                                    <button onclick="handleAskAI()" class="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-chef-orange hover:text-dark-ink">
-                                        <span class="material-symbols-outlined">send</span>
-                                    </button>
+                        <div sec:authorize="isAuthenticated()" class="mb-8 bg-background-light p-6 rounded-xl border border-border-color">
+                            <h3 class="text-dark-ink font-bold mb-3">Leave a Review</h3>
+                            <form th:action="@{/recipes/detail/{id}/review(id=${recipe.recipeId})}" method="post" th:object="${newReview}">
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-bold text-soft-grey mb-1">Rating</label>
+                                    <select name="rating" class="w-full sm:w-1/4 h-10 px-3 rounded-lg border border-border-color focus:ring-chef-orange focus:border-chef-orange bg-white">
+                                        <option value="5">★★★★★ (5/5) - Excellent</option>
+                                        <option value="4">★★★★☆ (4/5) - Good</option>
+                                        <option value="3">★★★☆☆ (3/5) - Average</option>
+                                        <option value="2">★★☆☆☆ (2/5) - Poor</option>
+                                        <option value="1">★☆☆☆☆ (1/5) - Terrible</option>
+                                    </select>
                                 </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-bold text-soft-grey mb-1">Your Comment</label>
+                                    <textarea name="comment" rows="3" required
+                                              class="w-full p-3 rounded-lg border border-border-color focus:ring-chef-orange focus:border-chef-orange resize-none"
+                                              placeholder="What did you think about this recipe?"></textarea>
+                                </div>
+
+                                <button type="submit" 
+                                        class="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-chef-orange text-white text-sm font-bold hover:bg-opacity-90 transition">
+                                    Post Review
+                                </button>
+                            </form>
+                        </div>
+
+                        <div sec:authorize="!isAuthenticated()" class="mb-8 p-4 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
+                            Please <a th:href="@{/login}" class="font-bold underline">login</a> to write a review.
+                        </div>
+
+                        <div class="flex flex-col gap-6">
+                            <div th:each="rv : ${reviews}" class="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="h-10 w-10 rounded-full bg-smart-mist flex items-center justify-center text-soft-grey font-bold">
+                                        <span class="material-symbols-outlined">person</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-dark-ink">User Review</p> <p class="text-xs text-soft-grey" th:text="${#temporals.format(rv.createdAt, 'dd-MM-yyyy HH:mm')}"></p>
+                                    </div>
+                                    <div class="ml-auto text-chef-orange font-bold text-sm">
+                                        <span th:text="${rv.rating}"></span> ★
+                                    </div>
+                                </div>
+                                <p class="text-dark-ink text-base leading-relaxed pl-[52px]" th:text="${rv.comment}"></p>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(reviews)}" class="text-center text-soft-grey py-8 italic">
+                                No reviews yet. Be the first to try this recipe!
                             </div>
                         </div>
                     </div>
@@ -127,12 +182,5 @@
             </div>
         </main>
     </div>
-
-    <script>
-        function handleAskAI() {
-            const question = document.getElementById('aiQuestionInput').value;
-            alert("AI Feature: " + question + " (Coming Soon)");
-        }
-    </script>
 </body>
 </html>

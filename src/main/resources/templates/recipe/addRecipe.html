@@ -23,7 +23,7 @@
 
         <main class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col w-full max-w-4xl gap-8">
-                <h1 class="text-4xl font-black leading-tight tracking-[-0.033em]">Add New Recipe</h1>
+                <h1 class="text-4xl font-black leading-tight tracking-[-0.033em]">New Recipe</h1>
 
                 <form th:action="@{/recipes/create}" th:object="${recipeForm}" method="post" enctype="multipart/form-data" class="flex flex-col gap-6">
 
@@ -40,16 +40,6 @@
                                     </div>
                                     <img id="cover-preview-img" src="" class="absolute inset-0 w-full h-full object-cover hidden" alt="Cover Preview" />
                                     <input type="file" th:field="*{imageFile}" class="hidden" accept="image/*" required onchange="previewCoverImage(this)" />
-                                </label>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-sm font-medium pb-2">Instruction Video (Optional)</span>
-                                <label class="flex flex-col items-center justify-center w-full h-48 border-2 border-border-color border-dashed rounded-lg cursor-pointer bg-background-light hover:bg-gray-100 transition">
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <span class="material-symbols-outlined text-4xl text-soft-grey">movie</span>
-                                        <p class="mb-1 text-sm text-soft-grey"><span class="font-semibold text-primary">Upload</span> video</p>
-                                    </div>
-                                    <input type="file" th:field="*{videoFile}" class="hidden" accept="video/*" />
                                 </label>
                             </div>
                         </div>

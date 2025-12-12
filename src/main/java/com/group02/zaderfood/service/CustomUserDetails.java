@@ -2,6 +2,7 @@ package com.group02.zaderfood.service;
 
 
 import com.group02.zaderfood.entity.User;
+import com.group02.zaderfood.entity.enums.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +25,10 @@ public class CustomUserDetails implements UserDetails {
     
     public User getUser() {
         return user;
+    }
+    
+    public UserRole getUserRole() {
+        return user.getRole();
     }
 
     // --- Các phương thức bắt buộc của Spring Security ---

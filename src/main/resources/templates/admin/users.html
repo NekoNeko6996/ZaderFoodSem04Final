@@ -1,199 +1,226 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" 
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      class="light" lang="en">
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
     <head>
-    <div th:replace="~{fragments/head :: common-head}"></div>
-    <title>Admin: User Management - Zader Food</title>
-</head>
-<body class="font-display bg-background-light text-dark-ink">
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>User Management - Zader Admin</title>
 
-    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        <div th:replace="~{fragments/navbar :: header_nav}"></div>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        </style>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {"primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "nutri-green": "#4CAF50", "alert-red": "#EF4444"},
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light text-dark-ink">
+        <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
 
-        <main class="flex h-full grow flex-col py-10">
-            <div class="container mx-auto px-4">
-                <div class="mx-auto flex w-full max-w-7xl flex-col gap-8">
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
+                <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                <div class="p-8">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                         <div>
-                            <p class="text-4xl font-black">User Management</p>
-                            <p class="text-gray-500">Manage all registered users.</p>
+                            <h2 class="text-3xl font-extrabold text-dark-ink">User Management</h2>
+                            <p class="text-gray-500 mt-1">Manage, filter and export all registered users.</p>
                         </div>
                         <button onclick="document.getElementById('addUserModal').showModal()" 
-                                class="flex items-center justify-center rounded-lg h-12 px-5 bg-primary text-white font-bold gap-2 hover:bg-primary-dark transition-colors shadow-sm">
-                            <span class="material-symbols-outlined">add</span>
+                                class="flex items-center justify-center rounded-lg h-10 px-5 bg-nutri-green text-white font-bold gap-2 hover:bg-green-600 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined text-sm">add</span>
                             <span>Add New User</span>
                         </button>
                     </div>
 
-                    <form th:action="@{/admin/users}" method="get" class="flex flex-col gap-4">
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div class="relative flex-1">
-                                <span class="material-symbols-outlined absolute left-4 top-3 text-gray-400">search</span>
-                                <input name="keyword" th:value="${keyword}" class="w-full rounded-lg border-gray-300 pl-12 h-12 focus:ring-primary focus:border-primary" placeholder="Search by name, email..." type="text"/>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+                        <form th:action="@{/admin/users}" method="get" class="flex flex-col md:flex-row gap-4 items-center">
+                            <div class="relative flex-1 w-full">
+                                <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+                                <input name="keyword" th:value="${keyword}" class="w-full rounded-lg border-gray-200 pl-10 h-10 focus:ring-nutri-green focus:border-nutri-green text-sm" placeholder="Search by name or email..." type="text"/>
                             </div>
-                            <select name="role" class="rounded-lg border-gray-300 h-12" onchange="this.form.submit()">
+                            <select name="role" class="rounded-lg border-gray-200 h-10 text-sm focus:ring-nutri-green" onchange="this.form.submit()">
                                 <option value="">All Roles</option>
                                 <option th:each="r : ${roles}" th:value="${r}" th:text="${r}" th:selected="${r == role}"></option>
                             </select>
-                            <select name="status" class="rounded-lg border-gray-300 h-12" onchange="this.form.submit()">
+                            <select name="status" class="rounded-lg border-gray-200 h-10 text-sm focus:ring-nutri-green" onchange="this.form.submit()">
                                 <option value="">All Status</option>
                                 <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${s == status}"></option>
                             </select>
-                            <a th:href="@{/admin/users/export}" class="flex items-center justify-center rounded-lg h-12 px-5 bg-white border border-gray-300 font-medium gap-2 hover:bg-gray-50">
-                                <span class="material-symbols-outlined">download</span>
-                                <span>Export</span>
+                            <a th:href="@{/admin/users/export}" class="flex items-center justify-center rounded-lg h-10 px-4 bg-gray-100 border border-gray-200 font-medium text-sm gap-2 hover:bg-gray-200 transition">
+                                <span class="material-symbols-outlined text-sm">download</span>
+                                <span>Export Excel</span>
                             </a>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
 
-                    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-                        <table class="w-full text-left">
-                            <thead class="border-b border-gray-200 bg-gray-50">
-                                <tr>
-                                    <th class="p-4 text-sm font-bold">User</th>
-                                    <th class="p-4 text-sm font-bold">Status</th>
-                                    <th class="p-4 text-sm font-bold">Role</th>
-                                    <th class="p-4 text-sm font-bold">Join Date</th>
-                                    <th class="p-4 text-sm font-bold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr th:each="user : ${users}">
-                                    <td class="p-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="bg-gray-200 rounded-full size-10 flex items-center justify-center font-bold text-gray-600">
-                                                <span th:text="${#strings.substring(user.fullName,0,1)}">A</span>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="p-4 font-semibold">User Info</th>
+                                        <th class="p-4 font-semibold">Status</th>
+                                        <th class="p-4 font-semibold">Role</th>
+                                        <th class="p-4 font-semibold">Joined Date</th>
+                                        <th class="p-4 font-semibold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr th:each="user : ${users}" class="hover:bg-gray-50 transition">
+                                        <td class="p-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="bg-nutri-green/10 text-nutri-green rounded-full size-10 flex items-center justify-center font-bold text-lg">
+                                                    <span th:text="${#strings.substring(user.fullName,0,1)}">A</span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-dark-ink" th:text="${user.fullName}">Name</p>
+                                                    <p class="text-gray-500 text-xs" th:text="${user.email}">email</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p class="font-semibold" th:text="${user.fullName}">Name</p>
-                                                <p class="text-gray-500 text-sm" th:text="${user.email}">email</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="p-4">
-                                        <div th:classappend="${user.status.name() == 'ACTIVE' ? 'bg-green-100 text-green-700' : (user.status.name() == 'BLOCKED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}"
-                                             class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium">
-                                            <div class="size-2 rounded-full bg-current"></div>
-                                            <span th:text="${user.status}">Status</span>
-                                        </div>
-                                    </td>
-                                    <td class="p-4" th:text="${user.role}">Role</td>
-                                    <td class="p-4 text-gray-600" th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">Date</td>
-                                    <td class="p-4">
-                                        <div class="flex justify-end gap-2">
-                                            <button class="rounded-lg h-10 px-4 bg-gray-200 text-sm font-bold hover:bg-gray-300">View</button>
+                                        </td>
+                                        <td class="p-4">
+                                            <span th:classappend="${user.status.name() == 'ACTIVE' ? 'bg-green-100 text-green-700' : (user.status.name() == 'BLOCKED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}"
+                                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                                <span th:text="${user.status}">Status</span>
+                                            </span>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold" th:text="${user.role}">Role</span>
+                                        </td>
+                                        <td class="p-4 text-gray-500" th:text="${#temporals.format(user.createdAt, 'dd MMM yyyy')}">Date</td>
+                                        <td class="p-4">
+                                            <div class="flex justify-end gap-2">
+                                                <form th:if="${user.status.name() != 'BANNED'}" 
+                                                      th:action="@{/admin/users/toggle-status/{id}(id=${user.userId})}" method="post">
+                                                    <button type="submit" 
+                                                            th:classappend="${user.status.name() == 'BLOCKED'} ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-orange-600 bg-orange-50 hover:bg-orange-100'"
+                                                            class="px-3 py-1.5 rounded text-xs font-bold transition-colors">
+                                                        <span th:text="${user.status.name() == 'BLOCKED'} ? 'Unlock' : 'Block'">Lock</span>
+                                                    </button>
+                                                </form>
 
-                                            <form th:if="${user.status.name() != 'BANNED'}" 
-                                                  th:action="@{/admin/users/toggle-status/{id}(id=${user.userId})}" method="post"
-                                                  onsubmit="ZaderToast.loading('Updating user status...');">
-                                                <button type="submit" 
-                                                        th:classappend="${user.status.name() == 'BLOCKED'} ? 'bg-primary hover:bg-primary-dark' : 'bg-yellow-500 hover:bg-yellow-600'"
-                                                        class="rounded-lg h-10 px-4 text-white text-sm font-bold transition-colors">
-                                                    <span th:text="${user.status.name() == 'BLOCKED'} ? 'Unlock' : 'Lock'">Lock</span>
-                                                </button>
-                                            </form>
-
-                                            <form th:if="${user.status.name() != 'BANNED'}" 
-                                                  th:id="'banForm-' + ${user.userId}"
-                                                  th:action="@{/admin/users/ban/{id}(id=${user.userId})}" method="post">
+                                                <form th:if="${user.status.name() != 'BANNED'}" 
+                                                      th:id="'ban-form-' + ${user.userId}"
+                                                      th:action="@{/admin/users/ban/{id}(id=${user.userId})}" method="post" style="display: none;">
+                                                </form>
                                                 <button type="button" 
-                                                        th:data-id="${user.userId}"
-                                                        th:data-name="${user.fullName}"
-                                                        onclick="confirmBan(this.getAttribute('data-id'), this.getAttribute('data-name'))"
-                                                        class="rounded-lg h-10 px-4 bg-dark-ink text-white text-sm font-bold hover:bg-black transition-colors">
+                                                        th:if="${user.status.name() != 'BANNED'}"
+                                                        th:onclick="confirmAction('ban-form-[[${user.userId}]]', 'Ban ' + [[${user.fullName}]] + '?', 'This user will be permanently banned.', 'Yes, Ban User')"
+                                                        class="px-3 py-1.5 rounded bg-gray-900 text-white text-xs font-bold hover:bg-black transition-colors">
                                                     Ban
                                                 </button>
-                                            </form>
 
-                                            <span th:if="${user.status.name() == 'BANNED'}" 
-                                                  class="flex items-center px-4 h-10 text-sm font-bold text-red-600 bg-red-100 rounded-lg border border-red-200 cursor-not-allowed">
-                                                BANNED
-                                            </span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="flex items-center justify-between" th:if="${totalPages > 0}">
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <dialog id="addUserModal" class="p-0 rounded-xl shadow-xl backdrop:bg-black/50 w-full max-w-lg">
-            <form th:action="@{/admin/users/add}" method="post" th:object="${newUser}" class="flex flex-col" onsubmit="ZaderToast.loading('Creating new user...');">
-                <div class="p-6 border-b"><h3 class="text-xl font-bold">Add New User</h3></div>
-                <div class="p-6 flex flex-col gap-4">
-                    <div><label class="block text-sm font-medium mb-1">Full Name</label><input type="text" th:field="*{fullName}" required class="w-full rounded-lg border-gray-300"/></div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Email</label>
-                        <input type="email" th:field="*{email}" required class="w-full rounded-lg border-gray-300"/>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Password</label>
-                        <input type="password" name="rawPassword" required class="w-full rounded-lg border-gray-300" placeholder="Set initial password"/>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Role</label>
-                        <select th:field="*{role}" class="w-full rounded-lg border-gray-300"><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Initial Status</label>
-                        <select th:field="*{status}" class="w-full rounded-lg border-gray-300"><option value="ACTIVE">ACTIVE</option><option value="PENDING_VERIFICATION">PENDING</option></select>
+                                                <span th:if="${user.status.name() == 'BANNED'}" class="text-red-600 font-bold text-xs px-2 py-1">PERMANENT BAN</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${users.empty}">
+                                        <td colspan="5" class="p-8 text-center text-gray-500">No users found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-4 border-t border-gray-100 flex justify-between items-center" th:if="${totalPages > 0}">
+                            <span class="text-sm text-gray-500">Page <span th:text="${currentPage}">1</span> of <span th:text="${totalPages}">10</span></span>
+                            <div class="flex gap-2">
+                                <a th:if="${currentPage > 1}" th:href="@{/admin/users(page=${currentPage - 1}, keyword=${keyword}, role=${role}, status=${status})}" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>
+                                <a th:if="${currentPage < totalPages}" th:href="@{/admin/users(page=${currentPage + 1}, keyword=${keyword}, role=${role}, status=${status})}" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('addUserModal').close()" class="px-4 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-200">Cancel</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark">Create User</button>
-                </div>
-            </form>
-        </dialog>
-    </div>
+            </main>
 
-    <div th:replace="~{fragments/toast :: toast-system}"></div>
+            <dialog id="addUserModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-lg open:animate-fade-in">
+                <form th:action="@{/admin/users/add}" method="post" th:object="${newUser}" class="flex flex-col">
+                    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-dark-ink">Add New User</h3>
+                        <button type="button" onclick="document.getElementById('addUserModal').close()" class="text-gray-400 hover:text-gray-600">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="p-6 flex flex-col gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                            <input type="text" th:field="*{fullName}" required class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green"/>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                            <input type="email" th:field="*{email}" required class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green"/>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                            <input type="password" name="rawPassword" required class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green" placeholder="Default password"/>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Role</label>
+                                <select th:field="*{role}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green">
+                                    <option value="USER">USER</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="NUTRITIONIST">NUTRITIONIST</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                                <select th:field="*{status}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green">
+                                    <option value="ACTIVE">ACTIVE</option>
+                                    <option value="PENDING_VERIFICATION">PENDING VERIFICATION</option>
+                                    <option value="BLOCKED">BLOCKED</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                        <button type="button" onclick="document.getElementById('addUserModal').close()" class="px-4 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-200">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-nutri-green text-white font-bold hover:bg-green-600 shadow-sm">Create User</button>
+                    </div>
+                </form>
+            </dialog>
+        </div>
 
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const serverMessage = /*[[${message}]]*/ null;
-        const serverMessageType = /*[[${messageType}]]*/ null;
-
-        if (serverMessage) {
-            if (serverMessageType === 'success') {
-                ZaderToast.success(serverMessage);
-            } else if (serverMessageType === 'error') {
-                ZaderToast.error(serverMessage);
-            } else {
-                ZaderToast.show(serverMessage, 'info');
-            }
-        }
-        /*]]>*/
-
-        function confirmBan(userId, userName) {
-            Swal.fire({
-                title: 'Ban user ' + userName + '?',
-                text: "This action is permanent and cannot be undone!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, ban now!',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    ZaderToast.loading('Processing ban request...');
-                    setTimeout(() => {
-                        document.getElementById('banForm-' + userId).submit();
-                    }, 300);
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+        <script>
+            function confirmAction(formId, title = 'Are you sure?', text = "You won't be able to revert this!", confirmBtnText = 'Yes, do it!') {
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#111827',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: confirmBtnText,
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Hiển thị loading trước khi submit
+                        ZaderToast.loading('Processing...');
+                        const form = document.getElementById(formId);
+                        if (form) {
+                            form.submit();
+                        } else {
+                            console.error('Form not found: ' + formId);
+                            ZaderToast.error('Error: Form ID not found');
+                        }
+                    }
                 }
-            });
-        }
-    </script>
-</body>
+                );
+            }
+        </script>
+    </body>
 </html>

@@ -3,6 +3,8 @@ package com.group02.zaderfood.repository;
 import com.group02.zaderfood.entity.User;
 import com.group02.zaderfood.entity.enums.UserRole;
 import com.group02.zaderfood.entity.enums.UserStatus;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -26,4 +28,14 @@ public interface UserRepository extends JpaRepository<User, Integer> {
             Pageable pageable);
 
     boolean existsByEmail(String email);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate")
+    long countNewUsers(@Param("startDate") LocalDateTime startDate);
+
+    // [Biểu đồ] Đếm user đăng ký theo từng ngày (cho Line Chart)
+    // Trả về List object dạng [Date, Count]
+    @Query("SELECT CAST(u.createdAt AS date), COUNT(u) FROM User u "
+            + "WHERE u.createdAt >= :startDate "
+            + "GROUP BY CAST(u.createdAt AS date) ORDER BY CAST(u.createdAt AS date)")
+    List<Object[]> countUsersByDate(@Param("startDate") LocalDateTime startDate);
 }

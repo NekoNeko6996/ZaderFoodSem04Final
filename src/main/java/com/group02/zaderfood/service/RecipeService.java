@@ -54,8 +54,7 @@ public class RecipeService {
     private CollectionItemRepository collectionItemRepository;
 
     @Transactional
-    public void createFullRecipe(RecipeCreationDTO form, int userId) {
-
+    public void createFullRecipe(RecipeCreationDTO form, int userId, boolean isNutritionist) {
         // 1. RECIPES 
         Recipe recipe = new Recipe();
         recipe.setName(form.getName());
@@ -68,6 +67,7 @@ public class RecipeService {
         recipe.setStatus(RecipeStatus.PENDING);
         recipe.setCreatedAt(LocalDateTime.now());
         recipe.setUpdatedAt(LocalDateTime.now());
+        recipe.setNutritionist(isNutritionist);
 
         // process file
         String coverImgUrl = fileStorageService.storeFile(form.getImageFile());
@@ -175,7 +175,7 @@ public class RecipeService {
                 .collect(Collectors.toList());
     }
 
-    public List<RecipeMatchDTO> findRecipesWithMissingIngredients(List<Integer> userIngredientIds, String keyword, Integer maxCalories, Integer maxTime, String difficulty) {
+    public List<RecipeMatchDTO> findRecipesWithMissingIngredients(List<Integer> userIngredientIds, String keyword, Integer maxCalories, Integer maxTime, String difficulty, Boolean isNutritionist) {
         List<RecipeMatchDTO> results = new ArrayList<>();
 
         List<Recipe> allRecipes = recipeRepository.findAllActiveRecipes();
@@ -197,6 +197,10 @@ public class RecipeService {
                 continue;
             }
             if (difficulty != null && !difficulty.isEmpty() && recipe.getDifficulty() != null && !recipe.getDifficulty().name().equalsIgnoreCase(difficulty)) {
+                continue;
+            }
+
+            if (Boolean.TRUE.equals(isNutritionist) && !recipe.isNutritionist()) {
                 continue;
             }
 

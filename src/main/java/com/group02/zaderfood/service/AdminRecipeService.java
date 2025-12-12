@@ -3,12 +3,19 @@ package com.group02.zaderfood.service;
 import com.group02.zaderfood.entity.*;
 import com.group02.zaderfood.entity.enums.RecipeStatus;
 import com.group02.zaderfood.repository.*;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class AdminRecipeService {
@@ -24,6 +31,9 @@ public class AdminRecipeService {
 
     @Autowired
     private RecipeStepRepository recipeStepRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     /**
      * Lấy danh sách các công thức đang chờ duyệt (PENDING)
@@ -60,10 +70,112 @@ public class AdminRecipeService {
         existingRecipe.setDifficulty(updatedData.getDifficulty());
         existingRecipe.setUpdatedAt(LocalDateTime.now());
 
-        // Lưu ý: Việc cập nhật List<RecipeIngredient> và List<RecipeStep> phức tạp hơn
-        // cần logic xóa cũ thêm mới hoặc update từng item. 
-        // Trong phạm vi code mẫu này, ta tập trung vào logic duyệt/từ chối.
+        if (updatedData.getImageFile() != null && !updatedData.getImageFile().isEmpty()) {
+            String newImageUrl = fileStorageService.storeFile(updatedData.getImageFile());
+            existingRecipe.setImageUrl(newImageUrl);
+        }
+
+        // 3. Xử lý danh sách nguyên liệu (SMART MERGE)
+        updateIngredientsList(existingRecipe, updatedData.getRecipeIngredients());
+
         return recipeRepository.save(existingRecipe);
+    }
+
+    private void updateIngredientsList(Recipe recipe, List<RecipeIngredient> newItems) {
+        // [DEBUG]
+        System.out.println("========== SERVICE LOGIC ==========");
+        if (newItems == null) {
+            return;
+        }
+
+        List<RecipeIngredient> currentItems = recipeIngredientRepository.findByRecipeId(recipe.getRecipeId());
+        System.out.println("Current DB Items: " + currentItems.size());
+
+        // Map để tra cứu nhanh theo ID
+        Map<Integer, RecipeIngredient> currentMap = currentItems.stream()
+                .filter(i -> i.getRecipeIngredientId() != null)
+                .collect(Collectors.toMap(RecipeIngredient::getRecipeIngredientId, Function.identity()));
+
+        List<RecipeIngredient> toSave = new ArrayList<>();
+        List<Integer> keptIds = new ArrayList<>();
+
+        for (RecipeIngredient newItem : newItems) {
+            // Fix Null Pointer như đã bàn ở bước trước
+            if (newItem == null) {
+                continue;
+            }
+
+            if (newItem.getRecipeIngredientId() != null && currentMap.containsKey(newItem.getRecipeIngredientId())) {
+                System.out.println(" -> UPDATE existing item: " + newItem.getRecipeIngredientId());
+                RecipeIngredient existing = currentMap.get(newItem.getRecipeIngredientId());
+                existing.setQuantity(newItem.getQuantity());
+                existing.setUnit(newItem.getUnit());
+                existing.setNote(newItem.getNote());
+                existing.setUpdatedAt(LocalDateTime.now());
+                toSave.add(existing);
+                keptIds.add(existing.getRecipeIngredientId());
+            } else {
+                System.out.println(" -> CREATE NEW item logic");
+                newItem.setRecipeId(recipe.getRecipeId());
+
+                // Logic thêm Ingredient mới
+                if (newItem.getIngredient() != null && newItem.getIngredientId() == null) {
+                    Ingredient newIngInfo = newItem.getIngredient();
+
+                    Ingredient createdIng = new Ingredient();
+                    createdIng.setName(newIngInfo.getName());
+
+                    createdIng.setCaloriesPer100g(newIngInfo.getCaloriesPer100g() != null ? newIngInfo.getCaloriesPer100g() : BigDecimal.ZERO);
+                    createdIng.setProtein(newIngInfo.getProtein() != null ? newIngInfo.getProtein() : BigDecimal.ZERO);
+                    createdIng.setFat(newIngInfo.getFat() != null ? newIngInfo.getFat() : BigDecimal.ZERO);
+                    createdIng.setCarbs(newIngInfo.getCarbs() != null ? newIngInfo.getCarbs() : BigDecimal.ZERO);
+
+                    // Lấy BaseUnit
+                    createdIng.setBaseUnit(newIngInfo.getBaseUnit() != null ? newIngInfo.getBaseUnit() : "g");
+
+                    createdIng.setIsActive(false);
+                    createdIng.setCreatedAt(LocalDateTime.now());
+
+                    ingredientRepository.save(createdIng);
+
+                    newItem.setIngredientId(createdIng.getIngredientId());
+                } else {
+                    System.out.println("    -> Using existing Ingredient ID: " + newItem.getIngredientId());
+                }
+
+                newItem.setIngredient(null);
+
+                newItem.setCreatedAt(LocalDateTime.now());
+                newItem.setIsDeleted(false);
+                toSave.add(newItem);
+            }
+        }
+
+        System.out.println("--- CHECKING FOR DELETIONS ---");
+        System.out.println("Ids to Keep: " + keptIds);
+
+        List<RecipeIngredient> toDelete = new ArrayList<>();
+        for (RecipeIngredient oldItem : currentItems) {
+            // Nếu ID trong DB không nằm trong danh sách Giữ lại -> XÓA
+            if (!keptIds.contains(oldItem.getRecipeIngredientId())) {
+                System.out.println(" >> DETECTED DELETE FOR ID: " + oldItem.getRecipeIngredientId());
+                toDelete.add(oldItem);
+            }
+        }
+
+        if (!toDelete.isEmpty()) {
+            recipeIngredientRepository.deleteAll(toDelete);
+            recipeIngredientRepository.flush(); // [QUAN TRỌNG] Ép thực thi lệnh DELETE ngay lập tức
+            System.out.println(" >> FLUSHED DELETIONS TO DB");
+        }
+
+        // 4. Lưu danh sách thêm/sửa
+        if (!toSave.isEmpty()) {
+            recipeIngredientRepository.saveAll(toSave);
+        }
+
+        System.out.println("Saving total items: " + toSave.size());
+        recipeIngredientRepository.saveAll(toSave);
     }
 
     /**
@@ -130,5 +242,48 @@ public class AdminRecipeService {
         step.setInstruction(newInstruction);
 
         recipeStepRepository.save(step);
+    }
+
+    public List<Recipe> getAllRecipes() {
+        // Lấy tất cả, sắp xếp mới nhất lên đầu
+        return recipeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    @Transactional
+    public String deleteRecipeSmart(Integer id) {
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        try {
+            // 1. Xóa các thành phần con trước (Steps, Ingredients liên kết)
+            // Lưu ý: Nếu DB cấu hình Cascade Delete thì bước này tự động.
+            // Nếu không, phải xóa tay. Ở đây ta thử xóa cứng Recipe.
+
+            // Nếu muốn xóa cứng sạch sẽ, phải xóa bảng con trước:
+            recipeStepRepository.deleteAllByRecipeId(id);
+            recipeIngredientRepository.deleteAllByRecipeId(id);
+
+            recipeRepository.delete(recipe);
+            recipeRepository.flush(); // Ép thực thi SQL ngay
+
+            return "HARD"; // Xóa vĩnh viễn thành công
+
+        } catch (DataIntegrityViolationException e) {
+            // 2. Nếu dính khóa ngoại (ví dụ: đã có trong MealPlan hoặc Reviews), chuyển sang xóa mềm
+            recipe.setIsDeleted(true);
+            recipe.setDeletedAt(LocalDateTime.now());
+            recipe.setStatus(RecipeStatus.HIDDEN); // Ẩn khỏi hiển thị
+            recipeRepository.save(recipe);
+
+            return "SOFT"; // Chuyển sang lưu trữ
+        }
+    }
+
+    public List<Recipe> searchRecipes(String keyword, RecipeStatus status, Integer maxCalories) {
+        // Nếu maxCalories <= 0 thì coi như không lọc calo
+        if (maxCalories != null && maxCalories <= 0) {
+            maxCalories = null;
+        }
+        return recipeRepository.searchRecipes(keyword, status, maxCalories);
     }
 }
