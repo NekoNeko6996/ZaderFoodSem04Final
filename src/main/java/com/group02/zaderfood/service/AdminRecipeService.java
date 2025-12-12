@@ -3,6 +3,7 @@ package com.group02.zaderfood.service;
 import com.group02.zaderfood.entity.*;
 import com.group02.zaderfood.entity.enums.RecipeStatus;
 import com.group02.zaderfood.repository.*;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,18 +76,22 @@ public class AdminRecipeService {
         }
 
         // 3. Xử lý danh sách nguyên liệu (SMART MERGE)
-        if (updatedData.getRecipeIngredients() != null) {
-            updateIngredientsList(existingRecipe, updatedData.getRecipeIngredients());
-        }
+        updateIngredientsList(existingRecipe, updatedData.getRecipeIngredients());
 
         return recipeRepository.save(existingRecipe);
     }
 
     private void updateIngredientsList(Recipe recipe, List<RecipeIngredient> newItems) {
-        // Lấy danh sách hiện tại trong DB
-        List<RecipeIngredient> currentItems = recipeIngredientRepository.findByRecipeId(recipe.getRecipeId());
+        // [DEBUG]
+        System.out.println("========== SERVICE LOGIC ==========");
+        if (newItems == null) {
+            return;
+        }
 
-        // Map để tra cứu nhanh theo ID (nếu là update item cũ)
+        List<RecipeIngredient> currentItems = recipeIngredientRepository.findByRecipeId(recipe.getRecipeId());
+        System.out.println("Current DB Items: " + currentItems.size());
+
+        // Map để tra cứu nhanh theo ID
         Map<Integer, RecipeIngredient> currentMap = currentItems.stream()
                 .filter(i -> i.getRecipeIngredientId() != null)
                 .collect(Collectors.toMap(RecipeIngredient::getRecipeIngredientId, Function.identity()));
@@ -95,8 +100,13 @@ public class AdminRecipeService {
         List<Integer> keptIds = new ArrayList<>();
 
         for (RecipeIngredient newItem : newItems) {
+            // Fix Null Pointer như đã bàn ở bước trước
+            if (newItem == null) {
+                continue;
+            }
+
             if (newItem.getRecipeIngredientId() != null && currentMap.containsKey(newItem.getRecipeIngredientId())) {
-                // CASE A: Cập nhật món cũ
+                System.out.println(" -> UPDATE existing item: " + newItem.getRecipeIngredientId());
                 RecipeIngredient existing = currentMap.get(newItem.getRecipeIngredientId());
                 existing.setQuantity(newItem.getQuantity());
                 existing.setUnit(newItem.getUnit());
@@ -105,26 +115,35 @@ public class AdminRecipeService {
                 toSave.add(existing);
                 keptIds.add(existing.getRecipeIngredientId());
             } else {
-                // CASE B: Thêm món mới vào list
+                System.out.println(" -> CREATE NEW item logic");
                 newItem.setRecipeId(recipe.getRecipeId());
-                // Nếu User nhập text nguyên liệu mới (chưa có ID), ta cần tạo Ingredient mới trước
+
+                // Logic thêm Ingredient mới
                 if (newItem.getIngredient() != null && newItem.getIngredientId() == null) {
                     Ingredient newIngInfo = newItem.getIngredient();
-                    // Logic tạo nhanh Ingredient
+
                     Ingredient createdIng = new Ingredient();
                     createdIng.setName(newIngInfo.getName());
-                    createdIng.setCaloriesPer100g(newIngInfo.getCaloriesPer100g());
-                    createdIng.setProtein(newIngInfo.getProtein());
-                    createdIng.setFat(newIngInfo.getFat());
-                    createdIng.setCarbs(newIngInfo.getCarbs());
-                    createdIng.setIsActive(false); // Chờ duyệt
+
+                    createdIng.setCaloriesPer100g(newIngInfo.getCaloriesPer100g() != null ? newIngInfo.getCaloriesPer100g() : BigDecimal.ZERO);
+                    createdIng.setProtein(newIngInfo.getProtein() != null ? newIngInfo.getProtein() : BigDecimal.ZERO);
+                    createdIng.setFat(newIngInfo.getFat() != null ? newIngInfo.getFat() : BigDecimal.ZERO);
+                    createdIng.setCarbs(newIngInfo.getCarbs() != null ? newIngInfo.getCarbs() : BigDecimal.ZERO);
+
+                    // Lấy BaseUnit
+                    createdIng.setBaseUnit(newIngInfo.getBaseUnit() != null ? newIngInfo.getBaseUnit() : "g");
+
+                    createdIng.setIsActive(false);
                     createdIng.setCreatedAt(LocalDateTime.now());
 
-                    // Xử lý ảnh nguyên liệu nếu có
-                    // (Cần DTO phức tạp hơn để hứng file ở đây, tạm thời bỏ qua ảnh ingredient con trong scope này để đơn giản)
                     ingredientRepository.save(createdIng);
+
                     newItem.setIngredientId(createdIng.getIngredientId());
+                } else {
+                    System.out.println("    -> Using existing Ingredient ID: " + newItem.getIngredientId());
                 }
+
+                newItem.setIngredient(null);
 
                 newItem.setCreatedAt(LocalDateTime.now());
                 newItem.setIsDeleted(false);
@@ -132,13 +151,30 @@ public class AdminRecipeService {
             }
         }
 
-        // CASE C: Xóa những món không còn trong list gửi lên
+        System.out.println("--- CHECKING FOR DELETIONS ---");
+        System.out.println("Ids to Keep: " + keptIds);
+
+        List<RecipeIngredient> toDelete = new ArrayList<>();
         for (RecipeIngredient oldItem : currentItems) {
+            // Nếu ID trong DB không nằm trong danh sách Giữ lại -> XÓA
             if (!keptIds.contains(oldItem.getRecipeIngredientId())) {
-                recipeIngredientRepository.delete(oldItem);
+                System.out.println(" >> DETECTED DELETE FOR ID: " + oldItem.getRecipeIngredientId());
+                toDelete.add(oldItem);
             }
         }
 
+        if (!toDelete.isEmpty()) {
+            recipeIngredientRepository.deleteAll(toDelete);
+            recipeIngredientRepository.flush(); // [QUAN TRỌNG] Ép thực thi lệnh DELETE ngay lập tức
+            System.out.println(" >> FLUSHED DELETIONS TO DB");
+        }
+
+        // 4. Lưu danh sách thêm/sửa
+        if (!toSave.isEmpty()) {
+            recipeIngredientRepository.saveAll(toSave);
+        }
+
+        System.out.println("Saving total items: " + toSave.size());
         recipeIngredientRepository.saveAll(toSave);
     }
 

@@ -2,6 +2,7 @@ package com.group02.zaderfood.controller;
 
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.entity.enums.RecipeStatus;
+import com.group02.zaderfood.repository.IngredientRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
 import com.group02.zaderfood.service.AdminRecipeService;
 import com.group02.zaderfood.service.RecipeService;
@@ -26,6 +27,9 @@ public class AdminRecipeController {
 
     @Autowired
     private RecipeService recipeService;
+
+    @Autowired
+    private IngredientRepository ingredientRepository;
 
     // 1. GET: Hiển thị trang danh sách chờ duyệt
     // Trả về file: templates/admin/recipe-pending-list.html
@@ -52,6 +56,7 @@ public class AdminRecipeController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_NUTRITIONIST") || a.getAuthority().equals("NUTRITIONIST"));
 
         boolean isActive = recipe.getStatus() == RecipeStatus.ACTIVE;
+        model.addAttribute("allIngredients", ingredientRepository.findAllActive());
 
         model.addAttribute("isActive", isActive);
         model.addAttribute("canEdit", canEdit);
@@ -62,13 +67,39 @@ public class AdminRecipeController {
     // 3. POST: Xử lý cập nhật thông tin (Khi bấm nút Lưu)
     // Dùng @ModelAttribute để hứng dữ liệu từ Form HTML gửi lên
     @PostMapping("/{id}/update")
-    public String updateRecipe(@PathVariable Integer id, @ModelAttribute Recipe recipe, RedirectAttributes ra) {
-        adminRecipeService.updateRecipeContent(id, recipe);
+    public String updateRecipe(@PathVariable Integer id, @ModelAttribute Recipe recipe, RedirectAttributes ra, @RequestParam String returnUrl) {
+        // --- [DEBUG CODE START] ---
+        System.out.println("========== DEBUG UPDATE RECIPE ==========");
+        System.out.println("1. Recipe ID: " + id);
+        if (recipe.getRecipeIngredients() != null) {
+            System.out.println("2. Total Ingredients Received: " + recipe.getRecipeIngredients().size());
+            for (int i = 0; i < recipe.getRecipeIngredients().size(); i++) {
+                var ri = recipe.getRecipeIngredients().get(i);
+                System.out.println("   - Item [" + i + "]: ID=" + ri.getRecipeIngredientId()
+                        + ", IngId=" + ri.getIngredientId()
+                        + ", Qty=" + ri.getQuantity()
+                        + ", Unit=" + ri.getUnit()
+                        + ", Note=" + ri.getNote());
+                // Kiểm tra xem có thông tin Ingredient lồng bên trong không (trường hợp tạo mới)
+                if (ri.getIngredient() != null) {
+                    System.out.println("     -> New Ingredient Name: " + ri.getIngredient().getName());
+                }
+            }
+        } else {
+            System.out.println("2. RecipeIngredients List is NULL!");
+        }
+        // --- [DEBUG CODE END] ---
 
-        ra.addFlashAttribute("message", "Recipe updated successfully!");
-        ra.addFlashAttribute("messageType", "success");
-
-        return "redirect:/admin/recipes/" + id;
+        try {
+            adminRecipeService.updateRecipeContent(id, recipe);
+            ra.addFlashAttribute("message", "Recipe updated successfully!");
+            ra.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            e.printStackTrace(); // In lỗi ra console server
+            ra.addFlashAttribute("message", "Error: " + e.getMessage());
+            ra.addFlashAttribute("messageType", "error");
+        }
+        return "redirect:/nutritionist/recipes/" + id + "?returnUrl=" + returnUrl;
     }
 
     // 4. POST: Duyệt công thức
@@ -132,7 +163,6 @@ public class AdminRecipeController {
         // 2. Logic phân quyền (Giữ nguyên)
         boolean isNutritionist = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_NUTRITIONIST") || a.getAuthority().equals("NUTRITIONIST"));
-       
 
         String sidebarFragment = isNutritionist ? "sidebar_nutritionist" : "sidebar";
         model.addAttribute("sidebarFragment", sidebarFragment);
