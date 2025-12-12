@@ -27,9 +27,8 @@
     </head>
     <body class="font-display bg-background-light text-dark-ink">
         <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
-
-            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-
+            <div th:replace="${isNutritionist} ? ~{fragments/sidebar_nutritionist :: sidebar} : ~{fragments/sidebar :: sidebar}"></div>
+            
             <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
                 <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
                 <div class="p-8">

@@ -15,7 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Autowired
-    private CustomUserDetailsService userDetailsService; 
+    private CustomUserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -24,15 +24,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        
-        http.authorizeHttpRequests(authorize -> authorize 
+
+        http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
                         "/",
-                        "/login", 
-                        "/register/**", 
-                        "/forgot-password/**", 
-                        "/css/**", 
-                        "/js/**", 
+                        "/login",
+                        "/register/**",
+                        "/forgot-password/**",
+                        "/css/**",
+                        "/js/**",
                         "/images/**",
                         "/icons/**",
                         "/default/**",
@@ -45,25 +45,37 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers("/ai-tools/**").authenticated()
                 .requestMatchers("/recipes/create", "/recipes/save").authenticated()
+                // --- SỬA ĐỔI TẠI ĐÂY ---
+
+                // 1. Rule cụ thể phải đứng trước. 
+                // Cho phép cả ADMIN và NUTRITIONIST vào trang quản lý nguyên liệu
+                // Dùng /** để bao gồm cả các action con như /add, /delete
+                .requestMatchers("/admin/ingredients/**", "/admin/categories/**").hasAnyRole("ADMIN", "NUTRITIONIST")
+                // 2. Các trang Nutritionist khác (nếu có, ví dụ duyệt bài)
+                .requestMatchers("/nutritionist/**").hasAnyRole("ADMIN", "NUTRITIONIST")
+                // 3. Rule tổng quát cho Admin đứng cuối cùng trong nhóm admin
+                // Tất cả các trang /admin/... còn lại chỉ dành cho ADMIN
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                // -----------------------
+
                 .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
+        )
+                .formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/authenticateTheUser")
                 .usernameParameter("username")
                 .passwordParameter("password")
-                .defaultSuccessUrl("/", true) 
+                .defaultSuccessUrl("/", true)
                 .permitAll()
-            )
-            .logout(logout -> logout
+                )
+                .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
-            )
-            .csrf(csrf -> csrf.disable()); // Tắt CSRF để test dễ hơn
+                )
+                .csrf(csrf -> csrf.disable()); // Tắt CSRF để test dễ hơn
 
         return http.build();
     }

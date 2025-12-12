@@ -16,7 +16,7 @@
                 <nav class="hidden md:flex gap-6 lg:gap-8 items-center ml-8 lg:ml-12">
                     <a th:href="@{/}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Home</a>
                     <a th:href="@{/recipes/suggestions}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Recipes</a>
-                    
+
                     <div class="relative group">
                         <button class="flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-bold uppercase tracking-wider">
                             Meal Plan
@@ -27,16 +27,18 @@
                             <a th:href="@{/meal-plan/history}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Meal Plan History</a>
                         </div>
                     </div>
-                    
-                    
+
+
                     <a th:href="@{/recipes/search}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">Ingredients</a>
                     <a th:href="@{/ai-tools/calorie-estimator}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">AI Tools</a>
 
                     <div sec:authorize="hasAnyAuthority('ADMIN', 'ROLE_ADMIN')" class="relative group">
-                        <button class="flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-bold uppercase tracking-wider">
-                            Admin
-                            <span class="material-symbols-outlined text-sm">expand_more</span>
-                        </button>
+                        <a href="/admin/dashboard">
+                            <button class="flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-bold uppercase tracking-wider">
+                                Admin
+                                <span class="material-symbols-outlined text-sm">expand_more</span>
+                            </button>
+                        </a>
                         <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
                             <a th:href="@{/admin/users}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Manage Users</a>
                             <a th:href="@{/admin/ingredients/create}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">System Ingredients</a>
@@ -90,7 +92,7 @@
                                 <a th:href="@{/user/favorites}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">favorite</span> My Favorites
                                 </a>
-                                
+
                                 <a th:href="@{/user/settings}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">settings</span> Personal Settings
                                 </a>

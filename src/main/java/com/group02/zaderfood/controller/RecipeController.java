@@ -6,6 +6,8 @@ import com.group02.zaderfood.dto.RecipeMatchDTO;
 import com.group02.zaderfood.entity.Ingredient;
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.entity.Review;
+import com.group02.zaderfood.entity.enums.RecipeStatus;
+import com.group02.zaderfood.entity.enums.UserRole;
 import com.group02.zaderfood.repository.IngredientRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
 import com.group02.zaderfood.repository.ReviewRepository;
@@ -81,7 +83,7 @@ public class RecipeController {
          * 3. Save Recipe -> Get ID
          * 4. Save RecipeIngredients (Connect Recipe ID and Ingredient ID)
          */
-        recipeService.createFullRecipe(form, currentUser.getUserId());
+        recipeService.createFullRecipe(form, currentUser.getUserId(), currentUser.getUserRole() == UserRole.NUTRITIONIST);
         return "redirect:/recipes/thank-you";
     }
 
@@ -98,6 +100,9 @@ public class RecipeController {
                 .average()
                 .orElse(0.0);
 
+        boolean isActive = recipe.getStatus().equals(RecipeStatus.ACTIVE);
+        
+        model.addAttribute("isActive", isActive);
         model.addAttribute("recipe", recipe);
         model.addAttribute("reviews", reviews); // Danh sách comment
         model.addAttribute("averageRating", String.format("%.1f", averageRating)); // Điểm TB
@@ -154,6 +159,7 @@ public class RecipeController {
             @RequestParam(name = "maxCalories", required = false) Integer maxCalories,
             @RequestParam(name = "maxTime", required = false) Integer maxTime,
             @RequestParam(name = "difficulty", required = false) String difficulty,
+            @RequestParam(name = "isNutritionist", required = false) Boolean isNutritionist,
             Model model) {
 
         // 1. Sidebar Selected Ingredients
@@ -164,7 +170,9 @@ public class RecipeController {
         }
 
         // 2. Gọi Service mới trả về List<RecipeMatchDTO>
-        List<RecipeMatchDTO> matchResults = recipeService.findRecipesWithMissingIngredients(ingredientIds, keyword, maxCalories, maxTime, difficulty);
+        List<RecipeMatchDTO> matchResults = recipeService.findRecipesWithMissingIngredients(
+                ingredientIds, keyword, maxCalories, maxTime, difficulty, isNutritionist
+        );
 
         model.addAttribute("recipeMatches", matchResults); // Đổi tên biến model để phân biệt
 
@@ -173,6 +181,7 @@ public class RecipeController {
         model.addAttribute("maxCalories", maxCalories);
         model.addAttribute("maxTime", maxTime);
         model.addAttribute("difficulty", difficulty);
+        model.addAttribute("isNutritionist", isNutritionist);
 
         return "recipe/results";
     }

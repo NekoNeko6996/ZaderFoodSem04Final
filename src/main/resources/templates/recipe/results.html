@@ -102,6 +102,26 @@
                                             </select>
                                         </div>
 
+                                        <div class="flex items-center gap-3 pt-2 pb-2">
+                                            <div class="relative flex items-start">
+                                                <div class="flex h-6 items-center">
+                                                    <input id="isNutritionist" 
+                                                           name="isNutritionist" 
+                                                           type="checkbox" 
+                                                           value="true"
+                                                           th:checked="${isNutritionist}"
+                                                           class="h-5 w-5 rounded border-gray-300 text-nutri-green focus:ring-nutri-green dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800">
+                                                </div>
+                                                <div class="ml-3 text-sm leading-6">
+                                                    <label for="isNutritionist" class="font-medium text-dark-ink dark:text-white flex items-center gap-2">
+                                                        <span class="material-symbols-outlined !text-[18px] text-blue-600">verified</span>
+                                                        Expert Recipes Only
+                                                    </label>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">Verified by nutritionists.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <button type="submit" class="w-full bg-dark-ink text-white font-bold py-2 rounded-lg hover:bg-opacity-90 transition">
                                             Apply Filters
                                         </button>
@@ -161,10 +181,18 @@
                                         <span class="material-symbols-outlined !text-[20px]">favorite</span>
                                     </button>
 
-                                    <div th:if="${not #lists.isEmpty(selectedIngredients)}"
-                                         class="absolute top-3 right-3 z-10 px-2 py-1 rounded-lg text-xs font-bold text-white shadow-sm"
-                                         th:classappend="${match.matchPercentage == 100 ? 'bg-nutri-green' : (match.matchPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500')}">
-                                        <span th:text="${match.matchPercentage} + '% Match'"></span>
+                                    <div class="absolute top-3 right-3 z-10 flex flex-col gap-2 items-end">
+                                        <div th:if="${match.recipe.isNutritionist}" 
+                                             class="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-600 text-white shadow-sm backdrop-blur-sm bg-opacity-90">
+                                            <span class="material-symbols-outlined !text-[16px]">verified</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider">Expert</span>
+                                        </div>
+
+                                        <div th:if="${not #lists.isEmpty(selectedIngredients)}"
+                                             class="px-2 py-1 rounded-lg text-xs font-bold text-white shadow-sm"
+                                             th:classappend="${match.matchPercentage == 100 ? 'bg-nutri-green' : (match.matchPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500')}">
+                                            <span th:text="${match.matchPercentage} + '% Match'"></span>
+                                        </div>
                                     </div>
 
                                     <img th:src="${match.recipe.imageUrl}" 

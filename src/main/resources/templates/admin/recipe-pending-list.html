@@ -29,7 +29,7 @@
     <body class="font-display bg-background-light text-dark-ink">
         <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
 
-            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+            <div th:replace="~{fragments/sidebar_nutritionist :: sidebar}"></div>
 
             <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
                 <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
@@ -79,7 +79,7 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2">   
                                                 <div class="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
                                                     <span class="material-symbols-outlined text-[14px]">person</span>
                                                 </div>
@@ -98,7 +98,7 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a th:href="@{/admin/recipes/{id}(id=${recipe.recipeId})}" 
+                                            <a th:href="@{/nutritionist/recipes/{id}(id=${recipe.recipeId}, returnUrl='pending')}" 
                                                class="inline-flex items-center gap-1.5 bg-white border border-gray-300 hover:border-nutri-green hover:text-nutri-green text-dark-ink px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm hover:shadow-md">
                                                 Review <span class="material-symbols-outlined text-lg">arrow_forward</span>
                                             </a>

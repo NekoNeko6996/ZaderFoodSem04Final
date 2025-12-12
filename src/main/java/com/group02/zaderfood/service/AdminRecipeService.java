@@ -8,7 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class AdminRecipeService {
@@ -24,6 +30,9 @@ public class AdminRecipeService {
 
     @Autowired
     private RecipeStepRepository recipeStepRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     /**
      * Lấy danh sách các công thức đang chờ duyệt (PENDING)
@@ -60,10 +69,77 @@ public class AdminRecipeService {
         existingRecipe.setDifficulty(updatedData.getDifficulty());
         existingRecipe.setUpdatedAt(LocalDateTime.now());
 
-        // Lưu ý: Việc cập nhật List<RecipeIngredient> và List<RecipeStep> phức tạp hơn
-        // cần logic xóa cũ thêm mới hoặc update từng item. 
-        // Trong phạm vi code mẫu này, ta tập trung vào logic duyệt/từ chối.
+        if (updatedData.getImageFile() != null && !updatedData.getImageFile().isEmpty()) {
+            String newImageUrl = fileStorageService.storeFile(updatedData.getImageFile());
+            existingRecipe.setImageUrl(newImageUrl);
+        }
+
+        // 3. Xử lý danh sách nguyên liệu (SMART MERGE)
+        if (updatedData.getRecipeIngredients() != null) {
+            updateIngredientsList(existingRecipe, updatedData.getRecipeIngredients());
+        }
+
         return recipeRepository.save(existingRecipe);
+    }
+
+    private void updateIngredientsList(Recipe recipe, List<RecipeIngredient> newItems) {
+        // Lấy danh sách hiện tại trong DB
+        List<RecipeIngredient> currentItems = recipeIngredientRepository.findByRecipeId(recipe.getRecipeId());
+
+        // Map để tra cứu nhanh theo ID (nếu là update item cũ)
+        Map<Integer, RecipeIngredient> currentMap = currentItems.stream()
+                .filter(i -> i.getRecipeIngredientId() != null)
+                .collect(Collectors.toMap(RecipeIngredient::getRecipeIngredientId, Function.identity()));
+
+        List<RecipeIngredient> toSave = new ArrayList<>();
+        List<Integer> keptIds = new ArrayList<>();
+
+        for (RecipeIngredient newItem : newItems) {
+            if (newItem.getRecipeIngredientId() != null && currentMap.containsKey(newItem.getRecipeIngredientId())) {
+                // CASE A: Cập nhật món cũ
+                RecipeIngredient existing = currentMap.get(newItem.getRecipeIngredientId());
+                existing.setQuantity(newItem.getQuantity());
+                existing.setUnit(newItem.getUnit());
+                existing.setNote(newItem.getNote());
+                existing.setUpdatedAt(LocalDateTime.now());
+                toSave.add(existing);
+                keptIds.add(existing.getRecipeIngredientId());
+            } else {
+                // CASE B: Thêm món mới vào list
+                newItem.setRecipeId(recipe.getRecipeId());
+                // Nếu User nhập text nguyên liệu mới (chưa có ID), ta cần tạo Ingredient mới trước
+                if (newItem.getIngredient() != null && newItem.getIngredientId() == null) {
+                    Ingredient newIngInfo = newItem.getIngredient();
+                    // Logic tạo nhanh Ingredient
+                    Ingredient createdIng = new Ingredient();
+                    createdIng.setName(newIngInfo.getName());
+                    createdIng.setCaloriesPer100g(newIngInfo.getCaloriesPer100g());
+                    createdIng.setProtein(newIngInfo.getProtein());
+                    createdIng.setFat(newIngInfo.getFat());
+                    createdIng.setCarbs(newIngInfo.getCarbs());
+                    createdIng.setIsActive(false); // Chờ duyệt
+                    createdIng.setCreatedAt(LocalDateTime.now());
+
+                    // Xử lý ảnh nguyên liệu nếu có
+                    // (Cần DTO phức tạp hơn để hứng file ở đây, tạm thời bỏ qua ảnh ingredient con trong scope này để đơn giản)
+                    ingredientRepository.save(createdIng);
+                    newItem.setIngredientId(createdIng.getIngredientId());
+                }
+
+                newItem.setCreatedAt(LocalDateTime.now());
+                newItem.setIsDeleted(false);
+                toSave.add(newItem);
+            }
+        }
+
+        // CASE C: Xóa những món không còn trong list gửi lên
+        for (RecipeIngredient oldItem : currentItems) {
+            if (!keptIds.contains(oldItem.getRecipeIngredientId())) {
+                recipeIngredientRepository.delete(oldItem);
+            }
+        }
+
+        recipeIngredientRepository.saveAll(toSave);
     }
 
     /**
@@ -130,5 +206,48 @@ public class AdminRecipeService {
         step.setInstruction(newInstruction);
 
         recipeStepRepository.save(step);
+    }
+
+    public List<Recipe> getAllRecipes() {
+        // Lấy tất cả, sắp xếp mới nhất lên đầu
+        return recipeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    @Transactional
+    public String deleteRecipeSmart(Integer id) {
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        try {
+            // 1. Xóa các thành phần con trước (Steps, Ingredients liên kết)
+            // Lưu ý: Nếu DB cấu hình Cascade Delete thì bước này tự động.
+            // Nếu không, phải xóa tay. Ở đây ta thử xóa cứng Recipe.
+
+            // Nếu muốn xóa cứng sạch sẽ, phải xóa bảng con trước:
+            recipeStepRepository.deleteAllByRecipeId(id);
+            recipeIngredientRepository.deleteAllByRecipeId(id);
+
+            recipeRepository.delete(recipe);
+            recipeRepository.flush(); // Ép thực thi SQL ngay
+
+            return "HARD"; // Xóa vĩnh viễn thành công
+
+        } catch (DataIntegrityViolationException e) {
+            // 2. Nếu dính khóa ngoại (ví dụ: đã có trong MealPlan hoặc Reviews), chuyển sang xóa mềm
+            recipe.setIsDeleted(true);
+            recipe.setDeletedAt(LocalDateTime.now());
+            recipe.setStatus(RecipeStatus.HIDDEN); // Ẩn khỏi hiển thị
+            recipeRepository.save(recipe);
+
+            return "SOFT"; // Chuyển sang lưu trữ
+        }
+    }
+
+    public List<Recipe> searchRecipes(String keyword, RecipeStatus status, Integer maxCalories) {
+        // Nếu maxCalories <= 0 thì coi như không lọc calo
+        if (maxCalories != null && maxCalories <= 0) {
+            maxCalories = null;
+        }
+        return recipeRepository.searchRecipes(keyword, status, maxCalories);
     }
 }

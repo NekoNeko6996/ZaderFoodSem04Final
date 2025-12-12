@@ -173,13 +173,15 @@
                                 <select th:field="*{role}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green">
                                     <option value="USER">USER</option>
                                     <option value="ADMIN">ADMIN</option>
+                                    <option value="NUTRITIONIST">NUTRITIONIST</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
                                 <select th:field="*{status}" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green focus:border-nutri-green">
                                     <option value="ACTIVE">ACTIVE</option>
-                                    <option value="PENDING_VERIFICATION">PENDING</option>
+                                    <option value="PENDING_VERIFICATION">PENDING VERIFICATION</option>
+                                    <option value="BLOCKED">BLOCKED</option>
                                 </select>
                             </div>
                         </div>

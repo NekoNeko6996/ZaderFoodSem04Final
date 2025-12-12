@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
+import org.springframework.security.core.Authentication;
 
 @Controller
 @RequestMapping("/admin")
@@ -29,9 +30,15 @@ public class AdminIngredientController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Boolean status,
-            @RequestParam(defaultValue = "1") int page) {
+            @RequestParam(defaultValue = "1") int page,
+            Authentication authentication) {
 
         Page<Ingredient> pageData = adminService.getIngredients(keyword, categoryId, status, page, 10);
+
+        boolean isNutritionist = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_NUTRITIONIST") || a.getAuthority().equals("NUTRITIONIST"));
+
+        model.addAttribute("isNutritionist", isNutritionist);
 
         model.addAttribute("ingredients", pageData.getContent());
         model.addAttribute("categories", adminService.getAllCategories()); // Cho dropdown
@@ -82,7 +89,13 @@ public class AdminIngredientController {
 
     // --- 2. TRANG QUẢN LÝ DANH MỤC ---
     @GetMapping("/categories")
-    public String listCategories(Model model) {
+    public String listCategories(Model model, Authentication authentication) {
+        boolean isNutritionist = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_NUTRITIONIST") || a.getAuthority().equals("NUTRITIONIST"));
+
+        String sidebarFragment = isNutritionist ? "sidebar_nutritionist" : "sidebar";
+        
+        model.addAttribute("isNutritionist", isNutritionist);
         model.addAttribute("categories", adminService.getAllCategories());
         return "admin/categories";
     }

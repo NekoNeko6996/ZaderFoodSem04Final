@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>All Recipes - Zader Admin</title>
+
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        </style>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {"primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "nutri-green": "#4CAF50", "alert-red": "#EF4444", "soft-grey": "#78909C"},
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light text-dark-ink">
+        <div class="relative flex min-h-screen w-full overflow-x-hidden group/design-root">
+            <div th:replace="${canEdit} ? ~{fragments/sidebar_nutritionist :: sidebar} : ~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
+                <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                <div class="p-8">
+                    <div class="flex flex-col gap-6 mb-8">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h1 class="text-3xl font-extrabold text-dark-ink">Recipe Database</h1>
+                                <p class="text-soft-grey mt-1">Manage all approved and active recipes.</p>
+                            </div>
+                            <a th:href="@{/recipes/create}" class="flex items-center gap-2 bg-nutri-green text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 transition shadow-sm">
+                                <span class="material-symbols-outlined text-lg">add</span> New Recipe
+                            </a>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <form th:action="@{/nutritionist/recipes/all}" method="get" class="flex flex-col md:flex-row gap-4 items-end">
+
+                                <div class="flex-1 w-full">
+                                    <label class="text-xs font-bold text-soft-grey uppercase mb-1 block">Search</label>
+                                    <div class="relative">
+                                        <input type="text" name="keyword" th:value="${keyword}" placeholder="Search by recipe name..." 
+                                               class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-nutri-green focus:border-nutri-green">
+                                        <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
+                                    </div>
+                                </div>
+
+                                <div class="w-full md:w-48">
+                                    <label class="text-xs font-bold text-soft-grey uppercase mb-1 block">Status</label>
+                                    <select name="status" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-nutri-green focus:border-nutri-green bg-white">
+                                        <option value="">All Status</option>
+                                        <option th:each="s : ${allStatuses}" 
+                                                th:value="${s}" 
+                                                th:text="${s}" 
+                                                th:selected="${s == status}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="w-full md:w-40">
+                                    <label class="text-xs font-bold text-soft-grey uppercase mb-1 block">Max Calories</label>
+                                    <input type="number" name="maxCalories" th:value="${maxCalories}" placeholder="e.g 500" min="0" step="50"
+                                           class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-nutri-green focus:border-nutri-green">
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button type="submit" class="bg-dark-ink text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-black transition shadow-sm flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-lg">filter_list</span> Filter
+                                    </button>
+
+                                    <a th:href="@{/nutritionist/recipes/all}" class="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition" title="Clear Filters">
+                                        <span class="material-symbols-outlined text-lg">refresh</span>
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <p th:text="${canEdit}"></p>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-100">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Recipe</th>
+                                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Author</th>
+                                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
+                                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <tr th:each="recipe : ${recipes}" class="group hover:bg-gray-50 transition-colors">
+
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="h-12 w-12 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+                                                    <img class="h-full w-full object-cover" 
+                                                         th:src="${recipe.imageUrl != null ? recipe.imageUrl : 'https://placehold.co/100x100?text=No+Img'}" 
+                                                         alt="Recipe Img">
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-bold text-dark-ink group-hover:text-nutri-green transition-colors" th:text="${recipe.name}">Name</div>
+                                                    <div class="text-xs text-soft-grey flex items-center gap-1 mt-0.5">
+                                                        <span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+                                                        <span th:text="${recipe.totalCalories} + ' kcal'">500 kcal</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center gap-2">
+                                                <div class="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                                    <span th:text="${recipe.user != null ? #strings.substring(recipe.user.fullName,0,1) : 'U'}">A</span>
+                                                </div>
+                                                <span class="text-sm text-dark-ink font-medium" 
+                                                      th:text="${recipe.user != null ? recipe.user.fullName : 'Unknown'}">User</span>
+                                            </div>
+                                        </td>
+
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2.5 py-1 inline-flex text-xs leading-4 font-bold rounded-full"
+                                                  th:classappend="${recipe.status.name() == 'ACTIVE' ? 'bg-green-100 text-green-700' : 
+                                                  (recipe.status.name() == 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700')}"
+                                                  th:text="${recipe.status}">ACTIVE</span>
+                                        </td>
+
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" 
+                                            th:text="${#temporals.format(recipe.createdAt, 'dd MMM yyyy')}">Date</td>
+
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div class="flex justify-end gap-3 items-center">
+
+                                                <a th:href="@{/nutritionist/recipes/{id}(id=${recipe.recipeId}, returnUrl=all)}" 
+                                                   class="text-gray-400 hover:text-nutri-green transition-colors" title="View Detail">
+                                                    <span class="material-symbols-outlined">visibility</span>
+                                                </a>
+
+                                                <a th:if="${canEdit}" th:href="@{/nutritionist/recipes/{id}(id=${recipe.recipeId}, returnUrl='all')}"
+                                                   class="text-blue-400 hover:text-blue-600 transition-colors" title="Edit Recipe">
+                                                    <span class="material-symbols-outlined">edit</span>
+                                                </a>
+
+                                                <form th:id="'delete-recipe-' + ${recipe.recipeId}" 
+                                                      th:action="@{/nutritionist/recipes/{id}/delete(id=${recipe.recipeId})}" 
+                                                      method="post" style="display: none;">
+                                                </form>
+                                                <button type="button" 
+                                                        th:data-id="${recipe.recipeId}"
+                                                        th:data-name="${recipe.name}"
+                                                        onclick="confirmAction('delete-recipe-' + this.getAttribute('data-id'), 'Delete ' + this.getAttribute('data-name') + '?', 'It will be soft-deleted if in use.', 'Yes, Delete')"
+                                                        class="text-red-400 hover:text-red-600 transition-colors" title="Delete">
+                                                    <span class="material-symbols-outlined">delete</span>
+                                                </button>
+
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="p-4 border-t border-gray-100 flex justify-center text-sm text-gray-500" th:if="${recipes.empty}">
+                            No recipes found.
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+
+        <script>
+            function confirmAction(formId, title = 'Are you sure?', text = "You won't be able to revert this!", confirmBtnText = 'Yes, do it!') {
+                if (typeof Swal === 'undefined') {
+                    if (confirm(title + "\n" + text))
+                        document.getElementById(formId).submit();
+                    return;
+                }
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#111827',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: confirmBtnText,
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.loading('Processing...');
+                        document.getElementById(formId).submit();
+                    }
+                });
+            }
+        </script>
+    </body>
+</html>

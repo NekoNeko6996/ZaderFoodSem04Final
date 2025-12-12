@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @NoArgsConstructor
@@ -81,6 +82,9 @@ public class Recipe implements Serializable {
 
     @Transient
     private BigDecimal fat;
+    
+    @Transient
+    private MultipartFile imageFile;
 
     // JOIN
     @OneToMany(mappedBy = "recipe")
