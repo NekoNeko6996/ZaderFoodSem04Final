@@ -1,9 +1,12 @@
 package com.group02.zaderfood.service;
 
 import com.group02.zaderfood.dto.CollectionDTO;
+import com.group02.zaderfood.dto.UnifiedRecipeDTO;
+import com.group02.zaderfood.entity.AiSavedRecipes;
 import com.group02.zaderfood.entity.CollectionItem;
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.entity.RecipeCollection;
+import com.group02.zaderfood.repository.AiSavedRecipeRepository;
 import com.group02.zaderfood.repository.CollectionItemRepository;
 import com.group02.zaderfood.repository.RecipeCollectionRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +38,9 @@ public class FavoriteService {
     private RecipeRepository recipeRepo;
     @Autowired
     private RecipeService recipeService; // Để tính Macro
+    
+    @Autowired
+    private AiSavedRecipeRepository aiSavedRepo;
 
     // 1. Lấy danh sách Recipes (Có Search, Filter, Sort)
     @Transactional
@@ -128,37 +135,90 @@ public class FavoriteService {
     }
 
     @Transactional
-    public Pair<RecipeCollection, List<Recipe>> getCollectionDetail(Integer userId, Integer collectionId) {
-        // Tìm Collection và đảm bảo nó thuộc về User này
+    public Pair<RecipeCollection, List<UnifiedRecipeDTO>> getCollectionDetail(Integer userId, Integer collectionId) {
+
         Optional<RecipeCollection> colOpt = collectionRepo.findById(collectionId);
 
         if (colOpt.isPresent() && colOpt.get().getUserId().equals(userId)) {
             RecipeCollection col = colOpt.get();
 
-            // Lấy danh sách Recipe
-            List<Integer> recipeIds = collectionItemRepo.findRecipeIdsByCollectionId(collectionId);
-            List<Recipe> recipes = recipeRepo.findAllById(recipeIds);
+            // 1. Lấy tất cả items trong collection (bao gồm cả AI và thường)
+            List<CollectionItem> items = collectionItemRepo.findByCollectionId(collectionId);
+            List<UnifiedRecipeDTO> resultList = new ArrayList<>();
 
-            // Tính Macro cho hiển thị đẹp
-            for (Recipe r : recipes) {
-                if (r.getTotalCalories() == null || r.getTotalCalories().compareTo(BigDecimal.ZERO) == 0) {
-                    recipeService.calculateRecipeMacros(r);
+            // 2. Lọc ID món thường và lấy dữ liệu
+            List<Integer> standardIds = items.stream()
+                    .map(CollectionItem::getRecipeId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (!standardIds.isEmpty()) {
+                List<Recipe> recipes = recipeRepo.findAllById(standardIds);
+                for (Recipe r : recipes) {
+                    if (r.getTotalCalories() == null) {
+                        recipeService.calculateRecipeMacros(r); // Fix calo null
+                    }
+                    int totalTime = (r.getPrepTimeMin() == null ? 0 : r.getPrepTimeMin())
+                            + (r.getCookTimeMin() == null ? 0 : r.getCookTimeMin());
+
+                    resultList.add(UnifiedRecipeDTO.builder()
+                            .id(r.getRecipeId())
+                            .name(r.getName())
+                            .imageUrl(r.getImageUrl())
+                            .calories(r.getTotalCalories())
+                            .timeMin(totalTime)
+                            .difficulty(r.getDifficulty() != null ? r.getDifficulty().name() : "EASY")
+                            .isAi(false) // Đánh dấu là món thường
+                            .build());
                 }
             }
 
-            return Pair.of(col, recipes); // Cần import org.springframework.data.util.Pair hoặc dùng Map
+            // 3. Lọc ID món AI và lấy dữ liệu
+            List<Integer> aiIds = items.stream()
+                    .map(CollectionItem::getAiRecipeId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (!aiIds.isEmpty()) {
+                List<AiSavedRecipes> aiRecipes = aiSavedRepo.findAllById(aiIds);
+                for (AiSavedRecipes ar : aiRecipes) {
+                    resultList.add(UnifiedRecipeDTO.builder()
+                            .id(ar.getAiRecipeId())
+                            .name(ar.getName())
+                            .imageUrl(ar.getImageUrl())
+                            .calories(ar.getTotalCalories())
+                            .timeMin(ar.getTimeMinutes())
+                            .difficulty("AI CHEF") // Badge riêng cho AI
+                            .isAi(true) // Đánh dấu là AI
+                            .build());
+                }
+            }
+
+            return Pair.of(col, resultList);
         }
         return null;
     }
 
     @Transactional
-    public void removeRecipeFromCollection(Integer userId, Integer collectionId, Integer recipeId) {
-        // Kiểm tra quyền sở hữu collection
+    public void removeRecipeFromCollection(Integer userId, Integer collectionId, Integer recipeId, boolean isAi) {
         Optional<RecipeCollection> colOpt = collectionRepo.findById(collectionId);
         if (colOpt.isPresent() && colOpt.get().getUserId().equals(userId)) {
-            // Tìm item và xóa
-            Optional<CollectionItem> item = collectionItemRepo.findByCollectionIdAndRecipeId(collectionId, recipeId);
-            item.ifPresent(collectionItem -> collectionItemRepo.delete(collectionItem));
+            CollectionItem item;
+            if (isAi) {
+                // Tìm theo AI ID
+                // Bạn cần thêm hàm findByCollectionIdAndAiRecipeId vào Repo hoặc dùng stream lọc tay
+                item = collectionItemRepo.findByCollectionId(collectionId).stream()
+                        .filter(i -> i.getAiRecipeId() != null && i.getAiRecipeId().equals(recipeId))
+                        .findFirst().orElse(null);
+            } else {
+                // Tìm theo Recipe ID thường
+                item = collectionItemRepo.findByCollectionIdAndRecipeId(collectionId, recipeId)
+                        .orElse(null);
+            }
+
+            if (item != null) {
+                collectionItemRepo.delete(item);
+            }
         }
     }
 
@@ -208,7 +268,7 @@ public class FavoriteService {
         }
         return null; // Không tìm thấy hoặc chưa public
     }
-    
+
     @Transactional // Quan trọng: Để đảm bảo tính toàn vẹn dữ liệu
     public void deleteCollection(Integer userId, Integer collectionId) {
         // 1. Tìm Collection
@@ -230,8 +290,8 @@ public class FavoriteService {
             // 5. Bước 2: Xóa vĩnh viễn Collection
             collectionRepo.delete(col);
         } else {
-             // (Tùy chọn) Ném lỗi nếu không tìm thấy hoặc không phải chủ sở hữu
-             // throw new RuntimeException("Collection not found or access denied");
+            // (Tùy chọn) Ném lỗi nếu không tìm thấy hoặc không phải chủ sở hữu
+            // throw new RuntimeException("Collection not found or access denied");
         }
     }
 }

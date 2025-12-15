@@ -39,4 +39,9 @@ public class UserPantry implements Serializable {
 
     @Column(name = "CreatedAt")
     private LocalDateTime createdAt;
+    
+    // Relations
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "IngredientId", insertable = false, updatable = false)
+    private Ingredient ingredient;
 }

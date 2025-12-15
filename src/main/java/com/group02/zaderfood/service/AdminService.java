@@ -1,6 +1,7 @@
 package com.group02.zaderfood.service;
 
 import com.group02.zaderfood.dto.AdminDashboardDTO;
+import com.group02.zaderfood.dto.NutritionistDashboardDTO;
 import com.group02.zaderfood.entity.enums.RecipeStatus;
 import com.group02.zaderfood.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ public class AdminService {
     private UserProfileRepository profileRepo;
     @Autowired
     private ReviewRepository reviewRepo;
+    @Autowired
+    private IngredientRepository ingredientRepository;
 
     public AdminDashboardDTO getDashboardStats() {
         AdminDashboardDTO dto = new AdminDashboardDTO();
@@ -117,5 +120,44 @@ public class AdminService {
             map.put(dateKey, count);
         }
         return map;
+    }
+
+    public NutritionistDashboardDTO getNutritionistStats() {
+        NutritionistDashboardDTO dto = new NutritionistDashboardDTO();
+
+        // 1. Lấy số liệu tổng quan (Counters)
+        dto.setPendingRecipes(recipeRepository.countByStatus(RecipeStatus.PENDING));
+        dto.setTotalIngredients(ingredientRepository.count());
+        dto.setActiveRecipes(recipeRepository.countByStatus(RecipeStatus.ACTIVE));
+        // Giả sử có ReviewRepo
+        // dto.setTotalReviews(reviewRepository.count()); 
+
+        // 2. Xử lý dữ liệu biểu đồ Diet (Xu hướng ăn kiêng)
+        List<Object[]> dietRaw = dietRepo.countByDietType();
+        List<String> dLabels = new ArrayList<>();
+        List<Long> dData = new ArrayList<>();
+
+        for (Object[] row : dietRaw) {
+            dLabels.add(row[0].toString()); // Tên Diet (KETO, VEGAN...)
+            dData.add((Long) row[1]);       // Số lượng
+        }
+        dto.setDietLabels(dLabels);
+        dto.setDietData(dData);
+
+        // 3. Xử lý dữ liệu biểu đồ Goal (Mục tiêu)
+        List<Object[]> goalRaw = profileRepo.countUsersByGoal();
+        List<String> gLabels = new ArrayList<>();
+        List<Long> gData = new ArrayList<>();
+
+        for (Object[] row : goalRaw) {
+            // Xử lý null hoặc tên đẹp hơn nếu cần
+            String goalName = row[0] != null ? row[0].toString() : "Unknown";
+            gLabels.add(goalName);
+            gData.add((Long) row[1]);
+        }
+        dto.setGoalLabels(gLabels);
+        dto.setGoalData(gData);
+
+        return dto;
     }
 }

@@ -23,4 +23,8 @@ public interface CollectionItemRepository extends JpaRepository<CollectionItem, 
     Optional<CollectionItem> findByCollectionIdAndRecipeId(Integer collectionId, Integer recipeId);
 
     void deleteByCollectionId(Integer collectionId);
+    
+    List<CollectionItem> findByCollectionId(Integer collectionId);
+  
+    Optional<CollectionItem> findByCollectionIdAndAiRecipeId(Integer collectionId, Integer aiRecipeId);
 }

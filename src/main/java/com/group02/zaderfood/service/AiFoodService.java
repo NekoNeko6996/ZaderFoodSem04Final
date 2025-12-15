@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group02.zaderfood.dto.AiFoodResponse;
+import com.group02.zaderfood.dto.PantryRecipeMatchDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -262,5 +263,102 @@ public class AiFoodService {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public List<PantryRecipeMatchDTO> generateRecipesFromPantry(String ingredientsList, String userProfileInfo) {
+        try {
+            // --- PROMPT ĐƯỢC NÂNG CẤP ---
+            String promptText = String.format(
+                    "Role: Professional Chef & Nutritionist.\n" +
+                    "Input: User's Pantry: [%s]. User Profile: %s.\n" +
+                    "Task: Create EXACTLY 3 to 4 unique recipes.\n" +
+                    "Constraints:\n" +
+                    "1. OUTPUT RAW JSON ARRAY ONLY. NO Intro text. NO Note at the end. NO Markdown (```json).\n" + // Nhấn mạnh RAW JSON
+                    "2. Structure must be a SINGLE Array of Objects: [ { ... }, { ... } ]\n" + // Nhấn mạnh Single Array
+                    "3. Required Fields: name, description, ingredientsList, stepsList, timeMin, calories, servings, matchPercentage, missingCount.\n"
+                    + "Output Structure:\n"
+                    + "[ \n"
+                    + "  { \n"
+                    + "    \"name\": \"Dish Name\", \n"
+                    + "    \"description\": \"Short appetizing description\", \n"
+                    + "    \"timeMin\": 30, \n"
+                    + "    \"calories\": 450, \n"
+                    + "    \"servings\": 2, \n"
+                    + "    \"ingredientsList\": [\"2 Eggs\", \"1 tbsp Oil\"], \n"
+                    + "    \"stepsList\": [\"Step 1: Crack eggs\", \"Step 2: Fry\"], \n"
+                    + "    \"matchPercentage\": 90, \n"
+                    + "    \"missingCount\": 0, \n"
+                    + "    \"imageUrl\": \"https://placehold.co/300?text=AI+Food\" \n"
+                    + "  } \n"
+                    + "]",
+                    ingredientsList, userProfileInfo
+            );
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", "llama3"); // Hoặc model bạn đang dùng (mistral/gemma)
+            requestBody.put("prompt", promptText);
+            requestBody.put("stream", false);
+
+            // Tăng context để AI không bị cắt chữ khi trả về nhiều trường
+            requestBody.put("options", Map.of("temperature", 0.7, "num_ctx", 4096));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+            String rawResponse = getRestTemplate().postForObject(ollamaUrl, entity, String.class);
+            System.out.println(rawResponse);
+
+            return parsePantryAiResponse(rawResponse);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
+    }
+
+    private List<PantryRecipeMatchDTO> parsePantryAiResponse(String jsonResponse) {
+        try {
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            if (root.has("response")) {
+                String aiText = root.get("response").asText();
+
+                // --- DEBUG: In ra để xem AI trả về gì ---
+                System.out.println("AI Raw Text: " + aiText);
+
+                // 1. Tách chuỗi JSON an toàn hơn Regex cũ
+                String cleanJson = extractJsonArray(aiText);
+
+                // 2. Parse thử thành JsonNode để kiểm tra cấu trúc
+                JsonNode arrayNode = objectMapper.readTree(cleanJson);
+
+                // 3. Xử lý trường hợp mảng lồng mảng [[...]]
+                if (arrayNode.isArray() && arrayNode.size() > 0 && arrayNode.get(0).isArray()) {
+                    System.out.println("AI returned nested array, unwrapping...");
+                    // Lấy mảng bên trong ra để parse
+                    cleanJson = arrayNode.get(0).toString();
+                }
+
+                // 4. Parse thành List DTO
+                return objectMapper.readValue(cleanJson, new com.fasterxml.jackson.core.type.TypeReference<List<PantryRecipeMatchDTO>>() {
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("AI Parse Error: " + e.getMessage());
+            // e.printStackTrace(); // Bật lên nếu cần xem chi tiết
+        }
+        return Collections.emptyList();
+    }
+
+    // Hàm phụ trợ: Tìm JSON Array chuẩn xác trong văn bản hỗn loạn
+    private String extractJsonArray(String text) {
+        int start = text.indexOf("[");
+        int end = text.lastIndexOf("]");
+
+        if (start == -1 || end == -1 || end < start) {
+            return "[]"; // Không tìm thấy JSON
+        }
+
+        return text.substring(start, end + 1);
     }
 }

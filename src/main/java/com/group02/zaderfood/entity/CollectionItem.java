@@ -23,7 +23,19 @@ public class CollectionItem implements Serializable {
 
     @Column(name = "RecipeId")
     private Integer recipeId;
+    
+    @Column(name = "AiRecipeId")
+    private Integer aiRecipeId;
 
     @Column(name = "AddedAt")
     private LocalDateTime addedAt;
+    
+    // Relation (Optional - giúp truy vấn object dễ hơn nếu cần)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "AiRecipeId", insertable = false, updatable = false)
+    private AiSavedRecipes aiSavedRecipe;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RecipeId", insertable = false, updatable = false)
+    private Recipe recipe;
 }

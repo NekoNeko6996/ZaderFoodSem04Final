@@ -57,13 +57,14 @@
                                         </div>
                                         <input name="keyword" th:value="${keyword}"
                                                class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-dark-ink focus:outline-0 focus:ring-2 focus:ring-nutri-green/50 border border-border-light bg-card-white h-full px-4 rounded-l-none border-l-0 pl-2 text-base"
+                                               style="border-color: #e5e7eb"
                                                placeholder="Search my favorite recipes..." />
                                     </div>
                                 </label>
                             </div>
 
                             <div class="flex gap-3 self-start md:self-center">
-                                <select name="sort" onchange="this.form.submit()"
+                                <select name="sort" onchange="this.form.submit()" style="border-color: #e5e7eb"
                                         class="h-12 rounded-lg bg-card-white border border-border-light px-4 text-dark-ink text-sm font-medium cursor-pointer focus:ring-nutri-green">
                                     <option value="">Sort By: Newest</option>
                                     <option value="time" th:selected="${param.sort != null && param.sort[0] == 'time'}">Prep Time (Low to High)</option>
@@ -191,25 +192,34 @@
                                 <div th:each="recipe : ${collectionRecipes}" class="flex flex-col rounded-xl bg-card-white shadow-soft overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all">
                                     <div class="bg-cover bg-center h-48 relative"
                                          th:style="|background-image: url('${recipe.imageUrl != null ? recipe.imageUrl : '/images/default-food.jpg'}')|">
+
+                                        <div class="absolute top-2 right-2 rounded-lg px-2 py-1 text-white text-xs font-bold backdrop-blur-sm"
+                                             th:classappend="${recipe.isAi} ? 'bg-purple-600/80' : 'bg-black/50'">
+                                            <span th:text="${recipe.difficulty}">EASY</span>
+                                        </div>
                                     </div>
 
                                     <div class="p-4 flex flex-col flex-grow">
                                         <h3 class="font-bold text-lg text-dark-ink mb-1 truncate" th:text="${recipe.name}">Name</h3>
                                         <div class="mt-auto text-xs text-soft-grey flex flex-wrap gap-2 items-center mb-3">
-                                            <span class="font-bold text-dark-ink" th:text="|${recipe.totalCalories} Kcal|"></span>
+                                            <span class="font-bold text-dark-ink" th:text="|${recipe.calories} Kcal|"></span>
                                             <span>•</span>
-                                            <span th:text="|${recipe.cookTimeMin + recipe.prepTimeMin} Min|"></span>
+                                            <span th:text="|${recipe.timeMin} Min|"></span>
                                         </div>
 
                                         <div class="grid grid-cols-2 gap-2">
-                                            <a th:href="@{/recipes/detail/{id}(id=${recipe.recipeId})}"
-                                               class="col-span-2 text-center text-white bg-nutri-green hover:bg-nutri-green/90 font-bold py-2 rounded-lg text-sm">
-                                                View
+                                            <a th:href="${recipe.isAi} 
+                                               ? @{/user/favorites/ai-detail/{id}(id=${recipe.id}, collectionId=${selectedCollection.collectionId})} 
+                                               : @{/recipes/detail/{id}(id=${recipe.id})}"
+                                               class="col-span-2 text-center text-white bg-nutri-green hover:bg-nutri-green/90 font-bold py-2 rounded-lg text-sm transition-colors">
+                                                View Recipe
                                             </a>
 
                                             <form th:action="@{/user/favorites/collections/remove-item}" method="post" class="col-span-2 delete-form">
                                                 <input type="hidden" name="collectionId" th:value="${selectedCollection.collectionId}"/>
-                                                <input type="hidden" name="recipeId" th:value="${recipe.recipeId}"/>
+                                                <input type="hidden" name="recipeId" th:value="${recipe.id}"/>
+                                                <input type="hidden" name="isAi" th:value="${recipe.isAi}"/>
+
                                                 <button type="button" onclick="confirmDelete(this)"
                                                         class="w-full text-dark-ink bg-smart-mist hover:bg-red-100 hover:text-red-600 font-bold py-2 rounded-lg text-sm transition-colors">
                                                     Remove from List

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>Nutritionist Workspace - ZaderFood</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "soft-grey": "#78909C", "nutri-green": "#4CAF50"
+                        },
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light text-dark-ink">
+        <div class="relative flex min-h-screen w-full">
+            <div th:replace="~{fragments/sidebar_nutritionist :: sidebar}"></div>
+
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
+                <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                <div class="p-8">
+                    <header class="mb-8">
+                        <h2 class="text-3xl font-extrabold text-dark-ink">Nutritionist Workspace</h2>
+                        <p class="text-soft-grey mt-1">Focus on content quality and health trends.</p>
+                    </header>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200 cursor-pointer hover:shadow-md transition"
+                             onclick="window.location.href = '/nutritionist/recipes/pending'">
+                            <div class="flex justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-orange-600 uppercase">Review Queue</p>
+                                    <h3 class="text-3xl font-black text-dark-ink mt-1" th:text="${stats.pendingRecipes}">0</h3>
+                                </div>
+                                <div class="p-3 bg-orange-50 rounded-full h-12 w-12 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-orange-500">hourglass_top</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">Recipes waiting for you</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <div class="flex justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-soft-grey uppercase">Ingredients</p>
+                                    <h3 class="text-3xl font-black text-dark-ink mt-1" th:text="${stats.totalIngredients}">0</h3>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-full h-12 w-12 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-green-600">nutrition</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">Total items in database</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-soft-grey uppercase">Published</p>
+                                    <h3 class="text-3xl font-black text-dark-ink mt-1" th:text="${stats.activeRecipes}">0</h3>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-full h-12 w-12 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-blue-600">menu_book</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">Recipes live on app</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-dark-ink mb-1">User Health Goals</h3>
+                            <p class="text-sm text-gray-500 mb-6">What are users trying to achieve?</p>
+                            <div class="h-64">
+                                <canvas id="goalChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-dark-ink mb-1">Dietary Preferences</h3>
+                            <p class="text-sm text-gray-500 mb-6">Active diet filters by users</p>
+                            <div class="h-64 flex justify-center">
+                                <canvas id="dietChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script th:inline="javascript">
+            // Goal Chart Data
+            const goalLabels = [[${stats.goalLabels}
+            ]];
+                    const goalData = [[${stats.goalData}
+                    ]];
+
+            new Chart(document.getElementById('goalChart'), {
+                type: 'bar',
+                data: {
+                    labels: goalLabels,
+                    datasets: [{
+                            label: 'Users',
+                            data: goalData,
+                            backgroundColor: '#4CAF50',
+                            borderRadius: 6,
+                            barThickness: 40
+                        }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {legend: {display: false}},
+                    scales: {y: {beginAtZero: true, grid: {display: false}}}
+                }
+            });
+
+            // Diet Chart Data
+            const dietLabels = [[${stats.dietLabels}
+            ]];
+                    const dietData = [[${stats.dietData}
+                    ]];
+
+            new Chart(document.getElementById('dietChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: dietLabels,
+                    datasets: [{
+                            data: dietData,
+                            backgroundColor: ['#81C784', '#66BB6A', '#4CAF50', '#43A047', '#2E7D32', '#1B5E20'],
+                            borderWidth: 0
+                        }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {legend: {position: 'right'}},
+                    cutout: '75%'
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -77,7 +77,12 @@
                                     <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-chef-orange text-white text-base font-bold w-full sm:w-auto hover:bg-opacity-90 transition">
                                         Add to Meal Plan
                                     </button>
-                                    <button class="flex items-center justify-center w-12 h-12 rounded-lg border border-border-color text-soft-grey hover:text-chef-orange hover:border-chef-orange transition">
+                                    <button
+                                        th:data-id="${recipe.recipeId}"
+                                        th:data-name="${recipe.name}"
+                                        onclick="toggleHeart(event, this)"
+                                        title="Add to Favorites"
+                                        class="flex items-center justify-center w-12 h-12 rounded-lg border border-border-color text-soft-grey hover:text-chef-orange hover:border-chef-orange transition">
                                         <span class="material-symbols-outlined">favorite</span>
                                     </button>
                                 </div>
@@ -181,6 +186,100 @@
                 </div>
             </div>
         </main>
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
     </div>
+
+    <dialog id="mealPlanModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-md">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <h3 class="text-lg font-bold text-dark-ink">Add to Meal Plan</h3>
+            <button onclick="document.getElementById('mealPlanModal').close()" class="text-gray-400 hover:text-dark-ink"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Select Date</label>
+                <select id="planDateSelect" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green">
+                    <option value="">Loading dates...</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Showing upcoming scheduled plans.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Meal Time</label>
+                <select id="mealTimeSelect" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green">
+                    <option value="BREAKFAST">Breakfast</option>
+                    <option value="LUNCH">Lunch</option>
+                    <option value="DINNER">Dinner</option>
+                    <option value="SNACK">Snack</option>
+                </select>
+            </div>
+        </div>
+        <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
+            <button onclick="document.getElementById('mealPlanModal').close()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg">Cancel</button>
+            <button onclick="confirmAddToMealPlan()" class="px-4 py-2 bg-nutri-green text-white font-bold hover:bg-green-600 rounded-lg shadow-sm">Save</button>
+        </div>
+    </dialog>
+
+    <script>
+        function toggleHeart(event, btnElement) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // 1. Lấy dữ liệu từ attribute
+            const recipeId = btnElement.getAttribute('data-id');
+            const recipeName = btnElement.getAttribute('data-name');
+            const icon = btnElement.querySelector('span');
+
+            // 2. GỌI TOAST LOADING
+            const loadingToastId = ZaderToast.loading(`Adding "${recipeName}" to your favorites...`);
+
+            setTimeout(() => {
+                fetch('/recipes/api/favorite/' + recipeId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                        .then(response => {
+                            if (response.status === 401) {
+                                throw new Error("UNAUTHORIZED");
+                            }
+                            if (!response.ok) {
+                                throw new Error("SERVER_ERROR");
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            ZaderToast.remove(loadingToastId);
+
+                            if (data.status === 'added' || data.status === 'exists') {
+                                // Success logic
+                                const msg = data.status === 'exists'
+                                        ? `"${recipeName}" is already in your favorites.`
+                                        : `"${recipeName}" has been added to favorites!`;
+
+                                ZaderToast.success(msg);
+
+                                // Update Icon UI
+                                icon.classList.remove('text-gray-400');
+                                icon.classList.add('text-red-500', 'fill-current');
+                                icon.style.fontVariationSettings = "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24";
+
+                                // Animation
+                                btnElement.classList.add('scale-110');
+                                setTimeout(() => btnElement.classList.remove('scale-110'), 200);
+                            }
+                        })
+                        .catch(error => {
+                            ZaderToast.remove(loadingToastId);
+
+                            if (error.message === "UNAUTHORIZED") {
+                                ZaderToast.error("Please login to save recipes!");
+                            } else {
+                                ZaderToast.error("Failed to add recipe. Please try again.");
+                            }
+                            console.error('Error:', error);
+                        });
+            }, 500);
+        }
+    </script>
 </body>
 </html>
