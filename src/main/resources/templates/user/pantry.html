@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>My Smart Pantry - ZaderFood</title>
+
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            /* Ẩn thanh cuộn cho datalist đẹp hơn nếu cần */
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        </style>
+
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary": "#4bbe4f",
+                            "background-light": "#FAFAFA",
+                            "dark-ink": "#263238",
+                            "nutri-green": "#4CAF50",
+                            "alert-red": "#EF4444",
+                            "warn-yellow": "#F59E0B"
+                        },
+                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                },
+            }
+        </script>
+    </head>
+    <body class="font-display bg-background-light text-dark-ink">
+        <div class="relative flex justify-center flex-col min-h-screen w-full overflow-x-hidden group/design-root">
+            <div th:replace="~{fragments/navbar :: header_nav}"></div>
+            <main class="bg-gray-50 min-h-screen container-fluid flex justify-center">
+                <div class="p-8 container">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-dark-ink flex items-center gap-2">
+                                <span class="material-symbols-outlined text-4xl text-nutri-green">kitchen</span> 
+                                Smart Pantry
+                            </h1>
+                            <p class="text-soft-grey mt-1">Manage ingredients you have at home to get smart recipe suggestions.</p>
+                        </div>
+                        <button onclick="confirmAiSuggestion()" class="flex gap-2 flex-row justify-center bg-gradient-to-r from-nutri-green to-green-600 p-2 rounded-2xl text-white">
+
+                    <div id="smart-suggestions" class="mb-8 transition-all duration-500 ease-in-out">
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 relative overflow-hidden shadow-sm min-h-[200px]">
+
+                            <div class="absolute right-0 top-0 opacity-5 pointer-events-none">
+                                <span class="material-symbols-outlined text-[180px] text-nutri-green -mr-8 -mt-8">soup_kitchen</span>
+                            </div>
+
+                            <div class="relative z-10">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="font-bold text-xl text-dark-ink flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-nutri-green">restaurant_menu</span>
+                                            Here's a suggestion for you
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            Dishes you can cook with your current inventory.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div id="suggestion-empty-state" 
+                                     th:classappend="${hasAiSuggestions} ? 'hidden' : ''"
+                                     class="flex flex-col items-center justify-center py-8 text-center animate-fade-in">
+                                    <div class="bg-white/60 p-4 rounded-full mb-3 shadow-sm border border-green-100/50">
+                                        <span class="material-symbols-outlined text-4xl text-nutri-green opacity-50">auto_awesome</span>
+                                    </div>
+                                    <h4 class="font-bold text-gray-600">No suggestions loaded yet</h4>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Try clicking <strong class="text-nutri-green">"What can I cook?"</strong> to generate recipes!
+                                    </p>
+                                </div>
+
+                                <div id="suggestion-results" 
+                                     th:classappend="${!hasAiSuggestions} ? 'hidden' : ''"
+                                     class="mt-6">
+
+                                    <div class="relative">
+                                        <div id="suggestion-grid" class="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scroll-smooth hide-scrollbar px-1">
+
+                                            <div th:if="${hasAiSuggestions}" th:each="r, iterStat : ${aiSuggestions}"
+                                                 th:onclick="'window.location.href=\'/user/pantry/ai-recipe/' + ${iterStat.index} + '\''"
+                                                 class="min-w-[280px] w-[280px] flex-shrink-0 snap-center bg-white rounded-xl p-3 shadow-sm border border-green-100 hover:shadow-md transition cursor-pointer group hover:-translate-y-1 animate-fade-in">
+
+                                                <div class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-gray-100">
+                                                    <img th:src="${r.imageUrl != null ? r.imageUrl : 'https://placehold.co/300?text=AI+Dish'}" 
+                                                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+
+                                                    <div class="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold shadow-sm border flex items-center gap-1"
+                                                         th:classappend="${r.matchPercentage >= 90} ? 'text-green-700 border-green-100' : 'text-yellow-600 border-yellow-100'">
+                                                        <span class="material-symbols-outlined text-[12px]" 
+                                                              th:text="${r.matchPercentage >= 90} ? 'check_circle' : 'auto_awesome'"></span> 
+                                                        <span th:text="${r.matchPercentage >= 90} ? 'Great Match' : 'AI Creative'"></span>
+                                                    </div>
+                                                </div>
+
+                                                <h4 class="font-bold text-dark-ink text-sm truncate" th:text="${r.name}">Recipe Name</h4>
+
+                                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                                    <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">timer</span> <span th:text="${r.timeMin}">30</span>m</span>
+                                                    <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> <span th:text="${r.calories}">400</span> kcal</span>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        <div class="absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-white/80 to-transparent pointer-events-none"></div>
+                                    </div>
+
+                                    <div class="mt-4 text-center flex justify-center gap-3">
+                                        <button id="btn-clear-ai" onclick="clearAiResults()" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm">delete</span> Clear Results
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                        <div class="lg:col-span-1">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4">
+                                <h3 class="font-bold text-lg text-dark-ink mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-nutri-green">add_circle</span> Add Item
+                                </h3>
+
+                                <form th:action="@{/user/pantry/add}" method="post" class="flex flex-col gap-4" onsubmit="return validateForm()">
+
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Ingredient Name</label>
+                                        <div class="relative">
+                                            <input list="ing-list" id="ing-input" class="w-full border-gray-200 rounded-lg pl-10 focus:ring-nutri-green focus:border-nutri-green" placeholder="e.g. Eggs, Milk..." onchange="updateIngDetails(this)" autocomplete="off" required>
+                                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+
+                                            <input type="hidden" name="ingredientId" id="real-ing-id">
+
+                                            <datalist id="ing-list">
+                                                <option th:each="ing : ${allIngredients}" 
+                                                        th:value="${ing.name}" 
+                                                        th:data-id="${ing.ingredientId}" 
+                                                        th:data-unit="${ing.baseUnit}"
+                                                        th:data-img="${ing.imageUrl}"></option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Quantity</label>
+                                            <input type="number" step="0.1" name="quantity" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green focus:border-nutri-green" placeholder="0.0" required>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Unit</label>
+                                            <input type="text" name="unit" id="ing-unit" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green focus:border-nutri-green" placeholder="kg, pcs...">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Expiry Date</label>
+                                        <div class="relative">
+                                            <input type="date" name="expiryDate" class="w-full border-gray-200 rounded-lg pl-10 focus:ring-nutri-green focus:border-nutri-green" required>
+                                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">calendar_today</span>
+                                        </div>
+                                        <div class="flex gap-2 mt-2">
+                                            <button type="button" onclick="setExpiry(7)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition">+1 Week</button>
+                                            <button type="button" onclick="setExpiry(14)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition">+2 Weeks</button>
+                                            <button type="button" onclick="setExpiry(30)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition">+1 Month</button>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="w-full bg-dark-ink text-white font-bold py-3 rounded-xl hover:bg-black transition shadow-lg mt-2 flex justify-center items-center gap-2">
+                                        Add to Pantry
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-lg text-dark-ink">Current Stock (<span th:text="${pantryItems.size()}">0</span>)</h3>
+
+                                <select class="text-sm border-gray-200 rounded-lg focus:ring-nutri-green">
+                                    <option>Sort by Expiry (Soonest)</option>
+                                    <option>Sort by Name</option>
+                                </select>
+                            </div>
+
+                            <div th:if="${pantryItems.empty}" class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm flex flex-col items-center">
+                                <div class="bg-green-50 p-4 rounded-full mb-4">
+                                    <span class="material-symbols-outlined text-4xl text-nutri-green">kitchen</span>
+                                </div>
+                                <h4 class="font-bold text-lg text-dark-ink">Your pantry is empty</h4>
+                                <p class="text-soft-grey text-sm mt-1 max-w-xs mx-auto">Add ingredients you have at home to track expiration dates and get recipe ideas.</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div th:each="item : ${pantryItems}" 
+                                     class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 relative group hover:shadow-md transition duration-200 overflow-hidden">
+
+                                    <div th:classappend="${item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'bg-red-500' : 
+                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(3)) ? 'bg-red-400' : 
+                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(7)) ? 'bg-yellow-400' : 'bg-nutri-green'))}"
+                                         class="w-1.5 h-full absolute left-0 top-0"></div>
+
+                                    <img th:src="${item.ingredient.imageUrl}"
+                                         onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=404'"
+                                         class="w-16 h-16 rounded-xl object-cover bg-gray-50 border border-gray-100">
+
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-bold text-dark-ink truncate" th:text="${item.ingredient.name}">Ingredient Name</h4>
+                                        <p class="text-sm text-gray-500 font-medium">
+                                            <span th:text="${#numbers.formatDecimal(item.quantity, 0, 'COMMA', 1, 'POINT')}">1.0</span> 
+                                            <span th:text="${item.unit}">kg</span>
+                                        </p>
+
+                                        <div class="flex items-center gap-1 text-xs font-bold mt-1"
+                                             th:classappend="${item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'text-red-600' : 
+                                             (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(5)) ? 'text-yellow-600' : 'text-green-600')}">
+                                            <span class="material-symbols-outlined text-[14px]">event</span>
+                                            <span th:if="${item.expiryDate.isBefore(T(java.time.LocalDate).now())}">Expired!</span>
+                                            <span th:unless="${item.expiryDate.isBefore(T(java.time.LocalDate).now())}" 
+                                                  th:text="${#temporals.format(item.expiryDate, 'dd MMM')}">01 Jan</span>
+                                        </div>
+                                    </div>
+
+                                    <form th:id="'delete-pantry-' + ${item.pantryId}" 
+                                          th:action="@{/user/pantry/delete/{id}(id=${item.pantryId})}" 
+                                          method="post" class="hidden">
+                                    </form>
+                                    <button type="button" 
+                                            th:onclick="confirmDelete('delete-pantry-[[${item.pantryId}]]')"
+                                            class="opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-lg"
+                                            title="Remove Item">
+                                        <span class="material-symbols-outlined text-lg">delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer th:replace="~{fragments/footer :: footer_section}"></footer>
+        <div th:replace="~{fragments/toast :: toast-system}"></div>
+
+        <script>
+            // 1. AUTOFILL UNIT & ID FROM DATALIST
+            function updateIngDetails(input) {
+                const list = document.getElementById('ing-list');
+                const hiddenId = document.getElementById('real-ing-id');
+                const unitInput = document.getElementById('ing-unit');
+
+                // Reset first
+                hiddenId.value = '';
+
+                for (let option of list.options) {
+                    if (option.value === input.value) {
+                        hiddenId.value = option.getAttribute('data-id');
+                        const defaultUnit = option.getAttribute('data-unit');
+                        if (defaultUnit)
+                            unitInput.value = defaultUnit;
+                        return;
+                    }
+                }
+            }
+
+            // 2. VALIDATION BEFORE SUBMIT
+            function validateForm() {
+                const hiddenId = document.getElementById('real-ing-id').value;
+                if (!hiddenId) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unknown Ingredient',
+                        text: 'Please select an ingredient from the suggested list.',
+                        confirmButtonColor: '#4bbe4f'
+                    });
+                    return false;
+                }
+                return true;
+            }
+
+            // 3. QUICK DATE SETTER
+            function setExpiry(daysToAdd) {
+                const date = new Date();
+                date.setDate(date.getDate() + daysToAdd);
+                // Format YYYY-MM-DD
+                const dateString = date.toISOString().split('T')[0];
+                document.querySelector('input[name="expiryDate"]').value = dateString;
+            }
+
+            // 4. CONFIRM DELETE
+            function confirmDelete(formId) {
+                Swal.fire({
+                    title: 'Remove item?',
+                    text: "Did you use it all up?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#EF4444',
+                    cancelButtonColor: '#9CA3AF',
+                    confirmButtonText: 'Yes, remove it',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.loading('Updating pantry...');
+                        document.getElementById(formId).submit();
+                    }
+                });
+            }
+
+            function findSmartRecipes() {
+                const emptyState = document.getElementById('suggestion-empty-state');
+                const resultsState = document.getElementById('suggestion-results');
+                const grid = document.getElementById('suggestion-grid');
+                var toastId;
+
+                if (typeof ZaderToast !== 'undefined')
+                    toastId = ZaderToast.loading('AI is scanning your pantry...');
+
+                // Gọi API thật
+                fetch('/user/pantry/suggest')
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                const recipes = result.data;
+
+                                if (recipes.length === 0) {
+                                    if (typeof ZaderToast !== 'undefined')
+                                        ZaderToast.info('No matching recipes found based on your items.');
+                                    return;
+                                }
+
+                                ZaderToast.remove(toastId);
+
+                                // Xóa card cũ (nếu có)
+                                grid.innerHTML = '';
+
+                                // Vẽ card mới từ dữ liệu thật
+                                recipes.forEach(r => {
+                                    // Logic màu sắc Badge dựa trên độ khớp
+                                    let badgeColor = r.matchPercentage === 100 ? 'text-green-700 border-green-100' : 'text-yellow-600 border-yellow-100';
+                                    let badgeIcon = r.matchPercentage === 100 ? 'check_circle' : 'warning';
+                                    let badgeText = r.matchPercentage === 100 ? '100% Match' : `Missing ${r.missingCount}`;
+
+                                    const html = `
+                        <div onclick="window.location.href='/recipes/detail/${r.recipeId}'" class="bg-white rounded-xl p-3 shadow-sm border border-green-100 hover:shadow-md transition cursor-pointer group hover:-translate-y-1 animate-fade-in">
+                            <div class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-gray-100">
+                                <img src="${r.imageUrl || 'https://placehold.co/300'}" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                <div class="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold ${badgeColor} shadow-sm border flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[12px]">${badgeIcon}</span> ${badgeText}
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-dark-ink text-sm truncate">${r.name}</h4>
+                            <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">timer</span> ${r.timeMin}m</span>
+                                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> ${r.calories || 0} kcal</span>
+                            </div>
+                        </div>`;
+
+                                    grid.insertAdjacentHTML('beforeend', html);
+                                });
+
+                                // Hiển thị kết quả
+                                emptyState.classList.add('hidden');
+                                resultsState.classList.remove('hidden');
+                                resultsState.classList.add('animate-fade-in');
+
+                                if (typeof ZaderToast !== 'undefined')
+                                    ZaderToast.success(`Found ${recipes.length} recipes!`);
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            if (typeof ZaderToast !== 'undefined')
+                                ZaderToast.error('Failed to load suggestions.');
+                        });
+            }
+
+            function confirmAiSuggestion() {
+                Swal.fire({
+                    title: 'Ask AI Chef?',
+                    text: "Our AI will analyze your pantry ingredients and health profile to create unique recipes for you. This may take a few seconds.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4bbe4f',
+                    cancelButtonColor: '#78909C',
+                    confirmButtonText: 'Yes, create recipes!',
+                    showLoaderOnConfirm: true, // Hiển thị loading spinner của SweetAlert
+                    preConfirm: () => {
+                        // Gọi API khi bấm Yes
+                        return fetch('/user/pantry/suggest-ai')
+                                .then(response => {
+                                    if (!response.ok)
+                                        throw new Error(response.statusText);
+                                    return response.json();
+                                })
+                                .catch(error => {
+                                    Swal.showValidationMessage(`Request failed: ${error}`);
+                                });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed && result.value.success) {
+                        // Hiển thị kết quả lên UI
+                        renderSuggestions(result.value.data);
+
+                        console.log(result.value);
+
+                        Swal.fire({
+                            title: 'Recipes Ready!',
+                            text: 'Here are some ideas based on your ingredients.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                });
+            }
+
+            // Hàm vẽ giao diện (Tái sử dụng logic cũ nhưng tách ra để gọi được từ cả AI và DB thường)
+            function renderSuggestions(recipes) {
+                const emptyState = document.getElementById('suggestion-empty-state');
+                const resultsState = document.getElementById('suggestion-results');
+                const grid = document.getElementById('suggestion-grid');
+
+                if (!recipes || recipes.length === 0)
+                    return;
+
+                grid.innerHTML = '';
+
+                recipes.forEach((r, index) => { // Thêm index vào loop
+                    let badgeColor = r.matchPercentage >= 90 ? 'text-green-700 border-green-100' : 'text-yellow-600 border-yellow-100';
+                    let badgeIcon = r.matchPercentage >= 90 ? 'check_circle' : 'auto_awesome';
+                    let badgeText = r.matchPercentage >= 90 ? 'Great Match' : 'AI Creative';
+
+                    // Link trỏ đến trang chi tiết dùng INDEX
+                    const html = `
+                        <div onclick="window.location.href='/user/pantry/ai-recipe/${index}'" 
+                             class="min-w-[280px] w-[280px] flex-shrink-0 snap-center bg-white rounded-xl p-3 shadow-sm border border-green-100 hover:shadow-md transition cursor-pointer group hover:-translate-y-1 animate-fade-in">
+                            <div class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-gray-100">
+                                <img src="${r.imageUrl || 'https://placehold.co/300?text=AI+Dish'}" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                <div class="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold ${badgeColor} shadow-sm border flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[12px]">${badgeIcon}</span> ${badgeText}
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-dark-ink text-sm truncate" title="${r.name}">${r.name}</h4>
+                            <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">timer</span> ${r.timeMin}m</span>
+                                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> ${r.calories} kcal</span>
+                            </div>
+                        </div>`;
+
+                    grid.insertAdjacentHTML('beforeend', html);
+                });
+
+                // Hiện nút Clear nếu chưa có
+                if (!document.getElementById('btn-clear-ai')) {
+                    const clearBtnHtml = `
+            <div class="mt-4 text-center flex justify-center gap-3">
+                 <button id="btn-clear-ai" onclick="clearAiResults()" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">delete</span> Clear Results
+                 </button>
+            </div>`;
+                    grid.parentElement.insertAdjacentHTML('beforeend', clearBtnHtml);
+                }
+
+                emptyState.classList.add('hidden');
+                resultsState.classList.remove('hidden');
+                resultsState.classList.add('animate-fade-in');
+            }
+
+            function clearAiResults() {
+                const emptyState = document.getElementById('suggestion-empty-state');
+                const resultsState = document.getElementById('suggestion-results');
+
+                // Gọi Server xóa Session
+                fetch('/user/pantry/clear-ai-session', {method: 'POST'});
+
+                // Reset UI
+                resultsState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+
+                if (typeof ZaderToast !== 'undefined')
+                    ZaderToast.info('AI results cleared.');
+            }
+        </script>
+        <script th:inline="javascript">
+            document.addEventListener("DOMContentLoaded", function () {
+                // 1. Lấy trạng thái từ Server (Java -> JS)
+                // Nếu hasAiSuggestions là null/false thì gán mặc định là false
+                const hasSessionData = /*[[${hasAiSuggestions}]]*/ false;
+
+                // 2. Kiểm tra logic
+                if (hasSessionData) {
+                    console.log("Loaded data from Session. Skipping auto-fetch.");
+                    // Không làm gì cả, vì HTML đã được Thymeleaf vẽ sẵn rồi
+                } else {
+                    console.log("No session data. Auto-fetching suggestions...");
+                    // Chưa có dữ liệu -> Chạy hàm tìm kiếm
+                    findSmartRecipes();
+                }
+            });
+        </script>
+    </body>
+</html>

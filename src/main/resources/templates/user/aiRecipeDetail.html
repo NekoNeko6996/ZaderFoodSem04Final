@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+    <head>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title th:text="${recipe.name + ' - AI Chef'}">AI Recipe Detail</title>
+</head>
+<body class="bg-background-light font-display text-dark-ink">
+    <div class="relative flex min-h-screen w-full flex-col group/design-root">
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
+
+        <main class="flex flex-1 justify-center px-4 py-8 sm:px-8 sm:py-12">
+            <div class="w-full max-w-5xl">
+
+                <a th:href="${backUrl}" class="inline-flex items-center gap-2 text-soft-grey hover:text-primary mb-4 font-bold transition">
+                    <span class="material-symbols-outlined">arrow_back</span> 
+                    <span th:text="${backLabel}">Back</span>
+                </a>
+
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 p-4 rounded-xl mb-6 flex items-start gap-3">
+                    <div class="bg-white p-2 rounded-full shadow-sm text-purple-600">
+                        <span class="material-symbols-outlined">smart_toy</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-purple-900 text-sm">AI Generated Content</h4>
+                        <p class="text-xs text-purple-700 mt-1">
+                            This recipe was created by Artificial Intelligence based on your pantry. 
+                            Please use your judgment while cooking.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-soft overflow-hidden border border-gray-100">
+
+                    <div th:if="${recipe.imageUrl != null and !recipe.imageUrl.contains('placehold.co')}" 
+                         class="relative h-64 md:h-96 bg-gray-200">
+                        <img th:src="${recipe.imageUrl}" class="w-full h-full object-cover"/>
+                        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-6 md:p-10">
+                            <h1 class="text-white text-3xl md:text-4xl font-black leading-tight" th:text="${recipe.name}">Recipe Name</h1>
+                        </div>
+                    </div>
+
+                    <div th:unless="${recipe.imageUrl != null and !recipe.imageUrl.contains('placehold.co')}" 
+                         class="relative h-64 md:h-80 bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center text-center p-6 border-b border-gray-100">
+
+                        <div class="bg-white p-4 rounded-full shadow-sm mb-4">
+                            <span class="material-symbols-outlined text-5xl text-slate-400">restaurant_menu</span>
+                        </div>
+                        <h1 class="text-dark-ink text-3xl md:text-4xl font-black leading-tight max-w-2xl" th:text="${recipe.name}">Recipe Name</h1>
+                        <p class="text-slate-500 mt-2 font-medium">AI Generated Recipe</p>
+                    </div>
+
+                    <div class="p-6 md:p-10">
+                        <div class="flex flex-wrap gap-4 items-center justify-between border-b border-gray-100 pb-6 mb-6">
+                            <div class="flex gap-6 text-sm">
+                                <div class="flex items-center gap-1.5 text-soft-grey">
+                                    <span class="material-symbols-outlined text-primary">timer</span>
+                                    <span class="font-bold text-dark-ink" th:text="${recipe.timeMin} + ' min'"></span>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-soft-grey">
+                                    <span class="material-symbols-outlined text-orange-500">local_fire_department</span>
+                                    <span class="font-bold text-dark-ink" th:text="${recipe.calories} + ' kcal'"></span>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-soft-grey">
+                                    <span class="material-symbols-outlined text-blue-500">restaurant</span>
+                                    <span class="font-bold text-dark-ink" th:text="${recipe.servings} + ' servings'"></span>
+                                </div>
+                            </div>
+
+                            <form th:unless="${isSavedView}" 
+                                  th:action="@{/user/pantry/ai-recipe/{index}/save(index=${recipeIndex})}" 
+                                  method="post">
+                                <button type="submit" class="bg-dark-ink hover:bg-black text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">bookmark</span> Save to Cookbook
+                                </button>
+                            </form>
+
+                            <div th:if="${isSavedView}" class="px-4 py-2 bg-green-50 text-green-700 rounded-lg font-bold text-sm flex items-center gap-2 border border-green-100">
+                                <span class="material-symbols-outlined text-lg">check_circle</span> Saved in Collection
+                            </div>
+                        </div>
+
+                        <p class="text-gray-600 italic mb-8 text-lg" th:text="${recipe.description}"></p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+                            <div class="md:col-span-2">
+                                <h3 class="text-xl font-bold text-dark-ink mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-nutri-green">grocery</span> Ingredients
+                                </h3>
+                                <ul class="space-y-3">
+                                    <li th:each="ing : ${recipe.ingredientsList}" class="flex items-start gap-3 p-3 rounded-lg bg-green-50/50 border border-green-50">
+                                        <span class="material-symbols-outlined text-nutri-green text-sm mt-0.5">check_circle</span>
+                                        <span class="text-dark-ink text-sm font-medium" th:text="${ing}"></span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="md:col-span-3">
+                                <h3 class="text-xl font-bold text-dark-ink mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-nutri-green">menu_book</span> Instructions
+                                </h3>
+                                <div class="space-y-6">
+                                    <div th:each="step, stat : ${recipe.stepsList}" class="flex gap-4">
+                                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-dark-ink text-white flex items-center justify-center font-bold text-sm" th:text="${stat.count}">1</div>
+                                        <div class="pt-1">
+                                            <p class="text-dark-ink text-base leading-relaxed" th:text="${step}"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div th:replace="~{fragments/footer :: footer_section}"></div>
+</body>
+</html>

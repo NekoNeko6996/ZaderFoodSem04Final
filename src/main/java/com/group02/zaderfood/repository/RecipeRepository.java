@@ -63,4 +63,11 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
     List<Recipe> searchRecipes(@Param("keyword") String keyword,
             @Param("status") RecipeStatus status,
             @Param("maxCalories") Integer maxCalories);
+    
+    @Query("SELECT DISTINCT r FROM Recipe r " +
+           "JOIN r.recipeIngredients ri " +
+           "WHERE ri.ingredientId IN :ingredientIds " +
+           "AND r.status = 'ACTIVE' " +
+           "AND (r.isDeleted = false OR r.isDeleted IS NULL)")
+    List<Recipe> findRecipesByIngredients(@Param("ingredientIds") List<Integer> ingredientIds);
 }

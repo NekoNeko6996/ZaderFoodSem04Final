@@ -86,7 +86,7 @@
                                     </div>
                                 </div>
 
-                                <div sec:authorize="hasRole('USER') and !hasRole('ADMIN')">
+                                <div sec:authorize="hasRole('USER') and !hasRole('ADMIN') and !hasRole('NUTRITIONIST')">
                                     <div class="flex flex-col gap-2 text-center">
                                         <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-nutri-green dark:bg-green-800 dark:text-green-300">
                                             <span class="material-symbols-outlined">add_reaction</span>
@@ -96,20 +96,6 @@
                                         <a th:href="@{/recipes/request-ingredient}" class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-nutri-green px-4 py-2 text-sm font-bold text-white hover:bg-deep-forest transition shadow-sm">
                                             <span class="material-symbols-outlined !text-lg">add</span>
                                             Request New Ingredient
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div sec:authorize="hasRole('ADMIN')">
-                                    <div class="flex flex-col gap-2 text-center">
-                                        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-800 dark:text-purple-300">
-                                            <span class="material-symbols-outlined">admin_panel_settings</span>
-                                        </div>
-                                        <h4 class="text-base font-bold text-dark-ink dark:text-white">System Management</h4>
-                                        <p class="text-sm text-soft-grey dark:text-gray-400">Directly add new ingredients to the system database.</p>
-                                        <a th:href="@{/admin/ingredients/create}" class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-700 transition shadow-sm">
-                                            <span class="material-symbols-outlined !text-lg">add_circle</span>
-                                            Add System Ingredient
                                         </a>
                                     </div>
                                 </div>
