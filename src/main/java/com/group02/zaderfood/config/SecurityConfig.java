@@ -50,7 +50,7 @@ public class SecurityConfig {
                 // 1. Rule cụ thể phải đứng trước. 
                 // Cho phép cả ADMIN và NUTRITIONIST vào trang quản lý nguyên liệu
                 // Dùng /** để bao gồm cả các action con như /add, /delete
-                .requestMatchers("/admin/ingredients/**", "/admin/categories/**").hasAnyRole("ADMIN", "NUTRITIONIST")
+                .requestMatchers("/admin/ingredients/**", "/admin/categories/**", "/admin/dashboard").hasAnyRole("ADMIN", "NUTRITIONIST")
                 // 2. Các trang Nutritionist khác (nếu có, ví dụ duyệt bài)
                 .requestMatchers("/nutritionist/**").hasAnyRole("ADMIN", "NUTRITIONIST")
                 // 3. Rule tổng quát cho Admin đứng cuối cùng trong nhóm admin
