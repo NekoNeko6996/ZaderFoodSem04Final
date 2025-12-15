@@ -73,7 +73,11 @@ public class FavoriteController {
     public String createCollection(@AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam("name") String name,
             RedirectAttributes redirectAttributes) {
-        if (userDetails != null && name != null && !name.trim().isEmpty()) {
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+        
+        if (name != null && !name.trim().isEmpty()) {
             favoriteService.createCollection(userDetails.getUserId(), name.trim());
             redirectAttributes.addFlashAttribute("successMessage", "Collection created successfully!");
         } else {
