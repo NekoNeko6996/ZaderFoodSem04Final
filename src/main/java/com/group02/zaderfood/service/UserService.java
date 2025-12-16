@@ -15,10 +15,12 @@ import org.springframework.stereotype.Service;
 import com.group02.zaderfood.dto.UserProfileDTO;
 import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
+import com.group02.zaderfood.entity.UserWeightHistory;
 import com.group02.zaderfood.entity.enums.DietType;
 import com.group02.zaderfood.entity.enums.Gender;
 import com.group02.zaderfood.repository.UserDietaryPreferenceRepository;
 import com.group02.zaderfood.repository.UserProfileRepository;
+import com.group02.zaderfood.repository.UserWeightHistoryRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,9 @@ public class UserService {
 
     @Autowired
     private UserDietaryPreferenceRepository dietRepo;
+
+    @Autowired
+    private UserWeightHistoryRepository weightHistoryRepo;
 
     public boolean isEmailExists(String email) {
         return userRepository.findByEmail(email).isPresent();
@@ -106,7 +111,7 @@ public class UserService {
         dto.setDietaryPreferences(dietTypes);
         dto.setAllergies(profile.getAllergies());
         dto.setGoal(profile.getGoal());
-        
+
         dto.setTargetWeightKg(profile.getTargetWeightKg());
         dto.setTargetDate(profile.getTargetDate());
         dto.setStartDate(profile.getStartDate());
@@ -444,6 +449,49 @@ public class UserService {
         profile.setCalorieGoalPerDay(resultDto.getDailyCalorieTarget());
 
         profile.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(profile);
+    }
+
+    @Transactional
+    public void updateCurrentWeight(Integer userId, BigDecimal newWeight) throws Exception {
+        // 1. Xác định khoảng thời gian hôm nay (00:00:00 -> 23:59:59)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = now.toLocalDate().atTime(23, 59, 59);
+
+        // 2. Kiểm tra xem hôm nay đã nhập chưa
+        Optional<UserWeightHistory> existingRecord = weightHistoryRepo.findByUserIdAndRecordedAtBetween(userId, startOfDay, endOfDay);
+
+        if (existingRecord.isPresent()) {
+            // CASE A: Đã có -> UPDATE bản ghi đó
+            UserWeightHistory history = existingRecord.get();
+            history.setWeightKg(newWeight);
+            history.setRecordedAt(now); // Cập nhật lại giờ mới nhất
+            weightHistoryRepo.save(history);
+        } else {
+            // CASE B: Chưa có -> INSERT MỚI
+            UserWeightHistory history = new UserWeightHistory();
+            history.setUserId(userId);
+            history.setWeightKg(newWeight);
+            history.setRecordedAt(now);
+            weightHistoryRepo.save(history);
+        }
+
+        // 3. Cập nhật Profile hiện tại (Logic cũ giữ nguyên)
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new Exception("Profile not found"));
+
+        profile.setWeightKg(newWeight);
+        profile.setUpdatedAt(now);
+
+        // 4. Tính toán lại chỉ số
+        List<UserDietaryPreference> dietList = dietRepo.findByUserId(userId);
+        List<DietType> dietTypes = dietList.stream()
+                .map(UserDietaryPreference::getDietType)
+                .collect(Collectors.toList());
+
+        recalculateBodyMetrics(profile, dietTypes);
+
         userProfileRepository.save(profile);
     }
 }

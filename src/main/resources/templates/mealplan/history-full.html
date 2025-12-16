@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+h<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/head :: common-head}">
         <title>Meal Plan History</title>
@@ -83,7 +83,78 @@
             </div>
 
             <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden relative">
+                    <div class="p-6 relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-dark-ink dark:text-white flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-orange-500">health_metrics</span>
+                                    Your Nutritional Profile
+                                </h2>
+                                <p class="text-sm text-gray-500 mt-1" th:if="${userProfile.goal != null}">
+                                    Current Goal: <span class="font-bold text-dark-ink dark:text-gray-300" th:text="${#strings.capitalize(#strings.toLowerCase(userProfile.goal.name().replace('_', ' ')))}">Weight Loss</span>
+                                </p>
+                            </div>
+                            <a href="/user/settings" class="text-xs font-bold text-gray-400 hover:text-primary transition-colors flex items-center gap-1">
+                                Edit <span class="material-symbols-outlined text-sm">edit</span>
+                            </a>
+                        </div>
 
+                        <div th:if="${userProfile.targetWeightKg != null}" class="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 flex items-center gap-4">
+                            <div class="p-3 bg-white dark:bg-gray-800 rounded-full text-blue-500 shadow-sm">
+                                <span class="material-symbols-outlined">flag</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-blue-400 uppercase tracking-wider">Specific Target</p>
+                                <p class="text-dark-ink dark:text-gray-200 font-medium">
+                                    Reach <strong class="text-lg">[[${userProfile.targetWeightKg}]] kg</strong> 
+                                    <span th:if="${userProfile.targetDate != null}">
+                                        by <span th:text="${#temporals.format(userProfile.targetDate, 'dd MMM yyyy')}">Date</span>
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4 text-center divide-x divide-gray-100 dark:divide-gray-700">
+                            <div class="px-2">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1" title="Basal Metabolic Rate">BMR</p>
+                                <p class="text-xl font-black text-gray-700 dark:text-gray-300">
+                                    [[${userProfile.bmr != null ? userProfile.bmr : '--'}]]
+                                </p>
+                                <span class="text-[10px] text-gray-400">kcal/day</span>
+                            </div>
+
+                            <div class="px-2">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1" title="Total Daily Energy Expenditure">TDEE</p>
+                                <p class="text-xl font-black text-blue-500">
+                                    [[${userProfile.tdee != null ? userProfile.tdee : '--'}]]
+                                </p>
+                                <span class="text-[10px] text-gray-400">kcal/day</span>
+                            </div>
+
+                            <div class="px-2">
+                                <p class="text-[10px] font-bold text-orange-500 uppercase mb-1">Daily Target</p>
+                                <p class="text-xl font-black text-orange-600">
+                                    [[${userProfile.calorieGoalPerDay != null ? userProfile.calorieGoalPerDay : '--'}]]
+                                </p>
+                                <span class="text-[10px] text-gray-400">kcal/day</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-dark-ink dark:text-white flex items-center gap-2">
+                            </h2>
+                        </div>
+
+                        <div class="flex gap-2 pr-6">
+                            <button onclick="openWeightModal()" 
+                                    class="text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors shadow-sm flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">monitor_weight</span> Update Weight
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-white dark:bg-[#1a0e0a] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                         <p class="text-xs font-bold text-gray-400 uppercase mb-1">Tracked Days</p>
@@ -128,6 +199,22 @@
                     </div>
                 </div>
 
+                <div class="bg-white dark:bg-[#1a0e0a] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-dark-ink dark:text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-500">monitor_weight</span>
+                            Weight Progress
+                        </h3>
+                        <div class="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100" 
+                             th:if="${userProfile.targetWeightKg != null}">
+                            Goal: [[${userProfile.targetWeightKg}]] kg
+                        </div>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <div class="bg-white dark:bg-[#1a0e0a] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center">
@@ -147,9 +234,7 @@
 
                     <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 p-6 rounded-xl border border-green-100 dark:border-green-800/30">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
-                                <span class="material-symbols-outlined">psychology</span> AI Insights
-                            </h3>
+                            <h3 class="text-lg font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2">Insights</h3>
                             <span class="px-2 py-1 bg-white/50 dark:bg-black/20 rounded text-[10px] font-bold text-emerald-600 border border-emerald-200">
                                 [[${stats.overallStatus}]]
                             </span>
@@ -172,93 +257,254 @@
         </div>
     </main>
 
+    <dialog id="weightModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-sm open:animate-fade-in">
+        <div class="p-5 border-b flex justify-between items-center bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-dark-ink dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-500">monitor_weight</span>
+                Update Weight
+            </h3>
+            <button onclick="document.getElementById('weightModal').close()" class="text-gray-400 hover:text-dark-ink transition">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="p-6 bg-white dark:bg-[#1a0e0a]">
+            <p class="text-sm text-gray-500 mb-4">Enter your current weight. We will recalculate your daily calorie needs automatically.</p>
+            <p id="todayDateDisplay" class="text-xs font-bold text-orange-600 mb-4 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">today</span> 
+                Loading date...
+            </p>
+
+            <label class="block mb-2 text-sm font-bold text-dark-ink dark:text-gray-300">New Weight (kg)</label>
+            <div class="relative">
+                <input type="number" id="newWeightInput" step="0.1" 
+                       class="w-full rounded-lg border-gray-300 focus:ring-orange-500 focus:border-orange-500 pl-4 pr-12 h-12 text-lg font-bold"
+                       th:value="${userProfile.weightKg}" placeholder="0.0">
+                <span class="absolute right-4 top-3 text-gray-400 font-bold">kg</span>
+            </div>
+        </div>
+
+        <div class="p-5 border-t bg-gray-50 dark:bg-gray-800 dark:border-gray-700 flex justify-end gap-3">
+            <button onclick="document.getElementById('weightModal').close()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition text-sm">Cancel</button>
+            <button onclick="submitWeightUpdate()" class="px-4 py-2 bg-orange-500 text-white font-bold hover:bg-orange-600 rounded-lg shadow-sm transition text-sm">
+                Save & Recalculate
+            </button>
+        </div>
+    </dialog>
+
     <th:block th:replace="~{fragments/footer :: footer_section}"></th:block>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script th:inline="javascript">
-                                    document.addEventListener('DOMContentLoaded', function () {
-                                        const labels = /*[[${stats.chartLabels}]]*/ [];
-                                        const dataCalories = /*[[${stats.chartDataCalories}]]*/ [];
-                                        const dataGoal = /*[[${stats.chartDataGoal}]]*/ [];
-                                        const avgPro = /*[[${stats.avgProtein}]]*/ 0;
-                                        const avgCarb = /*[[${stats.avgCarbs}]]*/ 0;
-                                        const avgFat = /*[[${stats.avgFat}]]*/ 0;
+                document.addEventListener('DOMContentLoaded', function () {
+                    const labels = /*[[${stats.chartLabels}]]*/ [];
+                    const dataCalories = /*[[${stats.chartDataCalories}]]*/ [];
+                    const dataGoal = /*[[${stats.chartDataGoal}]]*/ [];
+                    const avgPro = /*[[${stats.avgProtein}]]*/ 0;
+                    const avgCarb = /*[[${stats.avgCarbs}]]*/ 0;
+                    const avgFat = /*[[${stats.avgFat}]]*/ 0;
 
-                                        // 1. BIỂU ĐỒ CALO (Line Area Chart)
-                                        const ctxCal = document.getElementById('caloriesChart');
-                                        if (ctxCal) {
-                                            new Chart(ctxCal.getContext('2d'), {
-                                                type: 'line',
-                                                data: {
-                                                    labels: labels,
-                                                    datasets: [
-                                                        {
-                                                            label: 'Calories In',
-                                                            data: dataCalories,
-                                                            borderColor: '#F97316', // Orange-500
-                                                            backgroundColor: (context) => {
-                                                                const ctx = context.chart.ctx;
-                                                                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                                                                gradient.addColorStop(0, 'rgba(249, 115, 22, 0.2)');
-                                                                gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
-                                                                return gradient;
-                                                            },
-                                                            borderWidth: 2,
-                                                            pointBackgroundColor: '#fff',
-                                                            pointBorderColor: '#F97316',
-                                                            pointRadius: 4,
-                                                            pointHoverRadius: 6,
-                                                            fill: true,
-                                                            tension: 0.4
-                                                        },
-                                                        {
-                                                            label: 'Goal',
-                                                            data: dataGoal,
-                                                            borderColor: '#9CA3AF', // Gray-400
-                                                            borderWidth: 2,
-                                                            borderDash: [5, 5],
-                                                            pointRadius: 0,
-                                                            fill: false
-                                                        }
-                                                    ]
-                                                },
-                                                options: {
-                                                    responsive: true,
-                                                    maintainAspectRatio: false,
-                                                    plugins: {
-                                                        legend: {position: 'top', align: 'end', labels: {usePointStyle: true, boxWidth: 8}},
-                                                        tooltip: {mode: 'index', intersect: false}
-                                                    },
-                                                    scales: {
-                                                        y: {beginAtZero: false, grid: {borderDash: [2, 4], color: '#f3f4f6'}},
-                                                        x: {grid: {display: false}}
-                                                    }
-                                                }
-                                            });
-                                        }
+                    // 1. BIỂU ĐỒ CALO (Line Area Chart)
+                    const ctxCal = document.getElementById('caloriesChart');
+                    if (ctxCal) {
+                        new Chart(ctxCal.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: 'Calories In',
+                                        data: dataCalories,
+                                        borderColor: '#F97316', // Orange-500
+                                        backgroundColor: (context) => {
+                                            const ctx = context.chart.ctx;
+                                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                            gradient.addColorStop(0, 'rgba(249, 115, 22, 0.2)');
+                                            gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+                                            return gradient;
+                                        },
+                                        borderWidth: 2,
+                                        pointBackgroundColor: '#fff',
+                                        pointBorderColor: '#F97316',
+                                        pointRadius: 4,
+                                        pointHoverRadius: 6,
+                                        fill: true,
+                                        tension: 0.4
+                                    },
+                                    {
+                                        label: 'Goal',
+                                        data: dataGoal,
+                                        borderColor: '#9CA3AF', // Gray-400
+                                        borderWidth: 2,
+                                        borderDash: [5, 5],
+                                        pointRadius: 0,
+                                        fill: false
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {position: 'top', align: 'end', labels: {usePointStyle: true, boxWidth: 8}},
+                                    tooltip: {mode: 'index', intersect: false}
+                                },
+                                scales: {
+                                    y: {beginAtZero: false, grid: {borderDash: [2, 4], color: '#f3f4f6'}},
+                                    x: {grid: {display: false}}
+                                }
+                            }
+                        });
+                    }
 
-                                        // 2. BIỂU ĐỒ MACRO (Doughnut)
-                                        const ctxMacro = document.getElementById('macroChart');
-                                        if (ctxMacro) {
-                                            new Chart(ctxMacro.getContext('2d'), {
-                                                type: 'doughnut',
-                                                data: {
-                                                    labels: ['Protein', 'Carbs', 'Fat'],
-                                                    datasets: [{
-                                                            data: [avgPro, avgCarb, avgFat],
-                                                            backgroundColor: ['#3B82F6', '#22C55E', '#EAB308'], // Blue, Green, Yellow
-                                                            borderWidth: 0,
-                                                            hoverOffset: 10
-                                                        }]
-                                                },
-                                                options: {
-                                                    responsive: true,
-                                                    maintainAspectRatio: false,
-                                                    cutout: '75%',
-                                                    plugins: {legend: {display: false}}
-                                                }
-                                            });
+                    // 2. BIỂU ĐỒ MACRO (Doughnut)
+                    const ctxMacro = document.getElementById('macroChart');
+                    if (ctxMacro) {
+                        new Chart(ctxMacro.getContext('2d'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Protein', 'Carbs', 'Fat'],
+                                datasets: [{
+                                        data: [avgPro, avgCarb, avgFat],
+                                        backgroundColor: ['#3B82F6', '#22C55E', '#EAB308'], // Blue, Green, Yellow
+                                        borderWidth: 0,
+                                        hoverOffset: 10
+                                    }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '75%',
+                                plugins: {legend: {display: false}}
+                            }
+                        });
+                    }
+
+                    // [NEW] BIỂU ĐỒ CÂN NẶNG
+                    const weightLabels = /*[[${weightLabels}]]*/ [];
+                    const weightData = /*[[${weightData}]]*/ [];
+                    const targetWeight = /*[[${userProfile.targetWeightKg}]]*/ null; // Lấy mục tiêu để vẽ đường kẻ ngang
+
+                    const ctxWeight = document.getElementById('weightChart');
+                    if (ctxWeight && weightData.length > 0) {
+
+                        // Tạo dataset mục tiêu (đường thẳng ngang)
+                        const goalDataset = targetWeight ? {
+                            label: 'Goal',
+                            data: Array(weightLabels.length).fill(targetWeight),
+                            borderColor: '#22C55E', // Green
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        } : null;
+
+                        const datasets = [{
+                                label: 'Weight (kg)',
+                                data: weightData,
+                                borderColor: '#3B82F6', // Blue-500
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: '#3B82F6',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                fill: true,
+                                tension: 0.3 // Đường cong mềm mại
+                            }];
+
+                        if (goalDataset)
+                            datasets.push(goalDataset);
+
+                        new Chart(ctxWeight.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: weightLabels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {position: 'top', align: 'end'},
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false,
+                                        callbacks: {
+                                            label: function (context) {
+                                                return context.dataset.label + ': ' + context.parsed.y + ' kg';
+                                            }
                                         }
-                                    });
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: false, // Không bắt đầu từ 0 để biểu đồ dao động rõ hơn
+                                        grid: {borderDash: [2, 4], color: '#f3f4f6'},
+                                        title: {display: true, text: 'kg'}
+                                    },
+                                    x: {grid: {display: false}}
+                                }
+                            }
+                        });
+                    } else if (ctxWeight) {
+                        // Xử lý khi chưa có dữ liệu
+                        ctxWeight.parentElement.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-400 text-sm"><span class="material-symbols-outlined text-3xl mb-2">bar_chart_off</span>No weight history yet. Update your weight to see trends!</div>';
+                    }
+                });
+    </script>
+    <script>
+        // Xử lý cập nhật cân nặng
+        function submitWeightUpdate() {
+            const weight = document.getElementById('newWeightInput').value;
+
+            if (!weight || weight <= 0) {
+                if (typeof ZaderToast !== 'undefined')
+                    ZaderToast.error("Please enter a valid weight");
+                return;
+            }
+
+            const modal = document.getElementById('weightModal');
+            modal.close();
+
+            if (typeof ZaderToast !== 'undefined')
+                ZaderToast.loading("Recalculating your plan...");
+
+            fetch('/user/weight/update', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({weight: weight})
+            })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            if (typeof ZaderToast !== 'undefined')
+                                ZaderToast.success(data.message);
+                            // Reload trang sau 1s để thấy chỉ số mới
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            if (typeof ZaderToast !== 'undefined')
+                                ZaderToast.error(data.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.error("Connection failed");
+                    });
+        }
+
+        function openWeightModal() {
+            const modal = document.getElementById('weightModal');
+            const dateDisplay = document.getElementById('todayDateDisplay');
+
+            // Lấy ngày hiện tại format đẹp (VD: Today, 15 Dec 2025)
+            const options = {weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'};
+            const todayStr = new Date().toLocaleDateString('en-US', options);
+
+            dateDisplay.innerHTML = `<span class="material-symbols-outlined text-sm">today</span> Recording for: ${todayStr}`;
+
+            modal.showModal();
+        }
     </script>
 </body>
 </html>
