@@ -33,6 +33,7 @@ import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +125,23 @@ public class MealPlanController {
 
         UserProfile profile = userProfileRepository.findById(currentUser.getUserId()).orElse(null);
         model.addAttribute("userProfile", profile);
+        
+        if (profile != null && profile.getTargetWeightKg() != null && profile.getTargetDate() != null) {
+            
+            // Format ngày hiển thị (VD: 25 Dec 2025)
+            String targetDateStr = profile.getTargetDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
+            model.addAttribute("targetDateStr", targetDateStr);
+            
+            // Tính số ngày còn lại
+            long daysLeft = ChronoUnit.DAYS.between(LocalDate.now(), profile.getTargetDate());
+            
+            if(daysLeft < 0) daysLeft = 0; // Đã quá hạn
+            model.addAttribute("daysLeft", daysLeft);
+            
+            // Tính chênh lệch cân nặng (VD: -5kg)
+            BigDecimal diff = profile.getTargetWeightKg().subtract(profile.getWeightKg());
+            model.addAttribute("weightDiff", diff);
+        }
 
         // Logic kiểm tra nhanh để biến này có sẵn cho View dùng
         boolean isProfileMissing = profile == null

@@ -49,6 +49,16 @@ public class UserProfile implements Serializable {
     // [NEW] Thêm chỉ số TDEE từ DB v2.0
     @Column(name = "TDEE")
     private BigDecimal tdee;
+    
+    @Column(name = "TargetWeightKg")
+    private BigDecimal targetWeightKg;
+
+    // [NEW] Ngày dự kiến
+    @Column(name = "TargetDate")
+    private LocalDate targetDate;
+    
+    @Column(name = "StartDate")
+    private LocalDate startDate;
 
     @Column(name = "CalorieGoalPerDay")
     private Integer calorieGoalPerDay;
