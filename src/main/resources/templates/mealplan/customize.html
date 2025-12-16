@@ -450,7 +450,7 @@
                 const days = [];
                 // Lặp qua từng cột ngày (Monday, Tuesday...)
                 document.querySelectorAll('.weekly-day-card').forEach((dayCard, index) => {
-                    const dayName = dayCard.querySelector('h3').innerText;
+                    const dayName = dayCard.querySelector('a').innerText;
                     const totalCal = parseInt(dayCard.querySelector('.total-cal-badge').getAttribute('data-value')) || 0;
 
                     const meals = [];
