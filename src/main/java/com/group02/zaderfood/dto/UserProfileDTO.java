@@ -22,6 +22,13 @@ public class UserProfileDTO {
     private BigDecimal tdee;
     private UserGoal goal;
     
+    private BigDecimal targetWeightKg;
+    @DateTimeFormat(pattern = "yyyy-MM-dd") // Để binding form HTML
+    private LocalDate targetDate;
+    
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
+    
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;
     private Gender gender;
