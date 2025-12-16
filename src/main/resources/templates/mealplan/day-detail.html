@@ -81,9 +81,8 @@
                     <canvas id="caloriesDoughnut"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <span class="text-3xl font-black" 
-                              th:classappend="${remaining < 0} ? 'text-red-500' : 'text-dark-ink dark:text-white'"
-                              th:text="${remaining}">0</span>
-                        <span class="text-xs text-gray-400">kcal left</span>
+                              th:classappend="${remaining <= 0}"
+                              th:text="${remaining < 0 ? 0 : remaining}">0</span> <span class="text-xs text-gray-400">kcal left</span>
                     </div>
                 </div>
 
@@ -103,7 +102,7 @@
                 <div class="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-4">
                     <div>
                         <h3 class="text-lg font-bold text-dark-ink dark:text-white">Nutritional Breakdown</h3>
-                        <p class="text-sm text-gray-400">Real-time tracking against your goals</p>
+                        <p class="text-sm text-gray-400">Tracking against your goals</p>
                     </div>
                     <span class="bg-gray-100 dark:bg-gray-800 text-gray-500 px-3 py-1 rounded-lg text-xs font-bold">
                         [[${dayDetail.eatenMeals}]] / [[${dayDetail.totalMeals}]] meals completed
@@ -527,8 +526,12 @@
                         function initChart() {
                             const eaten = /*[[${dayDetail.consumedCalories}]]*/ 0;
                             const target = /*[[${targetCalories ?: 2000}]]*/ 2000;
-                            const remaining = Math.max(0, target - eaten);
 
+                            // [FIX] Nếu ăn vượt quá target, remaining sẽ là 0 (để biểu đồ không bị lỗi)
+                            // Số calo thừa sẽ được hiển thị bằng màu đỏ và text âm
+                            const chartRemaining = Math.max(0, target - eaten);
+
+                            console.log(chartRemaining);
                             const ctx = document.getElementById('caloriesDoughnut');
                             if (ctx) {
                                 new Chart(ctx.getContext('2d'), {
@@ -536,10 +539,11 @@
                                     data: {
                                         labels: ['Eaten', 'Remaining'],
                                         datasets: [{
-                                                data: [eaten, remaining],
+                                                // [FIX] Dữ liệu vẽ biểu đồ: Nếu vượt quá, coi như đã ăn 100% (target) để vòng tròn đỏ đầy
+                                                data: [eaten > target ? target : eaten, chartRemaining],
                                                 backgroundColor: [
-                                                    eaten > target ? '#EF4444' : '#F97316',
-                                                    '#F3F4F6'
+                                                    '#F97316', // <--- Luôn dùng màu Cam (Xóa điều kiện check if/else đi)
+                                                    '#F3F4F6'   // Màu xám nền
                                                 ],
                                                 borderWidth: 0,
                                                 hoverOffset: 4

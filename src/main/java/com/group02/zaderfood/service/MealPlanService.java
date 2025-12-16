@@ -288,7 +288,8 @@ public class MealPlanService {
 
         DayDetailDTO dto = new DayDetailDTO();
         dto.date = date;
-        dto.dayName = date.format(DateTimeFormatter.ofPattern("EEEE dd/MM"));
+        dto.dayName = date.format(DateTimeFormatter.ofPattern("EEEE dd/MM", Locale.ENGLISH));
+        
         dto.totalCalories = dailyPlan.getTotalCalories().intValue();
         // Lấy macros (xử lý null an toàn)
         dto.totalProtein = dailyPlan.getTotalProtein() != null ? dailyPlan.getTotalProtein().intValue() : 0;

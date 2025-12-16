@@ -125,6 +125,45 @@
                                     </div>
                                 </div>
 
+                                <div class="mt-6 p-6 bg-blue-50/50 rounded-xl border border-blue-100 relative">
+                                    <h4 class="font-bold text-dark-ink text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-blue-600">flag</span> Specific Goal Setting
+                                    </h4>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6"> <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Target Weight (Kg)</span>
+                                            <input type="number" step="0.1" th:field="*{targetWeightKg}" id="targetWeightInput"
+                                                   class="form-input rounded-lg border-smart-mist h-12 px-4 focus:border-blue-500 focus:ring-blue-500" 
+                                                   placeholder="e.g. 65.5"/>
+                                        </label>
+
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Start Date</span>
+                                            <input type="date" th:field="*{startDate}" id="startDateInput"
+                                                   class="form-input rounded-lg border-smart-mist h-12 px-4 focus:border-blue-500 focus:ring-blue-500" />
+                                        </label>
+
+                                        <label class="flex flex-col gap-2">
+                                            <span class="text-dark-ink text-sm font-medium">Target Date</span>
+                                            <input type="date" th:field="*{targetDate}" id="targetDateInput"
+                                                   class="form-input rounded-lg border-smart-mist h-12 px-4 focus:border-blue-500 focus:ring-blue-500" />
+                                        </label>
+                                    </div>
+
+                                    <div id="goalWarning" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm flex items-start gap-2">
+                                        <span class="material-symbols-outlined text-lg mt-0.5">warning</span>
+                                        <div>
+                                            <strong class="block font-bold">Unrealistic Goal Warning!</strong>
+                                            <span id="goalWarningText">You are trying to lose weight too fast.</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="goalInfo" class="hidden mt-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm flex items-start gap-2 flex items-center">
+                                        <span class="material-symbols-outlined text-lg mt-0.5">info</span>
+                                        <span id="goalInfoText">Normal pace.</span>
+                                    </div>
+                                </div>
+
                                 <div class="flex flex-col gap-6 pt-8 border-t border-gray-100">
                                     <div class="flex flex-col gap-2">
                                         <h3 class="text-dark-ink text-lg font-bold leading-tight">Dietary Preferences</h3>
@@ -319,6 +358,77 @@
             descElement.textContent = 'Hover over an option to see details.';
             descElement.classList.add('text-gray-400');
         }
+    </script>
+    <script>
+        // --- LOGIC CẢNH BÁO MỤC TIÊU ---
+        const currentWeightInput = document.getElementById('weightKg'); // Đảm bảo input cân nặng có id="weightKg"
+        const targetWeightInput = document.getElementById('targetWeightInput');
+        const targetDateInput = document.getElementById('targetDateInput');
+        const warningBox = document.getElementById('goalWarning');
+        const warningText = document.getElementById('goalWarningText');
+        const infoBox = document.getElementById('goalInfo');
+        const infoText = document.getElementById('goalInfoText');
+
+        function checkGoalFeasibility() {
+            const currentW = parseFloat(currentWeightInput.value);
+            const targetW = parseFloat(targetWeightInput.value);
+            const targetDateVal = targetDateInput.value;
+
+            if (!currentW || !targetW || !targetDateVal) {
+                warningBox.classList.add('hidden');
+                infoBox.classList.add('hidden');
+                return;
+            }
+
+            const today = new Date();
+            const tDate = new Date(targetDateVal);
+            const diffTime = tDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 0) {
+                warningBox.classList.remove('hidden');
+                warningText.textContent = "Target date must be in the future.";
+                infoBox.classList.add('hidden');
+                return;
+            }
+
+            const diffWeight = targetW - currentW; // Âm = Giảm cân, Dương = Tăng cân
+            const weeks = diffDays / 7;
+            const ratePerWeek = Math.abs(diffWeight) / weeks;
+
+            // Reset UI
+            warningBox.classList.add('hidden');
+            infoBox.classList.add('hidden');
+
+            // LOGIC KIỂM TRA
+            // 1. Giảm cân quá nhanh (> 1kg/tuần là khó và hại sức khỏe)
+            if (diffWeight < 0 && ratePerWeek > 1.0) {
+                warningBox.classList.remove('hidden');
+                warningText.textContent = `You are aiming to lose ${ratePerWeek.toFixed(1)} kg/week. Safe rate is 0.5 - 1.0 kg/week. This requires extreme calorie deficit.`;
+            }
+            // 2. Tăng cân quá nhanh (> 0.5kg/tuần chủ yếu là mỡ)
+            else if (diffWeight > 0 && ratePerWeek > 0.5) {
+                warningBox.classList.remove('hidden');
+                warningText.textContent = `You are aiming to gain ${ratePerWeek.toFixed(1)} kg/week. It's hard to build muscle that fast; you might gain mostly fat.`;
+            }
+            // 3. Bình thường
+            else {
+                infoBox.classList.remove('hidden');
+                const type = diffWeight < 0 ? "lose" : "gain";
+                infoText.textContent = `This is a healthy goal! You will ${type} about ${ratePerWeek.toFixed(2)} kg/week.`;
+            }
+        }
+
+        // Gắn sự kiện lắng nghe thay đổi
+        if (currentWeightInput)
+            currentWeightInput.addEventListener('input', checkGoalFeasibility);
+        if (targetWeightInput)
+            targetWeightInput.addEventListener('input', checkGoalFeasibility);
+        if (targetDateInput)
+            targetDateInput.addEventListener('input', checkGoalFeasibility);
+
+        // [THÊM DÒNG NÀY] Chạy kiểm tra ngay khi load trang để hiện cảnh báo/info
+        checkGoalFeasibility();
     </script>
 </body>
 </html>

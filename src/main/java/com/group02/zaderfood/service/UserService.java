@@ -15,10 +15,12 @@ import org.springframework.stereotype.Service;
 import com.group02.zaderfood.dto.UserProfileDTO;
 import com.group02.zaderfood.entity.UserDietaryPreference;
 import com.group02.zaderfood.entity.UserProfile;
+import com.group02.zaderfood.entity.UserWeightHistory;
 import com.group02.zaderfood.entity.enums.DietType;
 import com.group02.zaderfood.entity.enums.Gender;
 import com.group02.zaderfood.repository.UserDietaryPreferenceRepository;
 import com.group02.zaderfood.repository.UserProfileRepository;
+import com.group02.zaderfood.repository.UserWeightHistoryRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,9 @@ public class UserService {
 
     @Autowired
     private UserDietaryPreferenceRepository dietRepo;
+
+    @Autowired
+    private UserWeightHistoryRepository weightHistoryRepo;
 
     public boolean isEmailExists(String email) {
         return userRepository.findByEmail(email).isPresent();
@@ -107,6 +112,10 @@ public class UserService {
         dto.setAllergies(profile.getAllergies());
         dto.setGoal(profile.getGoal());
 
+        dto.setTargetWeightKg(profile.getTargetWeightKg());
+        dto.setTargetDate(profile.getTargetDate());
+        dto.setStartDate(profile.getStartDate());
+
         dto.setBmr(profile.getBmr());
         dto.setTdee(profile.getTdee());
 
@@ -120,6 +129,7 @@ public class UserService {
                 .orElseThrow(() -> new Exception("User not found"));
         user.setFullName(dto.getFullName());
         user.setUpdatedAt(LocalDateTime.now());
+
         userRepository.save(user);
 
         // 2. Cập nhật bảng UserProfiles
@@ -148,6 +158,9 @@ public class UserService {
         profile.setAllergies(dto.getAllergies());
         profile.setUpdatedAt(LocalDateTime.now());
         profile.setGoal(dto.getGoal());
+        profile.setTargetWeightKg(dto.getTargetWeightKg());
+        profile.setTargetDate(dto.getTargetDate());
+        profile.setStartDate(dto.getStartDate());
 
         recalculateBodyMetrics(profile, dto.getDietaryPreferences());
 
@@ -169,17 +182,15 @@ public class UserService {
     }
 
     /**
-     * Hàm tính toán chỉ số cơ thể tự động (Smart Calculator)
-     *
-     * @param profile Thông tin user (Cân nặng, chiều cao, tuổi...)
-     * @param diets Danh sách chế độ ăn user chọn (để override tỷ lệ Macros)
+     * Hàm tính toán chỉ số cơ thể tự động (Smart Calculator) FULL LOGIC: BMR ->
+     * TDEE -> Target Calorie (Date/Goal) -> Macros
      */
     private void recalculateBodyMetrics(UserProfile profile, List<DietType> diets) {
         // 1. VALIDATION: Kiểm tra dữ liệu đầu vào
         if (profile.getWeightKg() == null || profile.getHeightCm() == null
                 || profile.getBirthDate() == null || profile.getGender() == null
                 || profile.getActivityLevel() == null) {
-            return; // Thiếu dữ liệu thì không tính, giữ nguyên giá trị cũ hoặc null
+            return;
         }
 
         // 2. CHUẨN BỊ DỮ LIỆU SỐ
@@ -187,7 +198,7 @@ public class UserService {
         double height = profile.getHeightCm().doubleValue();
         int age = java.time.Period.between(profile.getBirthDate(), java.time.LocalDate.now()).getYears();
 
-        // 3. TÍNH BMR (Basal Metabolic Rate) - Công thức Mifflin-St Jeor
+        // 3. TÍNH BMR (Mifflin-St Jeor)
         double bmrValue;
         if (profile.getGender() == Gender.MALE) {
             bmrValue = (10 * weight) + (6.25 * height) - (5 * age) + 5;
@@ -201,36 +212,59 @@ public class UserService {
         switch (profile.getActivityLevel()) {
             case SEDENTARY:
                 multiplier = 1.2;
-                break;        // Ít vận động
+                break;
             case LIGHTLY_ACTIVE:
                 multiplier = 1.375;
-                break; // 1-3 ngày/tuần
+                break;
             case MODERATELY_ACTIVE:
                 multiplier = 1.55;
-                break; // 3-5 ngày/tuần
+                break;
             case VERY_ACTIVE:
                 multiplier = 1.725;
-                break;    // 6-7 ngày/tuần
+                break;
             case EXTRA_ACTIVE:
                 multiplier = 1.9;
-                break;     // VĐV chuyên nghiệp
+                break;
         }
         double tdeeValue = bmrValue * multiplier;
         profile.setTdee(BigDecimal.valueOf(tdeeValue).setScale(0, RoundingMode.HALF_UP));
 
-        // 5. TÍNH MỤC TIÊU CALO (CALORIE TARGET) - Dựa trên Goal
+        // =========================================================================
+        // 5. TÍNH MỤC TIÊU CALO (CALORIE TARGET) - ĐÂY LÀ PHẦN BẠN HỎI
+        // =========================================================================
         double targetCal = tdeeValue;
+        boolean isSpecificGoalSet = false;
 
-        if (profile.getGoal() != null) {
+        // ƯU TIÊN 1: Nếu User nhập Cân nặng & Ngày cụ thể -> Tính theo toán học
+        if (profile.getTargetWeightKg() != null && profile.getTargetDate() != null) {
+            double currentW = profile.getWeightKg().doubleValue();
+            double targetW = profile.getTargetWeightKg().doubleValue();
+
+            // Tính số ngày còn lại
+            long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), profile.getTargetDate());
+
+            if (daysBetween > 0) {
+                double diffKg = targetW - currentW; // Dương = Tăng cân, Âm = Giảm cân
+                // 1kg thay đổi cần khoảng 7700 kcal thâm hụt/dư thừa
+                double totalCaloriesDiffNeeded = diffKg * 7700;
+                double dailyAdjustment = totalCaloriesDiffNeeded / daysBetween;
+
+                targetCal = tdeeValue + dailyAdjustment;
+                isSpecificGoalSet = true;
+            }
+        }
+
+        // ƯU TIÊN 2: Nếu KHÔNG có ngày cụ thể -> Dùng Logic Goal Chung (Trừ/Cộng cố định)
+        if (!isSpecificGoalSet && profile.getGoal() != null) {
             switch (profile.getGoal()) {
                 case WEIGHT_LOSS:
-                    targetCal -= 500; // Thâm hụt để giảm cân (~0.5kg/tuần)
+                    targetCal -= 500; // Giảm cân: Thâm hụt 500 calo (Standard)
                     break;
                 case MUSCLE_GAIN:
-                    targetCal += 300; // Dư calo vừa phải để nuôi cơ (Lean Bulk)
+                    targetCal += 300; // Tăng cơ: Dư 300 calo (Lean Bulk)
                     break;
                 case WEIGHT_GAIN:
-                    targetCal += 500; // Dư nhiều calo để tăng cân nhanh (Dirty Bulk)
+                    targetCal += 500; // Tăng cân: Dư 500 calo
                     break;
                 case MAINTENANCE:
                 default:
@@ -239,49 +273,44 @@ public class UserService {
             }
         }
 
-        // Safety Check: Không để Calo mục tiêu thấp hơn BMR (tránh suy nhược cơ thể)
-        if (targetCal < bmrValue) {
-            targetCal = bmrValue;
+        // [SAFETY CHECK] Giới hạn an toàn (Không dưới 1000kcal)
+        if (targetCal < 1000) {
+            targetCal = 1000;
         }
 
         int finalCal = (int) targetCal;
         profile.setCalorieGoalPerDay(finalCal);
 
+        // =========================================================================
         // 6. TÍNH TỶ LỆ MACROS (PROTEIN - CARBS - FAT)
-        // Mặc định (Maintenance/Balanced): 25% Pro - 50% Carb - 25% Fat
+        // =========================================================================
         double ratioProt = 0.25;
         double ratioCarb = 0.50;
         double ratioFat = 0.25;
 
         boolean isDietOverridden = false;
 
-        // A. ƯU TIÊN 1: XÉT DIETARY PREFERENCES (Chế độ ăn đặc thù)
-        // Nếu user chọn chế độ ăn đặc biệt, tỷ lệ này sẽ đè lên tỷ lệ của Goal
+        // A. Ưu tiên chế độ ăn (Diet Type)
         if (diets != null && !diets.isEmpty()) {
             if (diets.contains(DietType.KETO)) {
-                // Keto: Fat cực cao, Carb cực thấp
-                ratioCarb = 0.05; // 5%
-                ratioProt = 0.25; // 25%
-                ratioFat = 0.70;  // 70%
+                ratioCarb = 0.05;
+                ratioProt = 0.25;
+                ratioFat = 0.70;
                 isDietOverridden = true;
             } else if (diets.contains(DietType.LOW_CARB)) {
-                // Low Carb: Giảm Carb vừa phải, tăng Protein & Fat
-                ratioCarb = 0.20; // 20%
-                ratioProt = 0.40; // 40%
-                ratioFat = 0.40;  // 40%
+                ratioCarb = 0.20;
+                ratioProt = 0.40;
+                ratioFat = 0.40;
                 isDietOverridden = true;
             } else if (diets.contains(DietType.HIGH_PROTEIN)) {
-                // High Protein: Ưu tiên Protein
-                ratioProt = 0.45; // 45%
-                ratioCarb = 0.30; // 30%
-                ratioFat = 0.25;  // 25%
+                ratioProt = 0.45;
+                ratioCarb = 0.30;
+                ratioFat = 0.25;
                 isDietOverridden = true;
             }
-            // Các diet khác (Vegan, Dairy Free...) thường không ép buộc tỷ lệ Macro, 
-            // nên để nó rơi xuống logic theo Goal bên dưới.
         }
 
-        // B. ƯU TIÊN 2: XÉT GOAL (Nếu không bị Diet override)
+        // B. Nếu không bị Diet ghi đè -> Dùng Goal để chia tỷ lệ
         if (!isDietOverridden && profile.getGoal() != null) {
             switch (profile.getGoal()) {
                 case WEIGHT_LOSS:
@@ -290,24 +319,21 @@ public class UserService {
                     ratioCarb = 0.30;
                     ratioFat = 0.30;
                     break;
-
                 case MUSCLE_GAIN:
-                    // Tăng cơ: Cần Protein xây cơ + Carb để tập nặng, Fat vừa phải
+                    // Tăng cơ: Cần Carb tập luyện, Protein xây cơ
                     ratioProt = 0.35;
                     ratioCarb = 0.45;
                     ratioFat = 0.20;
                     break;
-
                 case WEIGHT_GAIN:
-                    // Tăng cân: Tăng Fat (nhiều năng lượng), Carb & Pro cân bằng
+                    // Tăng cân: Cần năng lượng cao từ Fat/Carb
                     ratioProt = 0.30;
                     ratioCarb = 0.35;
                     ratioFat = 0.35;
                     break;
-
                 case MAINTENANCE:
                 default:
-                    // Cân bằng (25-50-25)
+                    // Cân bằng
                     ratioProt = 0.25;
                     ratioCarb = 0.50;
                     ratioFat = 0.25;
@@ -315,10 +341,8 @@ public class UserService {
             }
         }
 
-        // 7. QUY ĐỔI RA GAM (Grams) VÀ LƯU VÀO PROFILE
-        // 1g Protein = 4 kcal
-        // 1g Carbs   = 4 kcal
-        // 1g Fat     = 9 kcal
+        // 7. QUY ĐỔI RA GAM (Grams) VÀ LƯU
+        // 1g Protein = 4 kcal, 1g Carbs = 4 kcal, 1g Fat = 9 kcal
         profile.setProteinGoal((int) ((finalCal * ratioProt) / 4));
         profile.setCarbsGoal((int) ((finalCal * ratioCarb) / 4));
         profile.setFatGoal((int) ((finalCal * ratioFat) / 9));
@@ -425,6 +449,49 @@ public class UserService {
         profile.setCalorieGoalPerDay(resultDto.getDailyCalorieTarget());
 
         profile.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(profile);
+    }
+
+    @Transactional
+    public void updateCurrentWeight(Integer userId, BigDecimal newWeight) throws Exception {
+        // 1. Xác định khoảng thời gian hôm nay (00:00:00 -> 23:59:59)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = now.toLocalDate().atTime(23, 59, 59);
+
+        // 2. Kiểm tra xem hôm nay đã nhập chưa
+        Optional<UserWeightHistory> existingRecord = weightHistoryRepo.findByUserIdAndRecordedAtBetween(userId, startOfDay, endOfDay);
+
+        if (existingRecord.isPresent()) {
+            // CASE A: Đã có -> UPDATE bản ghi đó
+            UserWeightHistory history = existingRecord.get();
+            history.setWeightKg(newWeight);
+            history.setRecordedAt(now); // Cập nhật lại giờ mới nhất
+            weightHistoryRepo.save(history);
+        } else {
+            // CASE B: Chưa có -> INSERT MỚI
+            UserWeightHistory history = new UserWeightHistory();
+            history.setUserId(userId);
+            history.setWeightKg(newWeight);
+            history.setRecordedAt(now);
+            weightHistoryRepo.save(history);
+        }
+
+        // 3. Cập nhật Profile hiện tại (Logic cũ giữ nguyên)
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new Exception("Profile not found"));
+
+        profile.setWeightKg(newWeight);
+        profile.setUpdatedAt(now);
+
+        // 4. Tính toán lại chỉ số
+        List<UserDietaryPreference> dietList = dietRepo.findByUserId(userId);
+        List<DietType> dietTypes = dietList.stream()
+                .map(UserDietaryPreference::getDietType)
+                .collect(Collectors.toList());
+
+        recalculateBodyMetrics(profile, dietTypes);
+
         userProfileRepository.save(profile);
     }
 }
