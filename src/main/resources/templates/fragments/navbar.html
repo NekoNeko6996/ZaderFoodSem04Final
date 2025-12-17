@@ -42,8 +42,6 @@
                         </a>
                         <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
                             <a th:href="@{/admin/users}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Manage Users</a>
-                            <a th:href="@{/admin/ingredients/create}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">System Ingredients</a>
-                            <a th:href="@{/admin/recipes/pending}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Pending Recipes</a>
                         </div>
                     </div>
                     <div sec:authorize="hasAnyAuthority('NUTRITIONIST', 'ROLE_NUTRITIONIST')" class="relative group">
@@ -54,8 +52,7 @@
                             </button>
                         </a>
                         <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
-                            <a th:href="@{/admin/ingredients/create}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">System Ingredients</a>
-                            <a th:href="@{/admin/recipes/pending}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Peding Recipes</a>
+                            <a th:href="@{/nutritionist/recipes/pending}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Peding Recipes</a>
                         </div>
                     </div>
                 </nav>
