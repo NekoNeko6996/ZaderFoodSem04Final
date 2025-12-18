@@ -25,6 +25,7 @@
                         <div class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-dark-ink border border-border-color rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
                             <a th:href="@{/meal-plan/generate}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">New Meal Plan</a>
                             <a th:href="@{/meal-plan/history}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">Meal Plan History</a>
+                            <a th:href="@{/shopping-list}" class="block px-4 py-2 text-sm text-dark-ink dark:text-background-light hover:bg-gray-100 dark:hover:bg-gray-700">My Shopping List</a>
                         </div>
                     </div>
 
@@ -56,7 +57,7 @@
                         </div>
                     </div>
                 </nav>
-
+                
                 <div class="flex items-center gap-4 ml-auto">
 
                     <div sec:authorize="!isAuthenticated()" class="hidden md:flex gap-3">
@@ -150,6 +151,8 @@
                     <a th:href="@{/recipes/search}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">Find by Ingredients</a>
                     <a th:href="@{/user/pantry}" class="text-dark-ink dark:text-background-light text-sm font-medium hover:text-primary dark:hover:text-primary transition-colors">My Pantry</a>
                     <a th:href="@{/ai-tools/calorie-estimator}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">AI Calories</a>
+                    
+                    <a th:href="@{/shopping-list}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">My SHopping List</a>
 
                     <div sec:authorize="!isAuthenticated()" class="grid grid-cols-2 gap-3 mt-2 pt-3 border-t border-border-color">
                         <a th:href="@{/login}" class="text-center p-2.5 rounded-lg border border-border-color font-bold text-dark-ink">Log In</a>

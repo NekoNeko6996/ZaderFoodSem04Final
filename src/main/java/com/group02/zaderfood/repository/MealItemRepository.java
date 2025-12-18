@@ -11,4 +11,6 @@ public interface MealItemRepository extends JpaRepository<MealItem, Integer> {
     
     // Tìm các món ăn thuộc về một DailyPlan cụ thể
     List<MealItem> findByMealPlanId(Integer mealPlanId);
+    
+    List<MealItem> findByMealPlanIdIn(List<Integer> mealPlanIds);
 }

@@ -889,4 +889,10 @@ public class MealPlanService {
 
         itemRepo.save(item);
     }
+    
+    public List<LocalDate> getUpcomingPlannedDates(Integer userId) {
+    // Lấy các ngày có plan từ hôm nay trở đi
+    return dailyRepo.findByUserIdAndPlanDateGreaterThanEqual(userId, LocalDate.now())
+            .stream().map(DailyMealPlan::getPlanDate).collect(Collectors.toList());
+}
 }
