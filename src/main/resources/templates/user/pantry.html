@@ -364,7 +364,8 @@
 
                                 if (recipes.length === 0) {
                                     if (typeof ZaderToast !== 'undefined')
-                                        ZaderToast.info('No matching recipes found based on your items.');
+                                        ZaderToast.remove(toastId);
+                                        ZaderToast.show('No matching recipes found based on your items.');
                                     return;
                                 }
 
@@ -444,6 +445,16 @@
                         renderSuggestions(result.value.data);
 
                         console.log(result.value);
+                        if(result.value.data.length <= 0) {
+                            Swal.fire({
+                            title: 'No Recipe Return!',
+                            text: 'Try add some ingredient to your pantry and try again!',
+                            icon: 'error',
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                        return;
+                        }
 
                         Swal.fire({
                             title: 'Recipes Ready!',

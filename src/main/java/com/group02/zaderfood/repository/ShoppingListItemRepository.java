@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface ShoppingListItemRepository extends JpaRepository<ShoppingListItem, Integer> {
     List<ShoppingListItem> findByListId(Integer listId);
+    void deleteByListId(Integer listId);
 }

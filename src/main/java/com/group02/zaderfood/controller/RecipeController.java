@@ -102,6 +102,8 @@ public class RecipeController {
 
         boolean isActive = recipe.getStatus().equals(RecipeStatus.ACTIVE);
         
+        recipeService.calculateRecipeMacros(recipe);
+        
         model.addAttribute("isActive", isActive);
         model.addAttribute("recipe", recipe);
         model.addAttribute("reviews", reviews); // Danh sách comment
