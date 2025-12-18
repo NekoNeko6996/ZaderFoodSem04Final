@@ -34,4 +34,9 @@ public interface DailyMealPlanRepository extends JpaRepository<DailyMealPlan, In
            "WHERE d.createdAt >= :startDate " +
            "GROUP BY CAST(d.createdAt AS date) ORDER BY CAST(d.createdAt AS date)")
     List<Object[]> countMealPlansByDate(@Param("startDate") LocalDateTime startDate);
+    
+    List<DailyMealPlan> findByUserIdAndPlanDateBetween(Integer userId, LocalDate startDate, LocalDate endDate);
+
+    // [NEW] Tìm các plan từ ngày hiện tại trở đi (Để hiển thị chấm xanh trên lịch)
+    List<DailyMealPlan> findByUserIdAndPlanDateGreaterThanEqual(Integer userId, LocalDate date);
 }

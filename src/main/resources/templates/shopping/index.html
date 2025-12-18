@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/head :: common-head}">
+        <title>Shopping List</title>
+        <style>
+            /* Ẩn các phần không cần thiết khi in */
+            @media print {
+                header, nav, footer, .no-print, .toast-container {
+                    display: none !important;
+                }
+                body {
+                    background: white;
+                    color: black;
+                }
+                main {
+                    padding: 0;
+                    margin: 0;
+                    max-width: 100% !important;
+                }
+                .print-break-inside {
+                    break-inside: avoid;
+                }
+                /* Ép layout về 2 cột khi in giấy A4 để tiết kiệm giấy */
+                .print-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                }
+            }
+        </style>
+    </head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+
+    <body class="bg-smart-white font-display text-dark-ink">
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
+
+        <main class="container mx-auto px-4 py-8 max-w-5xl">
+            <h1 class="text-3xl font-black mb-2">My Shopping List</h1>
+            <p class="text-gray-500 mb-8">Generate your grocery list from your meal plan.</p>
+
+            <div class="bg-white rounded-xl shadow-soft p-6 mb-8 flex flex-col md:flex-row gap-4 items-center border border-gray-100">
+                <div class="flex-1 w-full">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Select Date Range</label>
+                    <div class="relative">
+                        <input type="text" id="dateRangePicker" class="w-full h-12 pl-10 pr-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Select dates...">
+                        <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400">date_range</span>
+                    </div>
+                </div>
+                <form id="generateForm" method="post" action="/shopping-list/generate" class="w-full md:w-auto">
+                    <input type=\"hidden\" name="dateRange" id="hiddenDateRange">
+                    <button type="button" onclick="submitGenerate()" class="w-full h-12 px-6 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition shadow-md flex items-center justify-center gap-2 mt-auto">
+                        <span class="material-symbols-outlined">shopping_cart_checkout</span>
+                        Get My List
+                    </button>
+                </form>
+            </div>
+
+            <div th:if="${currentListId != null}" class="flex flex-wrap justify-between items-center mb-6 gap-4 no-print">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xl font-bold text-dark-ink" th:text="${currentList.name}">Shopping List</h2>
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Active</span>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition shadow-sm">
+                        <span class="material-symbols-outlined">print</span> Print
+                    </button>
+
+                    <a th:href="@{/shopping-list/{id}/export(id=${currentListId})}" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition shadow-sm">
+                        <span class="material-symbols-outlined">table_view</span> Excel
+                    </a>
+
+                    <button onclick="sendEmail()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-sm">
+                        <span class="material-symbols-outlined">mail</span> Email
+                    </button>
+                </div>
+            </div>
+
+            <div th:if="${groupedItems != null}" id="shopping-list-container" class="animate-fade-in">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start print-grid">
+
+                    <div th:each="entry : ${groupedItems}" class="bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden print-break-inside">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-gray-400 text-lg">category</span>
+                                <h3 class="font-bold text-base text-dark-ink uppercase tracking-wide" th:text="${entry.key}">Meat</h3>
+                            </div>
+                            <span class="text-[10px] font-bold bg-white border border-gray-200 px-2 py-0.5 rounded text-gray-500" 
+                                  th:text="${entry.value.size()}">5</span>
+                        </div>
+
+                        <div class="divide-y divide-gray-50">
+                            <div th:each="item : ${entry.value}" class="p-3 flex items-start gap-3 hover:bg-gray-50 transition group">
+
+                                <label class="relative flex items-center cursor-pointer mt-1 no-print">
+                                    <input type="checkbox" 
+                                           class="peer h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary transition cursor-pointer"
+                                           th:checked="${item.isBought}"
+                                           th:onclick="'toggleItem(' + ${item.itemId} + ', this)'">
+                                </label>
+
+                                <div class="flex-1 transition-opacity duration-300" 
+                                     th:classappend="${item.isBought} ? 'opacity-40 line-through' : ''"
+                                     th:id="'text-' + ${item.itemId}">
+                                    <p class="font-bold text-sm text-dark-ink" th:text="${item.name}">Beef</p>
+                                    <p class="text-xs text-gray-500">
+                                        <span th:text="${#numbers.formatDecimal(item.quantity, 0, 1)}">200</span> 
+                                        <span th:text="${item.unit}">g</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div th:unless="${groupedItems != null}" class="text-center py-20 opacity-50">
+                <span class="material-symbols-outlined text-8xl text-gray-200">calendar_month</span>
+                <p class="text-gray-400 mt-4 text-lg">Select a date range above to generate your list.</p>
+            </div>
+
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script th:inline="javascript">
+                                // 1. Lấy dữ liệu từ Server
+                                const plannedDates = /*[[${plannedDates}]]*/ [];
+                                const savedFromDate = /*[[${fromDateStr}]]*/ null;
+                                const savedToDate = /*[[${toDateStr}]]*/ null;
+                                const currentListId = /*[[${currentListId}]]*/ null;
+
+                                // 2. Cấu hình ngày mặc định (nếu đã chọn trước đó)
+                                let defaultDates = [];
+                                if (savedFromDate && savedToDate) {
+                                    defaultDates = [savedFromDate, savedToDate];
+                                }
+
+                                // 3. Khởi tạo Flatpickr
+                                flatpickr("#dateRangePicker", {
+                                    mode: "range",
+                                    dateFormat: "Y-m-d",
+                                    altInput: true,
+                                    altFormat: "F j, Y",
+                                    minDate: "today",
+                                    defaultDate: defaultDates, // [QUAN TRỌNG] Set lại ngày đã chọn
+                                    onDayCreate: function (dObj, dStr, fp, dayElem) {
+                                        // Highlight ngày có plan bằng chấm xanh
+                                        // Cần múi giờ chuẩn để tránh lệch ngày
+                                        const dateStr = dayElem.dateObj.toLocaleDateString('en-CA'); // Format YYYY-MM-DD chuẩn quốc tế
+                                        if (plannedDates.includes(dateStr)) {
+                                            dayElem.classList.add("has-plan");
+                                            dayElem.innerHTML += "<span class='plan-dot'></span>";
+                                        }
+                                    }
+                                });
+
+                                // 4. Các hàm xử lý sự kiện
+                                function submitGenerate() {
+                                    const range = document.getElementById("dateRangePicker").value;
+                                    if (!range || !range.includes(" to ")) {
+                                        // Dùng Toast hoặc Alert tùy bạn (ở đây alert cho đơn giản nếu chưa có Toast)
+                                        if (typeof ZaderToast !== 'undefined') {
+                                            ZaderToast.error("Please select both start and end dates.");
+                                        } else {
+                                            alert("Please select both start and end dates.");
+                                        }
+                                        return;
+                                    }
+                                    document.getElementById("hiddenDateRange").value = range;
+                                    document.getElementById("generateForm").submit();
+                                }
+
+                                function toggleItem(itemId, checkbox) {
+                                    const textDiv = document.getElementById('text-' + itemId);
+                                    if (checkbox.checked) {
+                                        textDiv.classList.add('opacity-40', 'line-through');
+                                    } else {
+                                        textDiv.classList.remove('opacity-40', 'line-through');
+                                    }
+                                    fetch('/shopping-list/api/check?itemId=' + itemId, {method: 'POST'});
+                                }
+
+                                function sendEmail() {
+                                    if (!currentListId)
+                                        return;
+
+                                    if (typeof ZaderToast !== 'undefined')
+                                        ZaderToast.loading("Sending email...");
+
+                                    fetch(`/shopping-list/${currentListId}/email`, {method: 'POST'})
+                                            .then(res => {
+                                                if (res.ok) {
+                                                    if (typeof ZaderToast !== 'undefined')
+                                                        ZaderToast.success("Email sent!");
+                                                } else {
+                                                    if (typeof ZaderToast !== 'undefined')
+                                                        ZaderToast.error("Failed to send email.");
+                                                }
+                                            })
+                                            .catch(() => {
+                                                if (typeof ZaderToast !== 'undefined')
+                                                    ZaderToast.error("Connection error.");
+                                            });
+                                }
+        </script>
+        <style>
+            /* Style cho chấm xanh trên lịch */
+            .plan-dot {
+                position: absolute;
+                bottom: 2px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 4px;
+                height: 4px;
+                background-color: #10B981; /* Green-500 */
+                border-radius: 50%;
+            }
+            .has-plan {
+                font-weight: bold;
+            }
+        </style>
+    </body>
+</html>
