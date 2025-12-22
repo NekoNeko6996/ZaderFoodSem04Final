@@ -76,6 +76,18 @@
                         </button>
                     </div>
 
+                    <div id="message-alert" class="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 p-2 rounded-xl flex items-start gap-3 hidden">
+                        <div class="bg-white p-2 rounded-full shadow-sm text-purple-600">
+                            <span class="material-symbols-outlined">hourglass_top</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-purple-900 text-sm">AI Generated Content</h4>
+                            <p class="text-xs text-purple-700 mt-1">
+                                AI is analyzing the dish you submitted; this process may take up to 2-3 minutes, please wait a moment.
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="flex flex-col sm:flex-row gap-4">
                         <div class="relative flex-1">
                             <input id="textInput" class="w-full rounded-xl bg-background-light border-transparent focus:border-nutri-green focus:bg-white focus:ring-0 text-dark-ink h-14 pl-5 pr-12 text-lg transition-all placeholder:text-gray-400" placeholder="E.g., Grilled salmon with asparagus..." />
@@ -127,6 +139,12 @@
                                 <span id="resFat" class="text-3xl font-black text-dark-ink group-hover:scale-105 transition-transform">0g</span>
                             </div>
                         </div>
+                        <div class="w-100 flex justify-end">
+                            <button onclick="saveCurrentRecipe()" class="flex items-center gap-2 px-4 mt-3 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg font-bold transition text-sm">
+                                <span class="material-symbols-outlined text-lg">bookmark_add</span>
+                                Save Ai Recipe
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-2">
@@ -167,6 +185,8 @@
         </main>
     </div>
 
+    <div th:replace="~{fragments/toast :: toast-system}"></div>
+
     <script>
         // --- 1. Variables & Elements ---
         const dropZone = document.getElementById('drop-zone');
@@ -179,6 +199,8 @@
         const btnText = document.getElementById('btnText');
         const btnLoader = document.getElementById('btnLoader');
         const resultsSection = document.getElementById('resultsSection');
+
+        let currentAiData = null;
 
         // --- 2. Image Handling Logic ---
         dropZone.addEventListener('click', (e) => {
@@ -213,7 +235,7 @@
                 if (typeof Swal !== 'undefined')
                     Swal.fire('Error', 'Invalid file type! Please upload PNG or JPG.', 'error');
                 else
-                    alert("Invalid file type!");
+                    ZaderToast.error("Invalid file type!");
                 return;
             }
             const reader = new FileReader();
@@ -238,17 +260,19 @@
         async function analyzeFood() {
             const userText = textInput.value.trim();
             const fileInput = document.getElementById('imageInput');
+            const message_alert = document.getElementById("message-alert");
 
             if (!userText && (!fileInput.files || fileInput.files.length === 0)) {
                 if (typeof Swal !== 'undefined')
                     Swal.fire('Warning', 'Please enter food name or upload an image.', 'warning');
                 else
-                    alert("Please enter food name or upload an image.");
+                    ZaderToast.error("Please enter food name or upload an image.");
                 return;
             }
 
             setLoading(true);
             resultsSection.classList.add('hidden');
+            message_alert.classList.remove("hidden");
 
             const formData = new FormData();
             if (userText)
@@ -261,11 +285,14 @@
                 const response = await fetch('/api/ai/analyze', {method: 'POST', body: formData});
                 if (!response.ok)
                     throw new Error("Server error");
+                
+                message_alert.classList.add("hidden");
 
                 const resultData = await response.json();
                 if (resultData.error) {
                     alert(resultData.error);
                 } else {
+                    currentAiData = resultData;
                     renderResults(resultData);
                     saveToHistory(resultData);
                 }
@@ -274,7 +301,7 @@
                 if (typeof Swal !== 'undefined')
                     Swal.fire('Error', 'Could not analyze. Please try again.', 'error');
                 else
-                    alert("Could not analyze.");
+                    ZaderToast.error("Could not analyze.");
             } finally {
                 setLoading(false);
             }
@@ -351,6 +378,57 @@
                         <span class="text-xs text-soft-grey">kcal</span>
                     </div>
                 </div>`).join('');
+        }
+
+        function saveCurrentRecipe() {
+            if (!currentAiData) {
+                if (typeof ZaderToast !== 'undefined')
+                    ZaderToast.error("No data to save!");
+                return;
+            }
+
+            // [FIX] Kiểm tra xem có ảnh preview không trước khi lấy src
+            let imageUrlToSave = 'https://placehold.co/600x400?text=AI+Food'; // Ảnh mặc định
+            const imgElem = previewImage;
+
+            // Chỉ lấy src nếu thẻ tồn tại và không bị ẩn (có chứa ảnh thật)
+            if (imgElem && imgElem.src && !imgElem.src.includes('placehold.co') && !imgElem.classList.contains('hidden')) {
+                imageUrlToSave = imgElem.src;
+            }
+
+            // Hiệu ứng loading
+            if (typeof ZaderToast !== 'undefined')
+                var toastloadingid = ZaderToast.loading("Saving to your favorites...");
+
+            // Chuẩn bị payload
+            const payload = {
+                data: currentAiData,
+                imageUrl: imageUrlToSave
+            };
+
+            // Gọi API
+            fetch('/ai-tools/save-recipe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+                    .then(response => {
+                        if (!response.ok)
+                            throw new Error("Failed to save");
+                        ZaderToast.remove(toastloadingid);
+                        return response.json();
+                    })
+                    .then(result => {
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.success("Saved successfully!");
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.error("Error saving recipe.");
+                    });
         }
 
         window.onload = loadHistory;
