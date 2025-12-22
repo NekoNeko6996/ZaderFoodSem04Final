@@ -23,12 +23,21 @@ import java.util.Map;
 import org.springframework.web.client.RestClientException;
 
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
+import com.group02.zaderfood.entity.AiSavedRecipes;
+import com.group02.zaderfood.entity.CollectionItem;
 import com.group02.zaderfood.entity.Recipe;
+import com.group02.zaderfood.entity.RecipeCollection;
+import com.group02.zaderfood.repository.AiSavedRecipeRepository;
+import com.group02.zaderfood.repository.CollectionItemRepository;
+import com.group02.zaderfood.repository.RecipeCollectionRepository;
 import com.group02.zaderfood.repository.RecipeRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AiFoodService {
@@ -38,6 +47,15 @@ public class AiFoodService {
 
     @Value("${ollama.host.url}") // Lấy từ application.properties
     private String ollamaUrl;
+
+    @Autowired
+    private AiSavedRecipeRepository aiRecipeRepo;
+    @Autowired
+    private RecipeCollectionRepository collectionRepo;
+    @Autowired
+    private CollectionItemRepository collectionItemRepo;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper()
@@ -269,12 +287,14 @@ public class AiFoodService {
         try {
             // --- PROMPT ĐƯỢC NÂNG CẤP ---
             String promptText = String.format(
-                    "Role: Professional Chef & Nutritionist.\n" +
-                    "Input: User's Pantry: [%s]. User Profile: %s.\n" +
-                    "Task: Create EXACTLY 3 to 4 unique recipes.\n" +
-                    "Constraints:\n" +
-                    "1. OUTPUT RAW JSON ARRAY ONLY. NO Intro text. NO Note at the end. NO Markdown (```json).\n" + // Nhấn mạnh RAW JSON
-                    "2. Structure must be a SINGLE Array of Objects: [ { ... }, { ... } ]\n" + // Nhấn mạnh Single Array
+                    "Role: Professional Chef & Nutritionist.\n"
+                    + "Input: User's Pantry: [%s]. User Profile: %s.\n"
+                    + "Task: Create EXACTLY 3 to 4 unique recipes.\n"
+                    + "Constraints:\n"
+                    + "1. OUTPUT RAW JSON ARRAY ONLY. NO Intro text. NO Note at the end. NO Markdown (```json).\n"
+                    + // Nhấn mạnh RAW JSON
+                    "2. Structure must be a SINGLE Array of Objects: [ { ... }, { ... } ]\n"
+                    + // Nhấn mạnh Single Array
                     "3. Required Fields: name, description, ingredientsList, stepsList, timeMin, calories, servings, matchPercentage, missingCount.\n"
                     + "Output Structure:\n"
                     + "[ \n"
@@ -360,5 +380,90 @@ public class AiFoodService {
         }
 
         return text.substring(start, end + 1);
+    }
+
+    @Transactional
+    public void saveAiRecipeToCollection(Integer userId, AiFoodResponse aiData, String imageUrl) {
+        // 1. CHUẨN HÓA DỮ LIỆU
+        // Xử lý Time: "12 minutes" -> 12
+        Integer timeMin = 0;
+        try {
+            String timeStr = aiData.getTime().replaceAll("[^0-9]", "");
+            timeMin = timeStr.isEmpty() ? 0 : Integer.parseInt(timeStr);
+        } catch (Exception e) {
+        }
+
+        if (imageUrl != null && imageUrl.startsWith("data:image")) {
+            // Nếu là base64 -> Lưu thành file -> Lấy đường dẫn ngắn (/uploads/xyz.jpg)
+            imageUrl = fileStorageService.storeBase64(imageUrl);
+        }
+
+        // Xử lý Macros: "18g" -> 18.0
+        BigDecimal protein = parseMacro(aiData.getProtein());
+        BigDecimal carbs = parseMacro(aiData.getCarbs());
+        BigDecimal fat = parseMacro(aiData.getFat());
+
+        // Gộp mảng thành chuỗi
+        String ingText = String.join("\n", aiData.getIngredients());
+        String stepText = String.join("\n", aiData.getInstructions());
+
+        // 2. LƯU VÀO BẢNG AiSavedRecipes
+        AiSavedRecipes savedRecipe = AiSavedRecipes.builder()
+                .userId(userId)
+                .name(aiData.getDishName())
+                .description("AI Generated Recipe") // Có thể update AI để trả về description sau
+                .ingredientsText(ingText)
+                .stepsText(stepText)
+                .timeMinutes(timeMin)
+                .totalCalories(BigDecimal.valueOf(aiData.getCalories()))
+                .servings(1) // Mặc định
+                .imageUrl(imageUrl)
+                .build();
+
+        savedRecipe = aiRecipeRepo.save(savedRecipe);
+
+        // 3. XỬ LÝ COLLECTION "Ai Chef Favorites"
+        String collectionName = "Ai Chef Favorites";
+        RecipeCollection collection = collectionRepo.findByUserIdAndName(userId, collectionName)
+                .orElse(null);
+
+        if (collection == null) {
+            // Tạo mới nếu chưa có
+            collection = RecipeCollection.builder()
+                    .userId(userId)
+                    .name(collectionName)
+                    .isPublic(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .isDeleted(false)
+                    .build();
+            collection = collectionRepo.save(collection);
+        }
+
+        // 4. LIÊN KẾT VÀO COLLECTION (CollectionItems)
+        // Kiểm tra xem đã tồn tại trong collection chưa (tránh duplicate)
+        boolean exists = collectionItemRepo.existsByCollectionIdAndAiRecipeId(collection.getCollectionId(), savedRecipe.getAiRecipeId());
+
+        if (!exists) {
+            CollectionItem item = CollectionItem.builder()
+                    .collectionId(collection.getCollectionId())
+                    .aiRecipeId(savedRecipe.getAiRecipeId()) // Liên kết ID của AI Recipe
+                    .recipeId(null) // Cái này null vì đây là món AI, không phải Recipe thường
+                    .addedAt(LocalDateTime.now())
+                    .build();
+            collectionItemRepo.save(item);
+        }
+    }
+
+    // Hàm phụ trợ parse "18g" -> 18.0
+    private BigDecimal parseMacro(String val) {
+        if (val == null) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(val.replaceAll("[^0-9.]", ""));
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
     }
 }

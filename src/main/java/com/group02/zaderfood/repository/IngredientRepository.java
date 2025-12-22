@@ -27,4 +27,6 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Integer>
             Pageable pageable);
     
     List<Ingredient> findByIsActiveTrue();
+    
+    List<Ingredient> findByIsActiveFalseOrderByCreatedAtDesc();
 }

@@ -27,4 +27,6 @@ public interface CollectionItemRepository extends JpaRepository<CollectionItem, 
     List<CollectionItem> findByCollectionId(Integer collectionId);
   
     Optional<CollectionItem> findByCollectionIdAndAiRecipeId(Integer collectionId, Integer aiRecipeId);
+    
+    boolean existsByCollectionIdAndAiRecipeId(Integer collectionId, Integer aiRecipeId);
 }
