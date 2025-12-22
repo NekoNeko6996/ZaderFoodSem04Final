@@ -30,6 +30,12 @@
                        th:classappend="${currentUri != null && currentUri.contains('/recipes/pending')} ? 'bg-green-50 text-green-600 font-bold' : 'hover:bg-gray-100'">
                         <span class="material-symbols-outlined">restaurant_menu</span> Recipes Pending
                     </a>
+                    
+                    <a th:href="@{/admin/ingredient/pending}" 
+                       class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                       th:classappend="${currentUri != null && currentUri.contains('/ingredient/pending')} ? 'bg-green-50 text-green-600 font-bold' : 'hover:bg-gray-100'">
+                        <span class="material-symbols-outlined">grocery</span> Ingredients Pending
+                    </a>
 
                     <a th:href="@{/admin/ingredients}" 
                        class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"

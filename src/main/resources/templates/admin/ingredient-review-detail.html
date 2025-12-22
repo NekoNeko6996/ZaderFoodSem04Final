@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" class="light" lang="en">
+    <head>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title>Review Ingredient - Zader Admin</title>
+</head>
+<body class="bg-gray-50 font-display text-dark-ink">
+    <div class="flex h-screen overflow-hidden">
+        <div th:replace="~{fragments/sidebar_nutritionist :: sidebar}"></div>
+
+        <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+            <main class="w-full grow p-6">
+
+                <div class="max-w-4xl mx-auto mb-6">
+                    <a href="/admin/ingredient/pending" class="text-gray-500 hover:text-dark-ink flex items-center gap-1 text-sm font-bold mb-4">
+                        <span class="material-symbols-outlined text-sm">arrow_back</span> Back to List
+                    </a>
+                    <h1 class="text-3xl font-black text-dark-ink">Review Ingredient Data</h1>
+                </div>
+
+                <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+                    <form th:action="@{/admin/ingredient/approve/{id}(id=${ingredient.ingredientId})}" method="post">
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-0">
+                            <div class="md:col-span-1 bg-gray-50 p-6 border-r border-gray-100 flex flex-col items-center text-center">
+                                <div class="w-40 h-40 rounded-xl bg-white border border-gray-200 overflow-hidden shadow-sm mb-4">
+                                    <img th:src="${ingredient.imageUrl != null ? ingredient.imageUrl : 'https://placehold.co/300?text=No+Img'}" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">User Uploaded Image</span>
+                            </div>
+
+                            <div class="md:col-span-2 p-8">
+                                <div class="space-y-6">
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                                            <input type="text" name="name" th:value="${ingredient.name}" required
+                                                   class="w-full px-3 py-2 rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500 text-sm font-bold">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                                            <select name="categoryId" class="w-full px-3 py-2 rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500 text-sm">
+                                                <option th:each="cat : ${categories}" 
+                                                        th:value="${cat.categoryId}" 
+                                                        th:text="${cat.name}"
+                                                        th:selected="${cat.categoryId == ingredient.categoryId}"></option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Standard Unit</label>
+                                        <input type="text" name="baseUnit" th:value="${ingredient.baseUnit}" placeholder="e.g. g, ml, pcs" required
+                                               class="w-full px-3 py-2 rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500 text-sm">
+                                        <p class="text-xs text-gray-400 mt-1">Usually 'g' for solids, 'ml' for liquids.</p>
+                                    </div>
+
+                                    <div class="bg-green-50/50 p-4 rounded-xl border border-green-100">
+                                        <h3 class="text-sm font-bold text-green-800 mb-3 flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm">nutrition</span> Nutrition per 100g (or per unit)
+                                        </h3>
+                                        <div class="grid grid-cols-4 gap-3">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Calories</label>
+                                                <input type="number" step="0.1" name="calories" th:value="${ingredient.caloriesPer100g}" 
+                                                       class="w-full px-2 py-1.5 rounded border-gray-300 text-sm font-bold text-center">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Protein</label>
+                                                <input type="number" step="0.1" name="protein" th:value="${ingredient.protein}" 
+                                                       class="w-full px-2 py-1.5 rounded border-gray-300 text-sm font-bold text-center text-blue-600">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Carbs</label>
+                                                <input type="number" step="0.1" name="carbs" th:value="${ingredient.carbs}" 
+                                                       class="w-full px-2 py-1.5 rounded border-gray-300 text-sm font-bold text-center text-yellow-600">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fat</label>
+                                                <input type="number" step="0.1" name="fat" th:value="${ingredient.fat}" 
+                                                       class="w-full px-2 py-1.5 rounded border-gray-300 text-sm font-bold text-center text-red-600">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-between items-center">
+                            <button type="button" onclick="confirmReject()" 
+                                    class="text-red-600 hover:text-red-800 font-bold text-sm px-4 py-2 hover:bg-red-50 rounded-lg transition">
+                                Reject & Delete
+                            </button>
+
+                            <button type="submit" 
+                                    class="bg-green-600 text-white font-bold text-sm px-6 py-2.5 rounded-lg shadow-sm hover:bg-green-700 transition flex items-center gap-2">
+                                <span class="material-symbols-outlined text-lg">check_circle</span> Approve & Publish
+                            </button>
+                        </div>
+                    </form>
+
+                    <form id="rejectForm" th:action="@{/admin/ingredient/reject/{id}(id=${ingredient.ingredientId})}" method="post"></form>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        function confirmReject() {
+            Swal.fire({
+                title: 'Reject Ingredient?',
+                text: "This will permanently delete the user's request.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('rejectForm').submit();
+                }
+            })
+        }
+    </script>
+</body>
+</html>

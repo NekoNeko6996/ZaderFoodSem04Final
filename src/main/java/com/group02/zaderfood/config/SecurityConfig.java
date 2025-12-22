@@ -52,7 +52,7 @@ public class SecurityConfig {
                 // Dùng /** để bao gồm cả các action con như /add, /delete
                 .requestMatchers("/admin/ingredients/**", "/admin/categories/**", "/admin/dashboard").hasAnyRole("ADMIN", "NUTRITIONIST")
                 // 2. Các trang Nutritionist khác (nếu có, ví dụ duyệt bài)
-                .requestMatchers("/nutritionist/**").hasAnyRole("ADMIN", "NUTRITIONIST")
+                .requestMatchers("/nutritionist/**", "/admin/ingredient/**").hasAnyRole("ADMIN", "NUTRITIONIST")
                 // 3. Rule tổng quát cho Admin đứng cuối cùng trong nhóm admin
                 // Tất cả các trang /admin/... còn lại chỉ dành cho ADMIN
                 .requestMatchers("/admin/**").hasRole("ADMIN")
