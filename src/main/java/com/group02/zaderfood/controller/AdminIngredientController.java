@@ -2,9 +2,13 @@ package com.group02.zaderfood.controller;
 
 import com.group02.zaderfood.dto.IngredientInputDTO;
 import com.group02.zaderfood.entity.Ingredient;
+import com.group02.zaderfood.entity.IngredientCategory;
 import com.group02.zaderfood.entity.User;
+import com.group02.zaderfood.repository.IngredientCategoryRepository;
+import com.group02.zaderfood.repository.IngredientRepository;
 import com.group02.zaderfood.repository.UserRepository;
 import com.group02.zaderfood.service.AdminIngredientService;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -14,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,6 +31,10 @@ public class AdminIngredientController {
     private AdminIngredientService adminService;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private IngredientRepository ingredientRepo;
+    @Autowired
+    private IngredientCategoryRepository categoryRepo;
 
     // --- 1. TRANG QUẢN LÝ NGUYÊN LIỆU ---
     @GetMapping("/ingredients")
@@ -187,5 +196,75 @@ public class AdminIngredientController {
             // In lỗi ra console server để debug
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
+    }
+
+    @GetMapping("/ingredient/pending")
+    public String viewPendingIngredients(Model model) {
+        List<Ingredient> pendingList = ingredientRepo.findByIsActiveFalseOrderByCreatedAtDesc();
+        model.addAttribute("ingredients", pendingList);
+        return "admin/ingredient-pending-list";
+    }
+
+    // 2. XEM CHI TIẾT ĐỂ DUYỆT
+    @GetMapping("/ingredient/review/{id}")
+    public String reviewIngredient(@PathVariable Integer id, Model model) {
+        Ingredient ingredient = ingredientRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid Id:" + id));
+
+        List<IngredientCategory> categories = categoryRepo.findAll();
+
+        model.addAttribute("ingredient", ingredient);
+        model.addAttribute("categories", categories);
+        return "admin/ingredient-review-detail";
+    }
+
+    // 3. XỬ LÝ DUYỆT (APPROVE) - Cập nhật thông tin & Set Active = true
+    @PostMapping("/ingredient/approve/{id}")
+    public String approveIngredient(@PathVariable Integer id,
+            @RequestParam String name,
+            @RequestParam Integer categoryId,
+            @RequestParam BigDecimal calories,
+            @RequestParam BigDecimal protein,
+            @RequestParam BigDecimal carbs,
+            @RequestParam BigDecimal fat,
+            @RequestParam String baseUnit,
+            RedirectAttributes ra) {
+        try {
+            Ingredient ing = ingredientRepo.findById(id).orElseThrow();
+
+            // Cập nhật thông tin chuẩn hóa từ chuyên gia
+            ing.setName(name);
+            ing.setCategoryId(categoryId);
+            ing.setCaloriesPer100g(calories);
+            ing.setProtein(protein);
+            ing.setCarbs(carbs);
+            ing.setFat(fat);
+            ing.setBaseUnit(baseUnit);
+
+            ing.setIsActive(true); // KÍCH HOẠT
+
+            ingredientRepo.save(ing);
+
+            ra.addFlashAttribute("message", "Ingredient approved successfully!");
+            ra.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            ra.addFlashAttribute("message", "Error approving: " + e.getMessage());
+            ra.addFlashAttribute("messageType", "error");
+        }
+        return "redirect:/admin/ingredient/pending";
+    }
+
+    // 4. TỪ CHỐI (REJECT) - Xóa khỏi DB
+    @PostMapping("/ingredient/reject/{id}")
+    public String rejectIngredient(@PathVariable Integer id, RedirectAttributes ra) {
+        try {
+            ingredientRepo.deleteById(id); // Xóa cứng vì nguyên liệu rác chưa dùng ở đâu
+            ra.addFlashAttribute("message", "Ingredient rejected and deleted.");
+            ra.addFlashAttribute("messageType", "warning");
+        } catch (Exception e) {
+            ra.addFlashAttribute("message", "Error rejecting: " + e.getMessage());
+            ra.addFlashAttribute("messageType", "error");
+        }
+        return "redirect:/admin/ingredient/pending";
     }
 }

@@ -111,7 +111,7 @@ public class AdminRecipeController {
         ra.addFlashAttribute("message", "Recipe has been approved and published!");
         ra.addFlashAttribute("messageType", "success");
 
-        return "redirect:/admin/recipes/pending";
+        return "redirect:/nutritionist/recipes/pending";
     }
 
     // 5. POST: Từ chối công thức
@@ -123,7 +123,7 @@ public class AdminRecipeController {
         ra.addFlashAttribute("message", "Recipe has been rejected and removed.");
         ra.addFlashAttribute("messageType", "success"); // Hoặc dùng 'error' nếu muốn hiện màu đỏ
 
-        return "redirect:/admin/recipes/pending";
+        return "redirect:/nutritionist/recipes/pending";
     }
 
     // 6
