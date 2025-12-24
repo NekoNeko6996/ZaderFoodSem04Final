@@ -295,4 +295,27 @@ public class RecipeController {
     public String showThankYouPage() {
         return "recipe-thank-you";
     }
+    
+    @GetMapping("/my-recipes")
+    public String viewMyRecipes(Model model,
+                                @AuthenticationPrincipal CustomUserDetails user,
+                                @RequestParam(required = false) String keyword,
+                                @RequestParam(required = false) RecipeStatus status) {
+        
+        if (user == null) return "redirect:/login";
+
+        // 1. Lấy danh sách món ăn của user
+        List<Recipe> myRecipes = recipeService.getMyRecipes(user.getUserId(), keyword, status);
+        
+        // 2. Đẩy dữ liệu ra view
+        model.addAttribute("recipes", myRecipes);
+        
+        
+        // 3. Giữ lại trạng thái filter để hiển thị trên UI
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("currentStatus", status);
+        model.addAttribute("allStatuses", RecipeStatus.values()); // Để đổ vào dropdown
+
+        return "recipe/my-recipes"; // Tên file HTML sẽ tạo
+    }
 }

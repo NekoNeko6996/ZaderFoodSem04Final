@@ -55,6 +55,8 @@ public class RecipeService {
 
     @Transactional
     public void createFullRecipe(RecipeCreationDTO form, int userId, boolean isNutritionist) {
+        BigDecimal calculatedTotalCalories = BigDecimal.ZERO;
+        
         // 1. RECIPES 
         Recipe recipe = new Recipe();
         recipe.setName(form.getName());
@@ -80,7 +82,7 @@ public class RecipeService {
 
         // 2. LƯU NGUYÊN LIỆU (Xử lý tách Mới/Cũ) [cite: 18, 145]
         for (IngredientInputDTO input : form.getIngredients()) {
-            Integer finalIngredientId = null;
+            Ingredient currentIngredient = null;
 
             if (Boolean.TRUE.equals(input.getIsNewIngredient())) {
                 // --- TRƯỜNG HỢP A: NGUYÊN LIỆU MỚI (User tự nhập) ---
@@ -102,25 +104,41 @@ public class RecipeService {
                 newIng.setCreatedByUserId(userId);
 
                 // Lưu nguyên liệu mới xuống DB
-                Ingredient savedIng = ingredientRepository.save(newIng);
-                finalIngredientId = savedIng.getIngredientId();
+                currentIngredient = ingredientRepository.save(newIng);
             } else {
-                // --- TRƯỜNG HỢP B: NGUYÊN LIỆU CÓ SẴN ---
-                finalIngredientId = input.getExistingIngredientId();
+                if (input.getExistingIngredientId() != null) {
+                    currentIngredient = ingredientRepository.findById(input.getExistingIngredientId())
+                            .orElse(null);
+                }
             }
 
             // 3. TẠO LIÊN KẾT (Recipe - Ingredient) vào bảng RecipeIngredients [cite: 5]
-            if (finalIngredientId != null) {
+            if (currentIngredient != null) {
+                // A. Tạo liên kết
                 RecipeIngredient link = new RecipeIngredient();
                 link.setRecipeId(savedRecipe.getRecipeId());
-                link.setIngredientId(finalIngredientId);
+                link.setIngredientId(currentIngredient.getIngredientId());
                 link.setQuantity(input.getQuantity());
                 link.setUnit(input.getUnit());
                 link.setNote(input.getNote());
 
                 recipeIngredientRepository.save(link);
+
+                // B. [NEW] Tính toán Calo cộng dồn (Logic giống hàm calculateRecipeMacros)
+                BigDecimal quantity = input.getQuantity() != null ? input.getQuantity() : BigDecimal.ZERO;
+                BigDecimal calsPer100 = currentIngredient.getCaloriesPer100g() != null ? currentIngredient.getCaloriesPer100g() : BigDecimal.ZERO;
+                
+                // Tỉ lệ = Số lượng / 100
+                BigDecimal ratio = quantity.divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+                // Calo món này = Calo/100g * Tỉ lệ
+                BigDecimal itemCals = calsPer100.multiply(ratio);
+                
+                calculatedTotalCalories = calculatedTotalCalories.add(itemCals);
             }
         }
+        
+        savedRecipe.setTotalCalories(calculatedTotalCalories.setScale(0, RoundingMode.HALF_UP));
+        recipeRepository.save(savedRecipe);
 
         // 4. LƯU CÁC BƯỚC NẤU (STEPS) [cite: 5]
         // Lưu ý: Trong DTO form.steps nên là List<String> instruction
@@ -139,6 +157,7 @@ public class RecipeService {
                 }
             }
         }
+        
     }
 
     public List<Recipe> findRecipesByIngredientIds(List<Integer> ingredientIds) {
@@ -340,5 +359,9 @@ public class RecipeService {
         if (recipe.getTotalCalories() == null || recipe.getTotalCalories().compareTo(BigDecimal.ZERO) == 0) {
             recipe.setTotalCalories(calculatedCalories.setScale(0, RoundingMode.HALF_UP));
         }
+    }
+    
+    public List<Recipe> getMyRecipes(Integer userId, String keyword, RecipeStatus status) {
+        return recipeRepository.searchUserRecipes(userId, keyword, status);
     }
 }

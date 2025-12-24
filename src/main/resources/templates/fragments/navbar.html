@@ -103,6 +103,10 @@
                                 <a th:href="@{/user/favorites}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">favorite</span> My Favorites
                                 </a>
+                                
+                                <a th:href="@{/recipes/my-recipes}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                    <span class="material-symbols-outlined text-lg">nutrition</span> My Request Recipe
+                                </a>
 
                                 <a th:href="@{/user/settings}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <span class="material-symbols-outlined text-lg">settings</span> Personal Settings
@@ -153,6 +157,8 @@
                     <a th:href="@{/ai-tools/calorie-estimator}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">AI Calories</a>
                     
                     <a th:href="@{/shopping-list}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">My SHopping List</a>
+                    <a th:href="@{/recipes/my-recipes}" class="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-dark-ink dark:text-white">My Request Recipe</a>
+                    
 
                     <div sec:authorize="!isAuthenticated()" class="grid grid-cols-2 gap-3 mt-2 pt-3 border-t border-border-color">
                         <a th:href="@{/login}" class="text-center p-2.5 rounded-lg border border-border-color font-bold text-dark-ink">Log In</a>
