@@ -10,40 +10,55 @@
             <main class="px-4 md:px-10 lg:px-20 xl:px-40 flex flex-1 justify-center py-5 md:py-10">
                 <div class="layout-content-container flex flex-col w-full max-w-[1200px] flex-1">
 
-                    <div class="flex flex-col items-center justify-center text-center p-8 mb-6 bg-white rounded-xl shadow-sm border border-border-light">
+                    <div class="flex flex-col items-center justify-center text-center p-8 mb-6 bg-white rounded-xl shadow-sm border border-gray-100">
                         <div class="bg-blue-100 text-blue-600 p-3 rounded-full mb-4">
                             <span class="material-symbols-outlined text-3xl">folder_shared</span>
                         </div>
                         <h1 class="text-3xl font-black text-dark-ink mb-2" th:text="${collection.name}">Collection Name</h1>
-                        <p class="text-soft-grey">Shared Collection • <span th:text="${#lists.size(recipes)}">0</span> items</p>
-                        <p class="text-xs text-soft-grey mt-1">Created on <span th:text="${#temporals.format(collection.createdAt, 'dd MMM, yyyy')}">Date</span></p>
+
+                        <p class="text-soft-grey">Shared Collection • <span th:text="${#lists.size(items)}">0</span> items</p>
+
+                        <p class="text-xs text-soft-grey mt-1">Created on <span th:text="${#temporals.format(collection.createdAt, 'dd MMM yyyy')}">Date</span></p>
                     </div>
 
-                    <div th:if="${not #lists.isEmpty(recipes)}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <div th:each="recipe : ${recipes}" class="flex flex-col rounded-xl bg-card-white shadow-soft overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                            <div class="bg-cover bg-center h-48"
-                                 th:style="|background-image: url('${recipe.imageUrl != null ? recipe.imageUrl : '/images/default-food.jpg'}')|">
+                        <div th:each="item : ${items}" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
+
+                            <div class="h-48 w-full bg-cover bg-center relative"
+                                 th:style="|background-image: url('${item.imageUrl != null ? item.imageUrl : '/images/default-food.jpg'}')|">
+
+                                <div th:if="${item.isAi}" class="absolute top-2 right-2 bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[12px]">smart_toy</span> AI Chef
+                                </div>
                             </div>
 
                             <div class="p-4 flex flex-col flex-grow">
-                                <h3 class="font-bold text-lg text-dark-ink mb-1 truncate" th:text="${recipe.name}">Name</h3>
+                                <h3 class="font-bold text-lg text-dark-ink mb-1 truncate" th:text="${item.name}">Name</h3>
 
-                                <div class="mt-auto text-xs text-soft-grey flex flex-wrap gap-2 items-center mb-3">
-                                    <span class="font-bold text-dark-ink" th:text="|${recipe.totalCalories} Kcal|"></span>
+                                <div class="mt-auto text-xs text-gray-500 flex flex-wrap gap-2 items-center mb-4">
+                                    <span class="font-bold text-gray-700" th:text="|${item.calories} Kcal|"></span>
                                     <span>•</span>
-                                    <span th:text="|${recipe.cookTimeMin + recipe.prepTimeMin} Min|"></span>
+                                    <span th:text="|${item.timeMin} Min|"></span>
+                                    <span>•</span>
+                                    <span th:text="${item.difficulty}" 
+                                          th:class="${item.isAi} ? 'text-purple-600 font-medium' : 'text-green-600'"></span>
                                 </div>
 
-                                <a th:href="@{/recipes/detail/{id}(id=${recipe.recipeId})}"
-                                   class="w-full text-center text-white bg-nutri-green hover:bg-nutri-green/90 font-bold py-2 rounded-lg text-sm transition-colors">
-                                    View Recipe
+                                <a th:href="${item.isAi} 
+                                   ? @{/user/favorites/ai-detail/{id}(id=${item.id}, collectionId=${collection.collectionId})} 
+                                   : @{/recipes/detail/{id}(id=${item.id})}"
+                                   class="w-full text-center text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-sm flex items-center justify-center gap-2"
+                                   th:classappend="${item.isAi} ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-600 hover:bg-green-700'">
+
+                                    <span class="material-symbols-outlined text-lg" th:text="${item.isAi ? 'smart_toy' : 'menu_book'}"></span>
+                                    <span th:text="${item.isAi ? 'View AI Recipe' : 'View Recipe'}">View</span>
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <div th:if="${#lists.isEmpty(recipes)}" class="text-center py-10 text-soft-grey">
+                    <div th:if="${#lists.isEmpty(items)}" class="text-center py-10 text-soft-grey">
                         <p>This collection is empty.</p>
                     </div>
 

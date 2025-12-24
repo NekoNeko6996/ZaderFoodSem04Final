@@ -162,25 +162,51 @@
                             Please <a th:href="@{/login}" class="font-bold underline">login</a> to write a review.
                         </div>
 
-                        <div class="flex flex-col gap-6">
-                            <div th:each="rv : ${reviews}" class="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="h-10 w-10 rounded-full bg-smart-mist flex items-center justify-center text-soft-grey font-bold">
-                                        <span class="material-symbols-outlined">person</span>
+                        <div th:with="currentUserId=${#authentication.principal != 'anonymousUser' ? #authentication.principal.userId : null}">
+
+                            <div th:each="rv : ${reviews}" class="border-b border-gray-100 last:border-0 pb-6 last:pb-0 mb-6 group">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <div class="h-10 w-10 rounded-full bg-smart-mist flex items-center justify-center text-soft-grey font-bold">
+                                            <span class="material-symbols-outlined">person</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-dark-ink">
+                                                <span th:text="${rv.userId == currentUserId ? 'You' : 'User'}">User</span>
+                                            </p> 
+                                            <p class="text-xs text-soft-grey" th:text="${#temporals.format(rv.createdAt, 'dd-MM-yyyy HH:mm')}"></p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="text-sm font-bold text-dark-ink">User Review</p> <p class="text-xs text-soft-grey" th:text="${#temporals.format(rv.createdAt, 'dd-MM-yyyy HH:mm')}"></p>
-                                    </div>
-                                    <div class="ml-auto text-chef-orange font-bold text-sm">
-                                        <span th:text="${rv.rating}"></span> ★
+
+                                    <div class="flex flex-col items-end gap-1">
+                                        <div class="text-chef-orange font-bold text-sm">
+                                            <span th:text="${rv.rating}"></span> ★
+                                        </div>
+
+                                        <div th:if="${rv.userId == currentUserId}" class="flex gap-2 flex-col justify-start opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button type="button" 
+                                                    th:onclick="openEditReviewModal([[${rv.reviewId}]], [[${rv.rating}]], [[${rv.comment}]])"
+                                                    class="font-bold text-blue-600 hover:text-blue-800 hover:underline flex justify-start">
+                                                Edit
+                                            </button>
+
+                                            <form th:action="@{/recipes/detail/{rid}/review/{rvid}/delete(rid=${recipe.recipeId}, rvid=${rv.reviewId})}" 
+                                                  method="post" 
+                                                  th:id="'delete-review-' + ${rv.reviewId}">
+
+                                                <button type="button" 
+                                                        th:onclick="'confirmDeleteReview(' + ${rv.reviewId} + ')'"
+                                                        class="font-bold text-red-500 hover:text-red-700 hover:underline">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
+
                                 <p class="text-dark-ink text-base leading-relaxed pl-[52px]" th:text="${rv.comment}"></p>
                             </div>
 
-                            <div th:if="${#lists.isEmpty(reviews)}" class="text-center text-soft-grey py-8 italic">
-                                No reviews yet. Be the first to try this recipe!
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -217,6 +243,63 @@
             <button onclick="confirmAddToMealPlan()" class="px-4 py-2 bg-nutri-green text-white font-bold hover:bg-green-600 rounded-lg shadow-sm">Save</button>
         </div>
     </dialog>
+
+    <dialog id="editReviewModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-md">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <h3 class="text-lg font-bold text-dark-ink">Edit Your Review</h3>
+            <button onclick="document.getElementById('editReviewModal').close()" class="text-gray-400 hover:text-dark-ink">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="editReviewForm" method="post" class="p-6">
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-soft-grey mb-1">Rating</label>
+                <select id="editRating" name="rating" class="w-full px-3 py-2 rounded-lg border border-border-color focus:ring-chef-orange focus:border-chef-orange bg-white">
+                    <option value="5">★★★★★ (5/5) - Excellent</option>
+                    <option value="4">★★★★☆ (4/5) - Good</option>
+                    <option value="3">★★★☆☆ (3/5) - Average</option>
+                    <option value="2">★★☆☆☆ (2/5) - Poor</option>
+                    <option value="1">★☆☆☆☆ (1/5) - Terrible</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-soft-grey mb-1">Comment</label>
+                <textarea id="editComment" name="comment" rows="3" required
+                          class="w-full p-3 rounded-lg border border-border-color focus:ring-chef-orange focus:border-chef-orange resize-none"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('editReviewModal').close()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-chef-orange text-white font-bold hover:bg-opacity-90 rounded-lg shadow-sm">Update Review</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        function openEditReviewModal(reviewId, currentRating, currentComment) {
+            const modal = document.getElementById('editReviewModal');
+            const form = document.getElementById('editReviewForm');
+            const ratingInput = document.getElementById('editRating');
+            const commentInput = document.getElementById('editComment');
+
+            // 1. Cập nhật Action URL cho form
+            // Lấy RecipeId từ URL hiện tại hoặc biến Thymeleaf nếu muốn
+            // Cách đơn giản: RecipeId có sẵn trong URL trang hiện tại (/recipes/detail/{id})
+            const currentUrl = window.location.pathname; // VD: /recipes/detail/10
+            const recipeId = currentUrl.split('/').pop(); // Lấy số 10
+
+            form.action = `/recipes/detail/${recipeId}/review/${reviewId}/edit`;
+
+            // 2. Điền dữ liệu cũ vào form
+            ratingInput.value = currentRating;
+            commentInput.value = currentComment;
+
+            // 3. Mở Modal
+            modal.showModal();
+        }
+    </script>
 
     <script>
         function toggleHeart(event, btnElement) {
@@ -279,6 +362,30 @@
                             console.error('Error:', error);
                         });
             }, 500);
+        }
+
+        function confirmDeleteReview(reviewId) {
+            Swal.fire({
+                title: 'Delete this review?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444', // Màu đỏ (Tailwind red-500)
+                cancelButtonColor: '#9CA3AF', // Màu xám
+                confirmButtonText: 'Yes, delete it!',
+                reverseButtons: true // Đảo vị trí nút cho thuận tay
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Nếu người dùng bấm Yes, tìm form theo ID và submit
+                    const form = document.getElementById('delete-review-' + reviewId);
+                    if (form) {
+                        // (Optional) Hiện loading
+                        if (typeof ZaderToast !== 'undefined')
+                            ZaderToast.loading("Deleting...");
+                        form.submit();
+                    }
+                }
+            });
         }
     </script>
 </body>

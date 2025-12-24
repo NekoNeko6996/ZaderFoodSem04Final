@@ -29,7 +29,7 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("lqm231231@gmail.com");
         message.setTo(toEmail);
-        message.setSubject("Forgot Password OTP Code");
+        message.setSubject("OTP Code");
         message.setText("Your OTP Code: " + otp + "\nThis code will expire in 5 minutes.");
         mailSender.send(message);
     }

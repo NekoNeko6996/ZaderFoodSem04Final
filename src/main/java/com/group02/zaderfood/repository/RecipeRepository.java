@@ -70,4 +70,14 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
            "AND r.status = 'ACTIVE' " +
            "AND (r.isDeleted = false OR r.isDeleted IS NULL)")
     List<Recipe> findRecipesByIngredients(@Param("ingredientIds") List<Integer> ingredientIds);
+    
+    @Query("SELECT r FROM Recipe r WHERE " +
+           "r.createdByUserId = :userId AND " +
+           "(:keyword IS NULL OR :keyword = '' OR r.name LIKE %:keyword%) AND " +
+           "(:status IS NULL OR r.status = :status) AND " +
+           "(r.isDeleted = false OR r.isDeleted IS NULL) " +
+           "ORDER BY r.createdAt DESC")
+    List<Recipe> searchUserRecipes(@Param("userId") Integer userId,
+                                   @Param("keyword") String keyword,
+                                   @Param("status") RecipeStatus status);
 }

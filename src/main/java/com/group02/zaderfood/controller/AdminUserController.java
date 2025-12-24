@@ -43,7 +43,7 @@ public class AdminUserController {
         // 3. Truyền ID vào service để loại trừ
         Page<User> userPage = adminUserService.getUsers(currentUser.getUserId(), keyword, role, status, page, pageSize);
 
-        // ... các đoạn code addAttribute phía sau giữ nguyên
+        model.addAttribute("allRoles", UserRole.values());
         model.addAttribute("users", userPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", userPage.getTotalPages());
@@ -57,6 +57,22 @@ public class AdminUserController {
         model.addAttribute("newUser", new User());
 
         return "admin/users";
+    }
+    
+    @PostMapping("/update")
+    public String updateUser(@RequestParam Integer userId,
+                             @RequestParam String fullName,
+                             @RequestParam UserRole role,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            adminUserService.updateUser(userId, fullName, role);
+            redirectAttributes.addFlashAttribute("message", "User updated successfully!");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "Error updating user: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "error");
+        }
+        return "redirect:/admin/users";
     }
 
     @PostMapping("/add")

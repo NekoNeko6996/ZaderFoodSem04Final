@@ -38,7 +38,7 @@ public class FavoriteService {
     private RecipeRepository recipeRepo;
     @Autowired
     private RecipeService recipeService; // Để tính Macro
-    
+
     @Autowired
     private AiSavedRecipeRepository aiSavedRepo;
 
@@ -250,23 +250,60 @@ public class FavoriteService {
     }
 
     // 2. Hàm lấy dữ liệu cho trang Public (Dành cho người xem)
-    public Pair<RecipeCollection, List<Recipe>> getPublicCollectionData(Integer collectionId) {
-        Optional<RecipeCollection> colOpt = collectionRepo.findById(collectionId);
+    @Transactional(readOnly = true)
+    public Pair<RecipeCollection, List<UnifiedRecipeDTO>> getPublicCollectionData(Integer collectionId) {
 
-        // QUAN TRỌNG: Chỉ trả về nếu IsPublic = true
-        if (colOpt.isPresent() && Boolean.TRUE.equals(colOpt.get().getIsPublic())) {
-            List<Integer> recipeIds = collectionItemRepo.findRecipeIdsByCollectionId(collectionId);
-            List<Recipe> recipes = recipeRepo.findAllById(recipeIds);
-
-            // Tính macro để hiển thị đẹp
-            for (Recipe r : recipes) {
-                if (r.getTotalCalories() == null || r.getTotalCalories().compareTo(BigDecimal.ZERO) == 0) {
-                    recipeService.calculateRecipeMacros(r);
-                }
-            }
-            return Pair.of(colOpt.get(), recipes);
+        // 1. Tìm Collection
+        RecipeCollection col = collectionRepo.findById(collectionId).orElse(null);
+        if (col == null || !col.getIsPublic()) {
+            return null;
         }
-        return null; // Không tìm thấy hoặc chưa public
+
+        // 2. Lấy list items
+        List<CollectionItem> items = collectionItemRepo.findByCollectionId(collectionId);
+        List<UnifiedRecipeDTO> unifiedList = new ArrayList<>();
+
+        for (CollectionItem item : items) {
+            // Sử dụng Builder
+            UnifiedRecipeDTO.UnifiedRecipeDTOBuilder builder = UnifiedRecipeDTO.builder();
+            boolean hasData = false;
+
+            // CASE A: Món thường (Standard Recipe)
+            if (item.getRecipe() != null) {
+                Recipe r = item.getRecipe();
+                int totalTime = (r.getPrepTimeMin() != null ? r.getPrepTimeMin() : 0)
+                        + (r.getCookTimeMin() != null ? r.getCookTimeMin() : 0);
+
+                builder.id(r.getRecipeId())
+                        .name(r.getName())
+                        .imageUrl(r.getImageUrl())
+                        .calories(r.getTotalCalories())
+                        .timeMin(totalTime)
+                        .isAi(false)
+                        .difficulty(r.getDifficulty() != null ? r.getDifficulty().toString() : "Medium");
+
+                hasData = true;
+            } // CASE B: Món AI (AI Recipe)
+            else if (item.getAiSavedRecipe() != null) {
+                AiSavedRecipes ai = item.getAiSavedRecipe();
+
+                builder.id(ai.getAiRecipeId())
+                        .name(ai.getName())
+                        .imageUrl(ai.getImageUrl())
+                        .calories(ai.getTotalCalories())
+                        .timeMin(ai.getTimeMinutes())
+                        .isAi(true)
+                        .difficulty("AI Generated"); // Giá trị mặc định cho AI
+
+                hasData = true;
+            }
+
+            if (hasData) {
+                unifiedList.add(builder.build());
+            }
+        }
+
+        return Pair.of(col, unifiedList);
     }
 
     @Transactional // Quan trọng: Để đảm bảo tính toàn vẹn dữ liệu

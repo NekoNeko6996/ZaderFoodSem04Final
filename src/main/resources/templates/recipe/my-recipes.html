@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+    <div th:replace="~{fragments/head :: common-head}"></div>
+    <title>My Recipes - Zader Food</title>
+</head>
+<body class="bg-gray-50 font-display text-dark-ink">
+    <div class="relative flex min-h-screen w-full flex-col">
+
+        <div th:replace="~{fragments/navbar :: header_nav}"></div>
+
+        <main class="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-black text-dark-ink">My Recipe</h1>
+                    <p class="text-gray-500 mt-1">Manage the recipes you have contributed to the community.</p>
+                </div>
+
+                <a th:href="@{/recipes/create}" class="flex items-center gap-2 bg-nutri-green text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-600 transition shadow-sm">
+                    <span class="material-symbols-outlined">add_circle</span> Request New Recipe
+                </a>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <form action="/recipes/my-recipes" method="get" class="flex flex-col md:flex-row gap-4">
+
+                    <div class="flex-1 relative">
+                        <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400">search</span>
+                        <input type="text" name="keyword" th:value="${keyword}" 
+                               placeholder="Search your recipes..." 
+                               class="w-full pl-10 pr-4 py-2.5 rounded-lg border-gray-200 focus:ring-nutri-green focus:border-nutri-green">
+                    </div>
+
+                    <div class="w-full md:w-48">
+                        <select name="status" class="w-full py-2.5 rounded-lg border-gray-200 focus:ring-nutri-green focus:border-nutri-green" onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            <option th:each="st : ${allStatuses}" 
+                                    th:value="${st}" 
+                                    th:text="${st}"
+                                    th:selected="${st == currentStatus}"></option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="md:hidden bg-gray-900 text-white py-2 rounded-lg font-bold">Filter</button>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <div th:each="recipe : ${recipes}" class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition group flex flex-col h-full">
+
+                    <div class="h-48 w-full relative">
+                        <img th:src="${recipe.imageUrl != null ? recipe.imageUrl : '/images/default-food.jpg'}" 
+                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+
+                        <div class="absolute top-3 right-3 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                             th:classappend="${
+                             recipe.status.name() == 'ACTIVE' ? 'bg-green-100 text-green-700 border border-green-200' : 
+                             (recipe.status.name() == 'PENDING' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
+                             'bg-red-100 text-red-700 border border-red-200')
+                             }">
+                            <span th:text="${recipe.status}">STATUS</span>
+                        </div>
+                    </div>
+
+                    <div class="p-5 flex flex-col flex-grow">
+                        <h3 class="font-bold text-lg text-dark-ink mb-2 truncate" th:text="${recipe.name}">Recipe Name</h3>
+
+                        <div class="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> <span th:text="${recipe.totalCalories}">0</span> kcal</span>
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> <span th:text="${recipe.prepTimeMin + recipe.cookTimeMin}">0</span> min</span>
+                        </div>
+
+                        <div class="mt-auto flex gap-2">
+                            <a th:href="@{/recipes/detail/{id}(id=${recipe.recipeId})}" 
+                               class="flex-1 text-center py-2 rounded-lg bg-gray-50 text-gray-700 font-bold text-sm hover:bg-gray-100 transition">
+                                View
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(recipes)}" class="text-center py-16">
+                <div class="bg-gray-100 p-4 rounded-full inline-block mb-4">
+                    <span class="material-symbols-outlined text-4xl text-gray-400">menu_book</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-700">No recipes found</h3>
+                <p class="text-gray-500 text-sm mt-1">Try adjusting your filters or contribute your first dish!</p>
+                <a th:href="@{/recipes/create}" class="inline-block mt-4 text-nutri-green font-bold hover:underline">Share a Recipe</a>
+            </div>
+
+            <div id="pagination-controls" class="hidden mt-10 flex flex-col items-center">
+
+                <p class="text-sm text-gray-500 mb-4">
+                    Showing <span id="show-start" class="font-bold">1</span> 
+                    to <span id="show-end" class="font-bold">9</span> 
+                    of <span id="total-items" class="font-bold">20</span> recipes
+                </p>
+
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button onclick="changePage('prev')" id="btn-prev" class="relative inline-flex items-center rounded-l-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50">
+                        <span class="sr-only">Previous</span>
+                        <span class="material-symbols-outlined text-sm">chevron_left</span>
+                    </button>
+
+                    <div id="page-numbers" class="flex"></div>
+
+                    <button onclick="changePage('next')" id="btn-next" class="relative inline-flex items-center rounded-r-md px-3 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50">
+                        <span class="sr-only">Next</span>
+                        <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                </nav>
+            </div>
+        </main>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer_section}"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // CẤU HÌNH
+            const itemsPerPage = 9; // Số món mỗi trang
+            let currentPage = 1;
+
+            // Lấy danh sách phần tử
+            const items = document.querySelectorAll('.recipe-item');
+            const totalItems = items.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            // Các element UI
+            const paginationContainer = document.getElementById('pagination-controls');
+            const elStart = document.getElementById('show-start');
+            const elEnd = document.getElementById('show-end');
+            const elTotal = document.getElementById('total-items');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const pageNumbersContainer = document.getElementById('page-numbers');
+
+            // Hàm khởi chạy
+            function initPagination() {
+                if (totalItems <= itemsPerPage) {
+                    // Nếu ít món hơn 1 trang -> Ẩn phân trang, hiện tất cả
+                    paginationContainer.classList.add('hidden');
+                    items.forEach(item => item.classList.remove('hidden'));
+                    return;
+                }
+
+                // Hiện phân trang & set tổng số
+                paginationContainer.classList.remove('hidden');
+                elTotal.innerText = totalItems;
+
+                renderPage(currentPage);
+            }
+
+            // Hàm hiển thị trang
+            window.renderPage = function (page) {
+                // Validate
+                if (page < 1)
+                    page = 1;
+                if (page > totalPages)
+                    page = totalPages;
+                currentPage = page;
+
+                // 1. Ẩn/Hiện Items
+                const start = (currentPage - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+
+                items.forEach((item, index) => {
+                    if (index >= start && index < end) {
+                        item.classList.remove('hidden'); // Dùng class hidden của Tailwind
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                // 2. Cập nhật Text Info
+                elStart.innerText = start + 1;
+                elEnd.innerText = Math.min(end, totalItems);
+
+                // 3. Cập nhật trạng thái nút Prev/Next
+                btnPrev.disabled = (currentPage === 1);
+                btnNext.disabled = (currentPage === totalPages);
+
+                // 4. Vẽ lại số trang
+                renderPageNumbers();
+            };
+
+            // Hàm vẽ số trang (1, 2, 3...)
+            function renderPageNumbers() {
+                pageNumbersContainer.innerHTML = '';
+
+                // Logic đơn giản: Vẽ tất cả các trang. 
+                // Nếu nhiều trang quá (>10) thì cần logic rút gọn (1 ... 5 6 7 ... 10)
+                for (let i = 1; i <= totalPages; i++) {
+                    const btn = document.createElement('button');
+                    btn.innerText = i;
+                    btn.onclick = () => renderPage(i);
+
+                    // Style Active vs Inactive
+                    if (i === currentPage) {
+                        btn.className = "relative z-10 inline-flex items-center bg-nutri-green px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600";
+                    } else {
+                        btn.className = "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0";
+                    }
+
+                    pageNumbersContainer.appendChild(btn);
+                }
+            }
+
+            // Hàm chuyển trang Next/Prev
+            window.changePage = function (direction) {
+                if (direction === 'prev') {
+                    if (currentPage > 1)
+                        renderPage(currentPage - 1);
+                } else if (direction === 'next') {
+                    if (currentPage < totalPages)
+                        renderPage(currentPage + 1);
+                }
+            };
+
+            // Chạy
+            initPagination();
+        });
+    </script>
+</body>
+</html>
