@@ -135,6 +135,44 @@ public class RecipeController {
         // Redirect lại trang chi tiết để thấy comment vừa đăng
         return "redirect:/recipes/detail/" + id;
     }
+    
+    @PostMapping("/detail/{recipeId}/review/{reviewId}/delete")
+    public String deleteReview(@PathVariable Integer recipeId,
+                               @PathVariable Integer reviewId,
+                               @AuthenticationPrincipal CustomUserDetails currentUser) {
+        
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        // Bảo mật: Chỉ cho phép xóa nếu là chủ sở hữu hoặc là Admin
+        if (currentUser != null && (review.getUserId().equals(currentUser.getUserId()) 
+                                    || currentUser.getUserRole() == UserRole.ADMIN)) {
+            reviewRepository.delete(review);
+        }
+
+        return "redirect:/recipes/detail/" + recipeId;
+    }
+    
+    @PostMapping("/detail/{recipeId}/review/{reviewId}/edit")
+    public String updateReview(@PathVariable Integer recipeId,
+                               @PathVariable Integer reviewId,
+                               @RequestParam Integer rating,
+                               @RequestParam String comment,
+                               @AuthenticationPrincipal CustomUserDetails currentUser) {
+        
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        // Bảo mật: Chỉ chủ sở hữu mới được sửa
+        if (currentUser != null && review.getUserId().equals(currentUser.getUserId())) {
+            review.setRating(rating);
+            review.setComment(comment);
+            review.setCreatedAt(LocalDateTime.now());
+            reviewRepository.save(review);
+        }
+
+        return "redirect:/recipes/detail/" + recipeId;
+    }
 
     @GetMapping("/search")
     public String searchPage(@RequestParam(name = "ids", required = false) List<Integer> ids, Model model) {
