@@ -109,7 +109,8 @@
                                                       th:action="@{/admin/users/toggle-status/{id}(id=${user.userId})}" method="post">
                                                     <button type="submit" 
                                                             th:classappend="${user.status.name() == 'BLOCKED'} ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-orange-600 bg-orange-50 hover:bg-orange-100'"
-                                                            class="px-3 py-1.5 rounded text-xs font-bold transition-colors">
+                                                            class="px-3 py-1.5 rounded text-xs font-bold transition-colors" 
+                                                            style="height: 100%">
                                                         <span th:text="${user.status.name() == 'BLOCKED'} ? 'Unlock' : 'Block'">Lock</span>
                                                     </button>
                                                 </form>
@@ -123,6 +124,13 @@
                                                         th:onclick="confirmAction('ban-form-[[${user.userId}]]', 'Ban ' + [[${user.fullName}]] + '?', 'This user will be permanently banned.', 'Yes, Ban User')"
                                                         class="px-3 py-1.5 rounded bg-gray-900 text-white text-xs font-bold hover:bg-black transition-colors">
                                                     Ban
+                                                </button>
+
+                                                <button type="button"  th:if="${user.status.name() != 'BANNED'}"
+                                                        th:onclick="openEditUserModal([[${user.userId}]], [[${user.fullName}]], [[${user.email}]], [[${user.role}]])"
+                                                        class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition font-bold"
+                                                        title="Edit User">
+                                                    Edit
                                                 </button>
 
                                                 <span th:if="${user.status.name() == 'BANNED'}" class="text-red-600 font-bold text-xs px-2 py-1">PERMANENT BAN</span>
@@ -194,6 +202,44 @@
             </dialog>
         </div>
 
+        <dialog id="editUserModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-md">
+            <div class="bg-white rounded-xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 class="font-bold text-lg text-dark-ink">Edit User Info</h3>
+                    <button onclick="document.getElementById('editUserModal').close()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <form action="/admin/users/update" method="post" class="p-6 space-y-4">
+                    <input type="hidden" name="userId" id="editUserId">
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+                        <input type="text" id="editUserEmail" class="w-full bg-gray-100 text-gray-500 border-gray-200 rounded-lg focus:ring-0 cursor-not-allowed" readonly>
+                    </div>
+
+                    <div>   
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
+                        <input type="text" name="fullName" id="editUserFullName" required
+                               class="w-full border-gray-200 rounded-lg focus:ring-nutri-green focus:border-nutri-green">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Role</label>
+                        <select name="role" id="editUserRole" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green focus:border-nutri-green">
+                            <option th:each="r : ${allRoles}" th:value="${r}" th:text="${r}"></option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" onclick="document.getElementById('editUserModal').close()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-bold hover:bg-blue-700 rounded-lg shadow-sm">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
+
         <div th:replace="~{fragments/toast :: toast-system}"></div>
         <script>
             function confirmAction(formId, title = 'Are you sure?', text = "You won't be able to revert this!", confirmBtnText = 'Yes, do it!') {
@@ -220,6 +266,24 @@
                     }
                 }
                 );
+            }
+
+            function openEditUserModal(id, fullName, email, role) {
+                // 1. Lấy các thẻ input
+                const modal = document.getElementById('editUserModal');
+                const idInput = document.getElementById('editUserId');
+                const nameInput = document.getElementById('editUserFullName');
+                const emailInput = document.getElementById('editUserEmail');
+                const roleSelect = document.getElementById('editUserRole');
+
+                // 2. Điền dữ liệu vào form
+                idInput.value = id;
+                nameInput.value = fullName;
+                emailInput.value = email;
+                roleSelect.value = role;
+
+                // 3. Hiển thị Modal
+                modal.showModal();
             }
         </script>
     </body>

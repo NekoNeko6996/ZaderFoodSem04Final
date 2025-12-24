@@ -135,6 +135,44 @@ public class RecipeController {
         // Redirect lại trang chi tiết để thấy comment vừa đăng
         return "redirect:/recipes/detail/" + id;
     }
+    
+    @PostMapping("/detail/{recipeId}/review/{reviewId}/delete")
+    public String deleteReview(@PathVariable Integer recipeId,
+                               @PathVariable Integer reviewId,
+                               @AuthenticationPrincipal CustomUserDetails currentUser) {
+        
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        // Bảo mật: Chỉ cho phép xóa nếu là chủ sở hữu hoặc là Admin
+        if (currentUser != null && (review.getUserId().equals(currentUser.getUserId()) 
+                                    || currentUser.getUserRole() == UserRole.ADMIN)) {
+            reviewRepository.delete(review);
+        }
+
+        return "redirect:/recipes/detail/" + recipeId;
+    }
+    
+    @PostMapping("/detail/{recipeId}/review/{reviewId}/edit")
+    public String updateReview(@PathVariable Integer recipeId,
+                               @PathVariable Integer reviewId,
+                               @RequestParam Integer rating,
+                               @RequestParam String comment,
+                               @AuthenticationPrincipal CustomUserDetails currentUser) {
+        
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        // Bảo mật: Chỉ chủ sở hữu mới được sửa
+        if (currentUser != null && review.getUserId().equals(currentUser.getUserId())) {
+            review.setRating(rating);
+            review.setComment(comment);
+            review.setCreatedAt(LocalDateTime.now());
+            reviewRepository.save(review);
+        }
+
+        return "redirect:/recipes/detail/" + recipeId;
+    }
 
     @GetMapping("/search")
     public String searchPage(@RequestParam(name = "ids", required = false) List<Integer> ids, Model model) {
@@ -256,5 +294,28 @@ public class RecipeController {
     @GetMapping("/thank-you")
     public String showThankYouPage() {
         return "recipe-thank-you";
+    }
+    
+    @GetMapping("/my-recipes")
+    public String viewMyRecipes(Model model,
+                                @AuthenticationPrincipal CustomUserDetails user,
+                                @RequestParam(required = false) String keyword,
+                                @RequestParam(required = false) RecipeStatus status) {
+        
+        if (user == null) return "redirect:/login";
+
+        // 1. Lấy danh sách món ăn của user
+        List<Recipe> myRecipes = recipeService.getMyRecipes(user.getUserId(), keyword, status);
+        
+        // 2. Đẩy dữ liệu ra view
+        model.addAttribute("recipes", myRecipes);
+        
+        
+        // 3. Giữ lại trạng thái filter để hiển thị trên UI
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("currentStatus", status);
+        model.addAttribute("allStatuses", RecipeStatus.values()); // Để đổ vào dropdown
+
+        return "recipe/my-recipes"; // Tên file HTML sẽ tạo
     }
 }

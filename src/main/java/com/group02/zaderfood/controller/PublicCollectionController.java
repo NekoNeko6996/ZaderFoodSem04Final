@@ -1,6 +1,6 @@
 package com.group02.zaderfood.controller;
 
-import com.group02.zaderfood.entity.Recipe;
+import com.group02.zaderfood.dto.UnifiedRecipeDTO; // <--- BẮT BUỘC PHẢI CÓ DÒNG NÀY
 import com.group02.zaderfood.entity.RecipeCollection;
 import com.group02.zaderfood.service.FavoriteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,15 +22,18 @@ public class PublicCollectionController {
 
     @GetMapping("/view/{id}")
     public String viewPublicCollection(@PathVariable("id") Integer collectionId, Model model) {
-        Pair<RecipeCollection, List<Recipe>> data = favoriteService.getPublicCollectionData(collectionId);
+        
+        // Hàm này trả về Pair<RecipeCollection, List<UnifiedRecipeDTO>>
+        // Nên cần import UnifiedRecipeDTO để code biên dịch được
+        Pair<RecipeCollection, List<UnifiedRecipeDTO>> data = favoriteService.getPublicCollectionData(collectionId);
 
         if (data == null) {
-            return "error/404"; // Hoặc trang thông báo "Collection này là riêng tư"
+            return "error/404";
         }
 
         model.addAttribute("collection", data.getFirst());
-        model.addAttribute("recipes", data.getSecond());
+        model.addAttribute("items", data.getSecond()); 
 
-        return "public-collection-view"; // File HTML mới
+        return "public-collection-view";
     }
 }

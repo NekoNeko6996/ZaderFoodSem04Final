@@ -164,4 +164,19 @@ public class AdminUserService {
         workbook.close();
         outputStream.close();
     }
+
+    public void updateUser(Integer userId, String fullName, UserRole role) throws Exception {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new Exception("User not found"));
+        
+        // Cập nhật thông tin
+        user.setFullName(fullName);
+        
+        // Kiểm tra logic: Không cho phép hạ quyền Admin khác nếu cần thiết (tùy chọn)
+        user.setRole(role);
+        
+        // user.setEmail(email); // Thường email là định danh, ít khi cho đổi tùy tiện
+        
+        userRepository.save(user);
+    }
 }
