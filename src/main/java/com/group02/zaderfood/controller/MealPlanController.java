@@ -90,7 +90,8 @@ public class MealPlanController {
     @GetMapping("/generate")
     public String showGeneratePage(Model model,
             @AuthenticationPrincipal CustomUserDetails currentUser,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            @AuthenticationPrincipal CustomUserDetails user) {
 
         // Default values
         int defaultCalories = 2000;
@@ -119,8 +120,8 @@ public class MealPlanController {
                 }
 
                 // 4. Lấy lịch sử (History)
-                List<DailyMealPlan> history = mealPlanService.getRecentPlans(currentUser.getUserId());
-                model.addAttribute("planHistory", history);
+                List<DailyMealPlan> recentPlans = mealPlanService.getAllPlans(user.getUserId());
+                model.addAttribute("recentPlans", recentPlans);
 
             } catch (Exception e) {
                 // Nếu lỗi, userProfileDTO vẫn là object rỗng (new UserProfileDTO()) nên không crash view 

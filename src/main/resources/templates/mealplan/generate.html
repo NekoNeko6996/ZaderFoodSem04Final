@@ -166,37 +166,77 @@
                 </form>
             </div>
 
-            <div class="bg-white dark:bg-[#1a0e0a] rounded-xl shadow-sm p-6 md:p-8 mt-4" th:if="${not #lists.isEmpty(planHistory)}">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-gray-400">history</span>
-                        <h2 class="text-xl font-bold text-dark-ink dark:text-white">Recent Plans</h2>
+            <div class="flex flex-col gap-6">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h2 class="text-2xl font-black text-dark-ink dark:text-white">Meal History</h2>
+                        <p class="text-sm text-gray-500">Overview of your daily nutritional intake.</p>
                     </div>
+                </div>
 
-                    <a href="/meal-plan/history" class="text-sm font-bold text-primary hover:underline flex items-center gap-1">
-                        View Full History <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[800px] overflow-y-auto custom-scroll pr-2">
+                    <a th:each="plan : ${recentPlans}" 
+                       th:href="@{/meal-plan/history/{date}(date=${plan.planDate})}"
+                       class="block group relative bg-white dark:bg-[#1a0e0a] rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-orange-200 transition-all">
+
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex flex-col items-center justify-center w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-lg font-bold border border-orange-100 dark:border-orange-800">
+                                    <span class="text-xs uppercase" th:text="${#temporals.format(plan.planDate, 'MMM')}">DEC</span>
+                                    <span class="text-lg leading-none" th:text="${#temporals.format(plan.planDate, 'dd')}">12</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-dark-ink dark:text-gray-200" th:text="${#temporals.format(plan.planDate, 'EEEE')}">Monday</h4>
+                                    <p class="text-xs text-gray-400" th:text="${plan.isGeneratedByAI ? 'AI Generated' : 'Manual Plan'}">Type</p>
+                                </div>
+                            </div>
+
+                            <span class="material-symbols-outlined text-gray-300 group-hover:text-orange-500 transition-colors">chevron_right</span>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs mb-1"
+                                 th:with="safeCal=${plan.totalCalories != null ? plan.totalCalories.doubleValue() : 0.0}">
+
+                                <span class="text-gray-500">Calories</span>
+                                <span class="font-bold text-dark-ink dark:text-gray-300">
+                                    <span th:text="${safeCal.intValue()}">1500</span> kcal
+                                </span>
+                            </div>
+
+                            <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div class="h-2 rounded-full transition-all duration-500"
+                                     th:with="safeCal=${plan.totalCalories != null ? plan.totalCalories.doubleValue() : 0.0},
+                                     safeGoal=${userGoal != null ? userGoal : 2000.0},
+                                     pct=${safeGoal > 0 ? (safeCal * 100.0) / safeGoal : 0}"
+                                     th:style="'width: ' + ${pct > 100 ? 100 : pct} + '%'"
+                                     th:classappend="${safeCal == 0 ? 'bg-gray-300' : (safeCal >= (safeGoal * 0.9) && safeCal <= (safeGoal * 1.1) ? 'bg-green-500' : (safeCal > (safeGoal * 1.1) ? 'bg-red-500' : 'bg-yellow-500'))}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 border-t border-gray-50 dark:border-gray-800 pt-3">
+                            <div class="flex-1 flex flex-col items-center bg-blue-50 dark:bg-blue-900/10 py-1 rounded text-[10px] text-blue-600">
+                                <span class="font-bold">Pro</span>
+                                <span th:text="${plan.totalProtein != null ? plan.totalProtein.intValue() : 0} + 'g'">0g</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center bg-green-50 dark:bg-green-900/10 py-1 rounded text-[10px] text-green-600">
+                                <span class="font-bold">Carb</span>
+                                <span th:text="${plan.totalCarbs != null ? plan.totalCarbs.intValue() : 0} + 'g'">0g</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center bg-yellow-50 dark:bg-yellow-900/10 py-1 rounded text-[10px] text-yellow-600">
+                                <span class="font-bold">Fat</span>
+                                <span th:text="${plan.totalFat != null ? plan.totalFat.intValue() : 0} + 'g'">0g</span>
+                            </div>
+                        </div>
                     </a>
                 </div>
 
-                <div class="grid gap-4">
-                    <div th:each="plan : ${planHistory}" 
-                         class="group flex justify-between items-center p-4 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 transition-all cursor-pointer"
-                         th:data-url="@{/meal-plan/history/{date}(date=${plan.planDate})}"
-                         onclick="window.location.href = this.getAttribute('data-url')">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs shadow-sm">
-                                [[${#temporals.format(plan.planDate, 'MMM')}]]<br>[[${#temporals.format(plan.planDate, 'dd')}]]
-                            </div>
-                            <div>
-                                <p class="font-bold text-dark-ink dark:text-white group-hover:text-primary transition-colors" 
-                                   th:text="'Week of ' + ${#temporals.format(plan.planDate, 'MMMM dd, yyyy')}">Date</p>
-                                <p class="text-xs text-gray-500 font-medium flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[10px]">local_fire_department</span> [[${plan.totalCalories}]] kcal avg.
-                                </p>
-                            </div>
-                        </div>
-                        <span class="material-symbols-outlined text-gray-300 group-hover:text-primary">arrow_forward_ios</span>
+                <div th:if="${#lists.isEmpty(recentPlans)}" class="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
+                    <div class="text-gray-300 mb-2">
+                        <span class="material-symbols-outlined text-4xl">calendar_today</span>
                     </div>
+                    <p class="text-gray-500">No meal plans found history.</p>
                 </div>
             </div>
         </div>
