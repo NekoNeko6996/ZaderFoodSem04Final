@@ -56,7 +56,7 @@
                                         </td>
                                         <td class="px-6 py-4 text-sm text-gray-500" th:text="${#temporals.format(ing.createdAt, 'dd MMM yyyy')}">Date</td>
                                         <td class="px-6 py-4 text-right">
-                                            <a th:href="@{/nutritionist/ingredients/review/{id}(id=${ing.ingredientId})}" 
+                                            <a th:href="@{/admin/ingredient/review/{id}(id=${ing.ingredientId})}" 
                                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-bold transition">
                                                 Review
                                             </a>
