@@ -3,6 +3,7 @@ package com.group02.zaderfood.repository;
 import com.group02.zaderfood.entity.CollectionItem;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,10 +24,18 @@ public interface CollectionItemRepository extends JpaRepository<CollectionItem, 
     Optional<CollectionItem> findByCollectionIdAndRecipeId(Integer collectionId, Integer recipeId);
 
     void deleteByCollectionId(Integer collectionId);
-    
+
     List<CollectionItem> findByCollectionId(Integer collectionId);
-  
+
     Optional<CollectionItem> findByCollectionIdAndAiRecipeId(Integer collectionId, Integer aiRecipeId);
-    
+
     boolean existsByCollectionIdAndAiRecipeId(Integer collectionId, Integer aiRecipeId);
+
+    @Query("SELECT r.recipeId, r.name, r.imageUrl, r.createdAt, COUNT(c) "
+            + "FROM CollectionItem c "
+            + "JOIN Recipe r ON c.recipeId = r.recipeId "
+            + // Join bảng Recipe để lấy thông tin
+            "GROUP BY r.recipeId, r.name, r.imageUrl, r.createdAt "
+            + "ORDER BY COUNT(c) DESC")
+    List<Object[]> findMostFavoritedRecipes(Pageable pageable);
 }

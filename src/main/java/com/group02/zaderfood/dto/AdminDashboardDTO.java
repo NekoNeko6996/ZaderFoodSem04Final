@@ -2,6 +2,7 @@ package com.group02.zaderfood.dto;
 
 import lombok.Data;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class AdminDashboardDTO {
@@ -17,6 +18,9 @@ public class AdminDashboardDTO {
     private long newMealPlansThisMonth; // Để tính % tăng trưởng
 
     private long totalAiTokens;
+    
+    private List<String> tokenChartLabels; // Danh sách ngày (Trục X)
+    private Map<String, List<Long>> tokenChartData;
 
     // Dữ liệu biểu đồ (Chart.js)
     // Line Chart: User & Meal Plan 7 ngày qua

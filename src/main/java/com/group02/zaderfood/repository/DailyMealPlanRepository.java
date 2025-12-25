@@ -37,6 +37,7 @@ public interface DailyMealPlanRepository extends JpaRepository<DailyMealPlan, In
     
     List<DailyMealPlan> findByUserIdAndPlanDateBetween(Integer userId, LocalDate startDate, LocalDate endDate);
 
-    // [NEW] Tìm các plan từ ngày hiện tại trở đi (Để hiển thị chấm xanh trên lịch)
     List<DailyMealPlan> findByUserIdAndPlanDateGreaterThanEqual(Integer userId, LocalDate date);
+    List<DailyMealPlan> findByUserIdAndPlanDateLessThanEqualOrderByPlanDateDesc(Integer userId, LocalDate date);
+    List<DailyMealPlan> findByUserIdAndPlanDateGreaterThanEqualOrderByPlanDateAsc(Integer userId, LocalDate date);
 }

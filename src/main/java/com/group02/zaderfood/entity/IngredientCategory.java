@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.SQLRestriction;
 
 @Data
 @NoArgsConstructor
@@ -13,6 +14,7 @@ import org.hibernate.annotations.Nationalized;
 @Builder
 @Entity
 @Table(name = "IngredientCategories")
+@SQLRestriction("IsDeleted = 0")
 public class IngredientCategory implements Serializable {
 
     @Id

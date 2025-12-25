@@ -2,6 +2,7 @@ package com.group02.zaderfood.service;
 
 import com.group02.zaderfood.dto.AdminDashboardDTO;
 import com.group02.zaderfood.dto.NutritionistDashboardDTO;
+import com.group02.zaderfood.entity.AiRequestLog;
 import com.group02.zaderfood.entity.enums.RecipeStatus;
 import com.group02.zaderfood.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 public class AdminService {
@@ -30,6 +32,11 @@ public class AdminService {
     private ReviewRepository reviewRepo;
     @Autowired
     private IngredientRepository ingredientRepository;
+    @Autowired
+    private MealItemRepository mealItemRepository;
+
+    @Autowired
+    private CollectionItemRepository collectionItemRepository;
 
     public AdminDashboardDTO getDashboardStats() {
         AdminDashboardDTO dto = new AdminDashboardDTO();
@@ -106,9 +113,60 @@ public class AdminService {
             item.setReviewCount((Long) row[2]);
             topList.add(item);
         }
+
+        processAiTokenChart(dto);
         dto.setTopRecipes(topList);
 
         return dto;
+    }
+
+    private void processAiTokenChart(AdminDashboardDTO dto) {
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30).withHour(0).withMinute(0);
+
+        // 1. Lấy dữ liệu thô từ DB
+        List<AiRequestLog> logs = aiLogRepository.findByCreatedAtAfter(thirtyDaysAgo);
+
+        // 2. Chuẩn bị Labels (30 ngày gần nhất)
+        List<String> labels = new ArrayList<>();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
+        List<String> dateKeys = new ArrayList<>(); // Key dạng YYYY-MM-DD để map dữ liệu
+
+        for (int i = 29; i >= 0; i--) {
+            LocalDateTime d = LocalDateTime.now().minusDays(i);
+            labels.add(d.format(fmt));
+            dateKeys.add(d.toLocalDate().toString());
+        }
+        dto.setTokenChartLabels(labels);
+
+        // 3. Gom nhóm dữ liệu: Map<RequestType, Map<DateString, TotalTokens>>
+        Map<String, Map<String, Long>> groupedData = new HashMap<>();
+
+        for (AiRequestLog log : logs) {
+            String type = log.getRequestType() != null ? log.getRequestType() : "UNKNOWN";
+            String dateKey = log.getCreatedAt().toLocalDate().toString();
+            long tokens = log.getTokensUsed() != null ? log.getTokensUsed() : 0;
+
+            groupedData.putIfAbsent(type, new HashMap<>());
+            Map<String, Long> dateMap = groupedData.get(type);
+            dateMap.put(dateKey, dateMap.getOrDefault(dateKey, 0L) + tokens);
+        }
+
+        // 4. Chuyển đổi sang định dạng List để vẽ biểu đồ
+        Map<String, List<Long>> finalChartData = new HashMap<>();
+
+        for (Map.Entry<String, Map<String, Long>> entry : groupedData.entrySet()) {
+            String typeName = entry.getKey();
+            Map<String, Long> dateMap = entry.getValue();
+            List<Long> dataPoints = new ArrayList<>();
+
+            // Duyệt theo đúng thứ tự ngày trong dateKeys
+            for (String key : dateKeys) {
+                dataPoints.add(dateMap.getOrDefault(key, 0L));
+            }
+            finalChartData.put(typeName, dataPoints);
+        }
+
+        dto.setTokenChartData(finalChartData);
     }
 
     // Helper: Convert List<Object[]> to Map<DateString, Count>
@@ -137,12 +195,59 @@ public class AdminService {
         List<String> dLabels = new ArrayList<>();
         List<Long> dData = new ArrayList<>();
 
+        dto.setTotalMealPlans(mealPlanRepository.count());
+        dto.setPendingIngredients(ingredientRepository.countByIsActiveFalse());
+
         for (Object[] row : dietRaw) {
             dLabels.add(row[0].toString()); // Tên Diet (KETO, VEGAN...)
             dData.add((Long) row[1]);       // Số lượng
         }
+
+        List<Object[]> topRaw = mealItemRepository.findTopAddedRecipes(PageRequest.of(0, 5));
+
+        List<NutritionistDashboardDTO.TopRecipeStat> topList = new ArrayList<>();
+        if (topRaw != null) {
+            for (Object[] row : topRaw) {
+                // Thứ tự row phải khớp với câu SELECT trong Repository
+                Integer id = (Integer) row[0];
+                String name = (String) row[1];
+                String img = (String) row[2];
+                LocalDateTime date = (LocalDateTime) row[3];
+                Long count = (Long) row[4];
+
+                // Xử lý ảnh mặc định nếu null
+                if (img == null || img.isEmpty()) {
+                    img = "/images/default-food.png";
+                }
+
+                topList.add(new NutritionistDashboardDTO.TopRecipeStat(id, name, img, date, count));
+            }
+        }
+        dto.setTopAddedRecipes(topList);
+
+        List<Object[]> favRaw = collectionItemRepository.findMostFavoritedRecipes(PageRequest.of(0, 5));
+
+        List<NutritionistDashboardDTO.TopRecipeStat> favList = new ArrayList<>();
+        if (favRaw != null) {
+            for (Object[] row : favRaw) {
+                Integer id = (Integer) row[0];
+                String name = (String) row[1];
+                String img = (String) row[2];
+                LocalDateTime date = (LocalDateTime) row[3];
+                Long count = (Long) row[4];
+
+                if (img == null || img.isEmpty()) {
+                    img = "/images/default-food.png";
+                }
+
+                favList.add(new NutritionistDashboardDTO.TopRecipeStat(id, name, img, date, count));
+            }
+        }
+        dto.setTopFavoritedRecipes(favList);
+
         dto.setDietLabels(dLabels);
         dto.setDietData(dData);
+        dto.setTopAddedRecipes(topList);
 
         // 3. Xử lý dữ liệu biểu đồ Goal (Mục tiêu)
         List<Object[]> goalRaw = profileRepo.countUsersByGoal();

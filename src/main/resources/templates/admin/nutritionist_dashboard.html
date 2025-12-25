@@ -10,15 +10,15 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script id="tailwind-config">
             tailwind.config = {
-                darkMode: "class",
-                theme: {
+            darkMode: "class",
+                    theme: {
                     extend: {
-                        colors: {
-                            "primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "soft-grey": "#78909C", "nutri-green": "#4CAF50"
-                        },
-                        fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    colors: {
+                    "primary": "#4bbe4f", "background-light": "#FAFAFA", "dark-ink": "#263238", "soft-grey": "#78909C", "nutri-green": "#4CAF50"
                     },
-                },
+                            fontFamily: {"display": ["Manrope", "sans-serif"]},
+                    },
+                    },
             }
         </script>
     </head>
@@ -35,18 +35,30 @@
                     </header>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200 cursor-pointer hover:shadow-md transition"
-                             onclick="window.location.href = '/nutritionist/recipes/pending'">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                             <div class="flex justify-between">
                                 <div>
-                                    <p class="text-xs font-bold text-orange-600 uppercase">Review Queue</p>
-                                    <h3 class="text-3xl font-black text-dark-ink mt-1" th:text="${stats.pendingRecipes}">0</h3>
+                                    <p class="text-xs font-bold text-soft-grey uppercase">Total Plans</p>
+                                    <h3 class="text-3xl font-black text-dark-ink mt-1" th:text="${stats.totalMealPlans}">0</h3>
                                 </div>
-                                <div class="p-3 bg-orange-50 rounded-full h-12 w-12 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-orange-500">hourglass_top</span>
+                                <div class="p-3 bg-purple-50 rounded-full h-12 w-12 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-purple-600">calendar_month</span>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2">Recipes waiting for you</p>
+                            <p class="text-xs text-gray-400 mt-2">Daily plans generated</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200 cursor-pointer hover:shadow-md transition"
+                             onclick="window.location.href = '/nutritionist/ingredients/pending'"> <div class="flex justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-orange-600 uppercase">Ingr. Queue</p>
+                                    <h3 class="text-3xl font-black text-dark-ink mt-1" th:text="${stats.pendingIngredients}">0</h3>
+                                </div>
+                                <div class="p-3 bg-orange-50 rounded-full h-12 w-12 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-orange-500">grocery</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">New ingredients to review</p>
                         </div>
 
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
@@ -93,59 +105,166 @@
                             </div>
                         </div>
                     </div>
+                    <div class="p-6 overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 mt-7">
+                        <h3 class="text-lg font-bold text-dark-ink mb-1">Top most Frequently Used Recipes</h3>  
+                        <table class="w-full text-left border-collapse align-middle">
+                            <thead>
+                                <tr class="text-xs font-bold text-gray-400 uppercase border-b border-gray-100">
+                                    <th class="py-3 pl-2">Top</th>
+                                    <th class="py-3 pl-2">Recipe</th>
+                                    <th class="py-3">Added Date</th>
+                                    <th class="py-3 text-center">Total Adds</th>
+                                    <th class="py-3 text-right pr-2">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm text-dark-ink">
+                                <tr th:each="recipe, iterStat : ${stats.topAddedRecipes}" class="border-b border-gray-50 hover:bg-gray-50 transition group">
+                                    <td class="py-3 pl-2"  th:text="${iterStat.index + 1}">1</td>
+                                    <td class="py-3 pl-2">
+                                        <div class="flex items-center gap-3">
+                                            <img th:src="${recipe.imageUrl}" class="w-10 h-10 rounded-lg object-cover border border-gray-200" onerror="this.src='/images/default-food.png'">
+                                            <div>
+                                                <p class="font-bold text-dark-ink line-clamp-1" th:text="${recipe.name}">Recipe Name</p>
+                                                <p class="text-xs text-gray-400">ID: [[${recipe.id}]]</p>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="py-3 text-gray-500 text-xs">
+                                        <span th:text="${#temporals.format(recipe.createdAt, 'dd MMM yyyy')}">Date</span>
+                                    </td>
+
+                                    <td class="py-3 text-center">
+                                        <span class="inline-flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-md text-xs font-bold border border-orange-100">
+                                            <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                            [[${recipe.count}]]
+                                        </span>
+                                    </td>
+
+                                    <td class="py-3 text-right pr-2">
+                                        <a th:href="@{/recipes/detail/{id}(id=${recipe.id})}" target="_blank"
+                                           class="text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg transition-all shadow-sm inline-flex items-center gap-1">
+                                            View <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <tr th:if="${#lists.isEmpty(stats.topAddedRecipes)}">
+                                    <td colspan="4" class="py-8 text-center text-gray-400 italic">
+                                        <div class="flex flex-col items-center">
+                                            <span class="material-symbols-outlined text-3xl mb-2 text-gray-300">no_food</span>
+                                            No trending data available yet.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-7">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-bold text-dark-ink">Most Favorited</h3>
+                            <span class="text-xs font-bold text-soft-grey bg-gray-100 px-3 py-1 rounded-full">User Saves</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse align-middle">
+                                <thead>
+                                    <tr class="text-xs font-bold text-gray-400 uppercase border-b border-gray-100">
+                                        <th class="py-3 pl-2">Top</th>
+                                        <th class="py-3 pl-2">Recipe</th>
+                                        <th class="py-3">Added Date</th>
+                                        <th class="py-3 text-center">Saves</th>
+                                        <th class="py-3 text-right pr-2">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm text-dark-ink">
+                                    <tr th:each="fav, iterStat : ${stats.topFavoritedRecipes}" class="border-b border-gray-50 hover:bg-gray-50 transition group">
+                                        <td class="py-3 pl-2" th:text="${iterStat.index + 1}"></td>
+                                        <td class="py-3 pl-2">
+                                            <div class="flex items-center gap-3">
+                                                <img th:src="${fav.imageUrl}" class="w-10 h-10 rounded-lg object-cover border border-gray-200" onerror="this.src='/images/default-food.png'">
+                                                <div>
+                                                    <p class="font-bold text-dark-ink line-clamp-1" th:text="${fav.name}">Name</p>
+                                                    <p class="text-xs text-gray-400" th:text="${#temporals.format(fav.createdAt, 'dd MMM')}">Date</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-gray-500 text-xs">
+                                            <span th:text="${#temporals.format(fav.createdAt, 'dd MMM yyyy')}">Date</span>
+                                        </td>
+                                        <td class="py-3 text-center">
+                                            <span class="inline-flex items-center gap-1 bg-pink-50 text-pink-600 px-2 py-1 rounded-md text-xs font-bold border border-pink-100">
+                                                <span class="material-symbols-outlined text-[12px]">favorite</span>
+                                                [[${fav.count}]]
+                                            </span>
+                                        </td>
+                                        <td class="py-3 text-right pr-2">
+                                            <a th:href="@{/recipes/detail/{id}(id=${fav.id})}" target="_blank"
+                                               class="text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg transition-all shadow-sm inline-flex items-center gap-1">
+                                                View <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(stats.topFavoritedRecipes)}">
+                                        <td colspan="3" class="py-6 text-center text-gray-400 italic">No favorites yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
 
         <script th:inline="javascript">
             // Goal Chart Data
-            const goalLabels = [[${stats.goalLabels}
+            const goalLabels = [[${stats.goalLabels
+            }
             ]];
-                    const goalData = [[${stats.goalData}
-                    ]];
-
+            const goalData = [[${stats.goalData
+            }
+            ]];
             new Chart(document.getElementById('goalChart'), {
-                type: 'bar',
-                data: {
+            type: 'bar',
+                    data: {
                     labels: goalLabels,
-                    datasets: [{
+                            datasets: [{
                             label: 'Users',
-                            data: goalData,
-                            backgroundColor: '#4CAF50',
-                            borderRadius: 6,
-                            barThickness: 40
-                        }]
-                },
-                options: {
+                                    data: goalData,
+                                    backgroundColor: '#4CAF50',
+                                    borderRadius: 6,
+                                    barThickness: 40
+                            }]
+                    },
+                    options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {legend: {display: false}},
-                    scales: {y: {beginAtZero: true, grid: {display: false}}}
-                }
+                            maintainAspectRatio: false,
+                            plugins: {legend: {display: false}},
+                            scales: {y: {beginAtZero: true, grid: {display: false}}}
+                    }
             });
-
             // Diet Chart Data
-            const dietLabels = [[${stats.dietLabels}
+            const dietLabels = [[${stats.dietLabels
+            }
             ]];
-                    const dietData = [[${stats.dietData}
-                    ]];
-
+            const dietData = [[${stats.dietData
+            }
+            ]];
             new Chart(document.getElementById('dietChart'), {
-                type: 'doughnut',
-                data: {
+            type: 'doughnut',
+                    data: {
                     labels: dietLabels,
-                    datasets: [{
+                            datasets: [{
                             data: dietData,
-                            backgroundColor: ['#81C784', '#66BB6A', '#4CAF50', '#43A047', '#2E7D32', '#1B5E20'],
-                            borderWidth: 0
-                        }]
-                },
-                options: {
+                                    backgroundColor: ['#81C784', '#66BB6A', '#4CAF50', '#43A047', '#2E7D32', '#1B5E20'],
+                                    borderWidth: 0
+                            }]
+                    },
+                    options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {legend: {position: 'right'}},
-                    cutout: '75%'
-                }
+                            maintainAspectRatio: false,
+                            plugins: {legend: {position: 'right'}},
+                            cutout: '75%'
+                    }
             });
         </script>
     </body>

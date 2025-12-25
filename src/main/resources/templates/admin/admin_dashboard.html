@@ -77,29 +77,18 @@
                             <div class="mt-4 flex items-center text-sm"><span class="text-gray-500">Ready to serve</span></div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden hover:shadow-md transition cursor-pointer" 
-                             onclick="window.location.href = '/admin/recipes?status=PENDING'">
-                            <div class="absolute right-0 top-0 h-full w-1 bg-alert-red"></div>
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="text-soft-grey text-sm font-medium">Pending Approval</p>
-                                    <h3 class="text-3xl font-bold text-alert-red mt-2" th:text="${stats.pendingRecipes}">0</h3>
-                                </div>
-                                <div class="p-2 bg-red-50 rounded-lg"><span class="material-symbols-outlined text-alert-red">gavel</span></div>
-                            </div>
-                            <div class="mt-4 flex items-center text-sm"><span class="text-red-500 font-medium">Requires attention</span></div>
-                        </div>
-
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <p class="text-soft-grey text-sm font-medium">AI Tokens Used</p>
-                                    <h3 class="text-3xl font-bold text-dark-ink mt-2" th:text="${#numbers.formatInteger(stats.totalAiTokens, 1, 'COMMA')}">0</h3>
+                                    <h3 class="text-3xl font-bold text-dark-ink mt-2" th:text="${#numbers.formatInteger(stats.totalAiTokens, 1, 'COMMA')}"></h3>
                                 </div>
                                 <div class="p-2 bg-purple-50 rounded-lg"><span class="material-symbols-outlined text-purple-600">memory</span></div>
                             </div>
                             <div class="mt-4 flex items-center text-sm"><span class="text-gray-400">Total usage lifetime</span></div>
                         </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-sm border relative overflow-hidden hover:shadow-md transition"></div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -121,6 +110,21 @@
                                 <span class="px-2 py-1 bg-gray-100 rounded">KETO</span>
                                 <span class="px-2 py-1 bg-gray-100 rounded">VEGAN</span>
                                 <span class="px-2 py-1 bg-gray-100 rounded">EAT CLEAN</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 class="text-lg font-bold text-dark-ink">AI Consumption Trends</h3>
+                                    <p class="text-sm text-gray-500">Token usage by request type (Last 30 Days)</p>
+                                </div>
+                                <div class="p-2 bg-purple-50 rounded-lg"></div>
+                            </div>
+                            <div class="h-80 w-full">
+                                <canvas id="tokenChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -193,6 +197,87 @@
                 data: {labels: goalLabels, datasets: [{label: 'Users', data: goalData, backgroundColor: '#4bbe4f', borderRadius: 4}]},
                 options: {indexAxis: 'y', responsive: true, maintainAspectRatio: false}
             });
+        </script>
+
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            // Dữ liệu từ Controller
+            const tokenLabels = /*[[${stats.tokenChartLabels}]]*/ [];
+            const tokenDataMap = /*[[${stats.tokenChartData}]]*/ {};
+
+            // Bảng màu cho các đường (Line colors)
+            const lineColors = [
+                '#3B82F6', // Blue
+                '#EF4444', // Red
+                '#10B981', // Green
+                '#F59E0B', // Yellow
+                '#8B5CF6', // Purple
+                '#EC4899'  // Pink
+            ];
+
+            // Chuyển Map thành Datasets của Chart.js
+            const tokenDatasets = [];
+            let colorIdx = 0;
+
+            for (const [type, data] of Object.entries(tokenDataMap)) {
+                const color = lineColors[colorIdx % lineColors.length];
+                tokenDatasets.push({
+                    label: type, // Tên loại request (VD: ANALYZE_FOOD)
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.3, // Độ cong của đường
+                    fill: false,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                });
+                colorIdx++;
+            }
+
+            // Vẽ biểu đồ
+            const ctxToken = document.getElementById('tokenChart');
+            if (ctxToken) {
+                new Chart(ctxToken.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: tokenLabels,
+                        datasets: tokenDatasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                align: 'end',
+                                labels: {usePointStyle: true, boxWidth: 8}
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.dataset.label + ': ' + context.parsed.y + ' tokens';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {display: true, text: 'Tokens'},
+                                grid: {borderDash: [2, 4], color: '#f3f4f6'}
+                            },
+                            x: {
+                                grid: {display: false}
+                            }
+                        }
+                    }
+                });
+            }
+            /*]]>*/
         </script>
 
         <div th:replace="~{fragments/toast :: toast-system}"></div>

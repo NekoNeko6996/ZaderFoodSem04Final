@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -80,22 +79,12 @@ public class AdminIngredientService {
         IngredientCategory cat = categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        try {
-            // 1. Thử xóa cứng
-            categoryRepository.delete(cat);
-
-            categoryRepository.flush();
-
-            return "HARD"; // Đã xóa vĩnh viễn
-
-        } catch (DataIntegrityViolationException e) {
-
-            cat.setIsDeleted(true);
-            cat.setDeletedAt(LocalDateTime.now());
-            categoryRepository.save(cat);
-
-            return "SOFT"; // Đã chuyển sang ẩn
-        }
+        cat.setIsDeleted(true);
+        cat.setDeletedAt(LocalDateTime.now());
+        categoryRepository.save(cat);
+        System.out.print("SOFT");
+       
+        return null;
     }
 
     public void updateCategory(Integer id, String newName) {
