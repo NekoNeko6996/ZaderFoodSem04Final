@@ -74,7 +74,7 @@
                                 </div>
 
                                 <div class="flex flex-wrap gap-3 items-start">
-                                    <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-chef-orange text-white text-base font-bold w-full sm:w-auto hover:bg-opacity-90 transition">
+                                    <button onclick="openMealPlanModal()" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-chef-orange text-white text-base font-bold w-full sm:w-auto hover:bg-opacity-90 transition">
                                         Add to Meal Plan
                                     </button>
                                     <button
@@ -215,22 +215,58 @@
         <div th:replace="~{fragments/toast :: toast-system}"></div>
     </div>
 
-    <dialog id="mealPlanModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-md">
-        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+    <dialog id="mealPlanModal" class="p-0 rounded-xl shadow-2xl backdrop:bg-black/40 w-full max-w-sm">
+        <div class="p-5 border-b flex justify-between items-center bg-gray-50">
             <h3 class="text-lg font-bold text-dark-ink">Add to Meal Plan</h3>
-            <button onclick="document.getElementById('mealPlanModal').close()" class="text-gray-400 hover:text-dark-ink"><span class="material-symbols-outlined">close</span></button>
+            <button onclick="document.getElementById('mealPlanModal').close()" class="text-gray-400 hover:text-dark-ink">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
-        <div class="p-6 flex flex-col gap-4">
+
+        <div class="p-5 flex flex-col gap-5">
+
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1">Select Date</label>
-                <select id="planDateSelect" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green">
-                    <option value="">Loading dates...</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Showing upcoming scheduled plans.</p>
+                <label class="block text-sm font-bold text-gray-700 mb-2">Select Date</label>
+
+                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <button id="calPrevBtn" onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+                            <span class="material-symbols-outlined text-sm">chevron_left</span>
+                        </button>
+                        <span id="calMonthYear" class="text-sm font-bold text-dark-ink uppercase tracking-wide">DECEMBER 2025</span>
+                        <button id="calNextBtn" onclick="changeCalendarMonth(1)" class="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+                            <span class="material-symbols-outlined text-sm">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 mb-2 text-center">
+                        <span class="text-[10px] font-bold text-gray-400">S</span>
+                        <span class="text-[10px] font-bold text-gray-400">M</span>
+                        <span class="text-[10px] font-bold text-gray-400">T</span>
+                        <span class="text-[10px] font-bold text-gray-400">W</span>
+                        <span class="text-[10px] font-bold text-gray-400">T</span>
+                        <span class="text-[10px] font-bold text-gray-400">F</span>
+                        <span class="text-[10px] font-bold text-gray-400">S</span>
+                    </div>
+
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                        <div class="h-8 flex items-center justify-center text-xs text-gray-300">...</div>
+                    </div>
+
+                    <div class="flex justify-center gap-3 mt-3 pt-3 border-t border-gray-50 text-[10px] text-gray-400">
+                        <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Good</div>
+                        <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> Fair</div>
+                        <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Over</div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="selectedDateValue">
+                <p id="selectedDateDisplay" class="text-xs text-nutri-green font-bold mt-2 text-right min-h-[16px]"></p>
             </div>
+
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1">Meal Time</label>
-                <select id="mealTimeSelect" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green">
+                <select id="mealTimeSelect" class="w-full rounded-lg border-gray-300 focus:ring-nutri-green text-sm">
                     <option value="BREAKFAST">Breakfast</option>
                     <option value="LUNCH">Lunch</option>
                     <option value="DINNER">Dinner</option>
@@ -238,9 +274,10 @@
                 </select>
             </div>
         </div>
-        <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
-            <button onclick="document.getElementById('mealPlanModal').close()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg">Cancel</button>
-            <button onclick="confirmAddToMealPlan()" class="px-4 py-2 bg-nutri-green text-white font-bold hover:bg-green-600 rounded-lg shadow-sm">Save</button>
+
+        <div class="p-5 border-t bg-gray-50 flex justify-end gap-3">
+            <button onclick="document.getElementById('mealPlanModal').close()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg text-sm">Cancel</button>
+            <button onclick="confirmAddToMealPlan()" class="px-4 py-2 bg-nutri-green text-white font-bold hover:bg-green-600 rounded-lg shadow-sm text-sm">Add to Plan</button>
         </div>
     </dialog>
 
@@ -386,6 +423,271 @@
                     }
                 }
             });
+        }
+    </script>
+
+    <script>
+        // --- VARIABLES ---
+        let currentCalMonth = new Date().getMonth() + 1; // 1-12
+        let currentCalYear = new Date().getFullYear();
+        let selectedDate = null;
+
+        // 1. Mở Modal và Load Lịch tháng hiện tại
+        function openMealPlanModal() {
+            const modal = document.getElementById('mealPlanModal');
+            modal.showModal();
+
+            // Reset
+            selectedDate = null;
+            document.getElementById('selectedDateValue').value = "";
+            document.getElementById('selectedDateDisplay').innerText = "";
+
+            // Load lịch
+            loadMiniCalendar(currentCalMonth, currentCalYear);
+        }
+
+        // 2. Gọi API lấy dữ liệu lịch
+        function loadMiniCalendar(month, year) {
+            const grid = document.getElementById('calendarGrid');
+            const header = document.getElementById('calMonthYear');
+
+            // Loading UI
+            grid.innerHTML = '<div class="col-span-7 py-4 text-center text-xs text-gray-400">Loading calendar...</div>';
+
+            fetch(`/api/meal-plan/calendar?month=${month}&year=${year}`)
+                    .then(res => {
+                        if (res.status === 401)
+                            throw new Error("UNAUTHORIZED");
+                        return res.json();
+                    })
+                    .then(data => {
+                        renderCalendarGrid(data);
+                        header.innerText = `${data.monthName} ${data.year}`;
+                        currentCalMonth = data.month;
+                        currentCalYear = data.year;
+                    })
+                    .catch(err => {
+                        if (err.message === "UNAUTHORIZED") {
+                            document.getElementById('mealPlanModal').close();
+                            ZaderToast.error("Please login first");
+                        } else {
+                            grid.innerHTML = '<div class="col-span-7 text-center text-red-400 text-xs">Failed to load</div>';
+                        }
+                    });
+        }
+
+        // 3. Render HTML cho Lịch (Đã Fix Tooltip tràn lề)
+        function renderCalendarGrid(data) {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // A. Render Offset (Khoảng trắng đầu tháng)
+            // Cần tính tổng số ô đã render để biết vị trí cột của ngày hiện tại
+            let cellCounter = 0;
+
+            for (let i = 0; i < data.startOffset; i++) {
+                grid.appendChild(document.createElement('div'));
+                cellCounter++;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // B. Render Ngày
+            data.days.forEach(day => {
+                const dateStr = day.fullDate;
+                const dayDate = new Date(dateStr);
+                dayDate.setHours(0, 0, 0, 0);
+                const isPast = dayDate < today;
+
+                // Tính chỉ số cột (0: Chủ nhật, ..., 6: Thứ 7)
+                const colIndex = cellCounter % 7;
+                cellCounter++;
+
+                // Container nút
+                const btn = document.createElement('button');
+                btn.className = `aspect-square relative flex items-center justify-center rounded-full text-xs font-medium transition-all group hover:bg-gray-100`;
+
+                if (day.isToday) {
+                    btn.classList.add('ring-2', 'ring-dark-ink', 'font-bold');
+                }
+
+                if (isPast) {
+                    btn.classList.add('opacity-30', 'cursor-not-allowed');
+                    btn.disabled = true;
+                } else {
+                    btn.onclick = () => selectDateInCalendar(btn, dateStr);
+                }
+
+                // 1. Số ngày
+                btn.innerHTML = `<span class="z-10">${day.dayValue}</span>`;
+
+                if (day.hasPlan) {
+                    // 2. Dấu chấm màu
+                    const dot = document.createElement('div');
+                    dot.className = `absolute bottom-1 w-1 h-1 rounded-full`;
+                    if (day.statusColor === 'GREEN')
+                        dot.classList.add('bg-green-500');
+                    else if (day.statusColor === 'YELLOW')
+                        dot.classList.add('bg-yellow-500');
+                    else if (day.statusColor === 'RED')
+                        dot.classList.add('bg-red-500');
+                    else
+                        dot.classList.add('bg-gray-300');
+                    btn.appendChild(dot);
+
+                    // --- 3. TOOLTIP THÔNG MINH (SMART POSITIONING) ---
+
+                    // Xác định class vị trí dựa trên cột
+                    let tooltipPosClass = "left-1/2 -translate-x-1/2"; // Mặc định: Căn giữa
+                    let arrowPosClass = "left-1/2 -translate-x-1/2";   // Mũi tên: Căn giữa
+
+                    if (colIndex === 0 || colIndex === 1) {
+                        // Sát lề trái -> Căn trái
+                        tooltipPosClass = "left-0";
+                        arrowPosClass = "left-3"; // Mũi tên lệch trái để trỏ vào nút
+                    } else if (colIndex === 5 || colIndex === 6) {
+                        // Sát lề phải -> Căn phải
+                        tooltipPosClass = "right-0";
+                        arrowPosClass = "right-3"; // Mũi tên lệch phải
+                    }
+
+                    const tooltipHtml = `
+                    <div class="absolute bottom-full mb-2 ${tooltipPosClass} w-48 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 hidden group-hover:block z-50 text-left pointer-events-none">
+                        <div class="absolute top-full ${arrowPosClass} border-8 border-transparent border-t-white dark:border-t-gray-800"></div>
+                        
+                        <div class="border-b border-gray-100 pb-2 mb-2">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">Total Intake</p>
+                            <div class="flex justify-between items-end">
+                                <span class="text-sm font-black ${getDayColorClass(day.statusColor)}">${day.totalCalories}</span>
+                                <span class="text-[10px] text-gray-400 mb-0.5">/ ${day.calorieGoal} kcal</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-gray-500">Breakfast</span>
+                                <span class="font-bold text-dark-ink">${day.breakfastCal}</span>
+                            </div>
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-gray-500">Lunch</span>
+                                <span class="font-bold text-dark-ink">${day.lunchCal}</span>
+                            </div>
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-gray-500">Dinner</span>
+                                <span class="font-bold text-dark-ink">${day.dinnerCal}</span>
+                            </div>
+                             <div class="flex justify-between text-[10px]">
+                                <span class="text-gray-500">Snack</span>
+                                <span class="font-bold text-dark-ink">${day.snackCal}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                    btn.insertAdjacentHTML('beforeend', tooltipHtml);
+                }
+
+                grid.appendChild(btn);
+            });
+        }
+
+        // Helper function để lấy màu text cho số tổng
+        function getDayColorClass(status) {
+            if (status === 'GREEN')
+                return 'text-green-500';
+            if (status === 'YELLOW')
+                return 'text-yellow-500';
+            if (status === 'RED')
+                return 'text-red-500';
+            return 'text-gray-400';
+        }
+
+        // 4. Xử lý chọn ngày
+        function selectDateInCalendar(btnElement, dateStr) {
+            // Xóa style selected cũ
+            const allBtns = document.querySelectorAll('#calendarGrid button');
+            allBtns.forEach(b => {
+                b.classList.remove('bg-dark-ink', 'text-white', 'hover:bg-dark-ink');
+                // Reset lại màu text nếu không phải là nút vừa bấm
+                if (!b.disabled)
+                    b.classList.add('text-dark-ink', 'hover:bg-gray-100');
+            });
+
+            // Add style selected mới
+            btnElement.classList.remove('text-dark-ink', 'hover:bg-gray-100');
+            btnElement.classList.add('bg-dark-ink', 'text-white', 'hover:bg-dark-ink');
+
+            // Lưu giá trị
+            selectedDate = dateStr;
+            document.getElementById('selectedDateValue').value = dateStr;
+
+            // Hiển thị text ngày chọn
+            const displayDate = new Date(dateStr).toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'short'});
+            document.getElementById('selectedDateDisplay').innerText = `Selected: ${displayDate}`;
+        }
+
+        // 5. Chuyển tháng
+        function changeCalendarMonth(offset) {
+            let newMonth = currentCalMonth + offset;
+            let newYear = currentCalYear;
+
+            if (newMonth > 12) {
+                newMonth = 1;
+                newYear++;
+            } else if (newMonth < 1) {
+                newMonth = 12;
+                newYear--;
+            }
+
+            // Không cho phép lùi về tháng quá khứ sâu (Option)
+            // if (newYear < new Date().getFullYear() || (newYear === new Date().getFullYear() && newMonth < new Date().getMonth() + 1)) return;
+
+            loadMiniCalendar(newMonth, newYear);
+        }
+
+        // 6. Confirm Add (Logic cũ nhưng lấy date từ input hidden)
+        function confirmAddToMealPlan() {
+            const date = document.getElementById('selectedDateValue').value;
+            const mealType = document.getElementById('mealTimeSelect').value;
+            const recipeId = window.location.pathname.split('/').pop();
+
+            if (!date) {
+                ZaderToast.error("Please select a date on the calendar.");
+                return;
+            }
+
+            const modal = document.getElementById('mealPlanModal');
+            let loadingID = ZaderToast.loading("Adding to meal plan...");
+
+            const payload = {
+                recipeId: parseInt(recipeId),
+                date: date,
+                mealType: mealType
+            };
+
+            fetch('/api/meal-plan/add-item', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            })
+                    .then(res => res.json())
+                    .then(data => {
+                        ZaderToast.remove(loadingID);
+                        
+                        if (data.status === 'success') {
+                            modal.close();
+                            ZaderToast.success(data.message);
+                        } else if (data.status === 'duplicate') {
+                            ZaderToast.warning(data.message);
+                        } else {
+                            ZaderToast.error("Failed: " + data.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.log(err);
+                        ZaderToast.error("An error occurred.");
+                    });
         }
     </script>
 </body>
