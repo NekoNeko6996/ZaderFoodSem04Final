@@ -289,7 +289,7 @@ public class MealPlanService {
         DayDetailDTO dto = new DayDetailDTO();
         dto.date = date;
         dto.dayName = date.format(DateTimeFormatter.ofPattern("EEEE dd/MM", Locale.ENGLISH));
-        
+
         dto.totalCalories = dailyPlan.getTotalCalories().intValue();
         // Lấy macros (xử lý null an toàn)
         dto.totalProtein = dailyPlan.getTotalProtein() != null ? dailyPlan.getTotalProtein().intValue() : 0;
@@ -330,6 +330,11 @@ public class MealPlanService {
                     String ingImg = (ing != null && ing.getImageUrl() != null) ? ing.getImageUrl() : "/images/ingredients/default.png";
                     String category = "Pantry";
 
+                    if (ing != null) {
+                        ri.setIngredient(ing);
+                    }
+                    
+                    
                     BigDecimal qty = (ri.getQuantity() != null) ? ri.getQuantity() : BigDecimal.ZERO;
                     if (item.getQuantityMultiplier() != null) {
                         qty = qty.multiply(item.getQuantityMultiplier());
@@ -425,11 +430,11 @@ public class MealPlanService {
 
         dto.totalCalories = dailyPlan.getTotalCalories().intValue();
         dto.dailyIngredients = ingredientList;
-        
+
         dto.suggestions = new ArrayList<>();
 
         int remainingCal = dto.totalCalories - consumedCal;
-        
+
         // Chỉ gợi ý nếu còn thiếu năng lượng đáng kể (> 100kcal)
         if (remainingCal > 100) {
 
@@ -850,7 +855,7 @@ public class MealPlanService {
     public void deleteMealItem(Integer itemId) {
         itemRepo.deleteById(itemId);
     }
-    
+
     @Transactional
     public void addRecipeToPlan(Integer userId, LocalDate date, Integer recipeId, String typeStr) {
         // 1. Tìm/Tạo Plan
@@ -880,7 +885,7 @@ public class MealPlanService {
         item.setCarbs(r.getCarbs());
         item.setFat(r.getFat());
         item.setImageUrl(r.getImageUrl());
-        
+
         item.setMealTimeType(MealType.valueOf(typeStr.toUpperCase()));
         item.setStatus("PENDING");
         item.setQuantityMultiplier(BigDecimal.ONE);
@@ -889,10 +894,10 @@ public class MealPlanService {
 
         itemRepo.save(item);
     }
-    
+
     public List<LocalDate> getUpcomingPlannedDates(Integer userId) {
-    // Lấy các ngày có plan từ hôm nay trở đi
-    return dailyRepo.findByUserIdAndPlanDateGreaterThanEqual(userId, LocalDate.now())
-            .stream().map(DailyMealPlan::getPlanDate).collect(Collectors.toList());
-}
+        // Lấy các ngày có plan từ hôm nay trở đi
+        return dailyRepo.findByUserIdAndPlanDateGreaterThanEqual(userId, LocalDate.now())
+                .stream().map(DailyMealPlan::getPlanDate).collect(Collectors.toList());
+    }
 }

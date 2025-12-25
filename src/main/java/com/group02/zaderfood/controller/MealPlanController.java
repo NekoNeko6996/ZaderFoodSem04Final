@@ -3,6 +3,7 @@ package com.group02.zaderfood.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group02.zaderfood.dto.AiFoodResponse;
 import com.group02.zaderfood.dto.DayDetailDTO;
+import com.group02.zaderfood.dto.DayDetailDTO.MealDetail;
 import com.group02.zaderfood.dto.SavePlanDTO;
 import com.group02.zaderfood.dto.UserProfileDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
@@ -19,6 +20,7 @@ import com.group02.zaderfood.service.AiFoodService;
 import com.group02.zaderfood.service.CustomUserDetails;
 import com.group02.zaderfood.service.FileStorageService;
 import com.group02.zaderfood.service.MealPlanService;
+import com.group02.zaderfood.service.RecipeService;
 import com.group02.zaderfood.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -76,6 +78,8 @@ public class MealPlanController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private RecipeService recipeService;
 
     private String getDayLabel(LocalDate date) {
         // EEEE: Tên thứ (Monday), dd/MM: Ngày tháng
