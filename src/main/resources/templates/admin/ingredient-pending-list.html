@@ -9,87 +9,90 @@
         <div th:replace="~{fragments/sidebar_nutritionist :: sidebar}"></div>
 
         <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-            <main class="w-full grow p-6">
-                <div class="flex flex-col gap-6 max-w-7xl mx-auto">
+            <main class="flex-1 ml-64 bg-gray-50 min-h-screen">
 
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 class="text-3xl font-bold text-dark-ink">Ingredient Requests</h1>
-                            <p class="text-gray-500 mt-1">Review and standardize nutritional data submitted by users.</p>
-                        </div>
-                    </div>
-
-                    <div th:if="${message}" th:classappend="${messageType == 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}" class="p-4 rounded-lg flex items-center gap-2">
-                        <span class="material-symbols-outlined text-lg">info</span>
-                        <span th:text="${message}"></span>
-                    </div>
-
-                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
-                                    <tr>
-                                        <th class="px-6 py-4">Image</th>
-                                        <th class="px-6 py-4">Ingredient Name</th>
-                                        <th class="px-6 py-4">Requested By</th>
-                                        <th class="px-6 py-4">Submitted At</th>
-                                        <th class="px-6 py-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableBody" class="divide-y divide-gray-100">
-                                    <tr th:each="ing : ${ingredients}" class="item-row hover:bg-gray-50 transition">
-                                        <td class="px-6 py-4">
-                                            <div class="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
-                                                <img th:src="${ing.imageUrl != null ? ing.imageUrl : 'https://placehold.co/100?text=Ing'}" 
-                                                     class="w-full h-full object-cover">
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <p class="font-bold text-dark-ink" th:text="${ing.name}">Apple</p>
-                                            <p class="text-xs text-gray-500" th:text="${ing.caloriesPer100g} + ' kcal/100g'">52 kcal</p>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-600">
-                                            <span class="flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-sm">person</span>
-                                                <span th:text="${ing.createdByUserId}">User 123</span>
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500" th:text="${#temporals.format(ing.createdAt, 'dd MMM yyyy')}">Date</td>
-                                        <td class="px-6 py-4 text-right">
-                                            <a th:href="@{/nutritionist/ingredients/review/{id}(id=${ing.ingredientId})}" 
-                                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-bold transition">
-                                                Review
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(ingredients)}">
-                                        <td colspan="5" class="px-6 py-10 text-center text-gray-400 italic">
-                                            No pending ingredients found. Good job!
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                <div>
+                    <div th:replace="~{fragments/navbar_admin :: header_nav_admin}"></div>
+                    <div class="flex flex-col gap-6 max-w-7xl mx-auto p-6">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h1 class="text-3xl font-bold text-dark-ink">Ingredient Requests</h1>
+                                <p class="text-gray-500 mt-1">Review and standardize nutritional data submitted by users.</p>
+                            </div>
                         </div>
 
-                        <div id="pagination-controls" class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white hidden">
-                            <div class="text-sm text-gray-500">
-                                Showing <span id="start-index" class="font-bold text-dark-ink">0</span> 
-                                to <span id="end-index" class="font-bold text-dark-ink">0</span> 
-                                of <span id="total-rows" class="font-bold text-dark-ink">0</span> entries
+                        <div th:if="${message}" th:classappend="${messageType == 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}" class="p-4 rounded-lg flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">info</span>
+                            <span th:text="${message}"></span>
+                        </div>
+
+                        <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
+                                        <tr>
+                                            <th class="px-6 py-4">Image</th>
+                                            <th class="px-6 py-4">Ingredient Name</th>
+                                            <th class="px-6 py-4">Requested By</th>
+                                            <th class="px-6 py-4">Submitted At</th>
+                                            <th class="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBody" class="divide-y divide-gray-100">
+                                        <tr th:each="ing : ${ingredients}" class="item-row hover:bg-gray-50 transition">
+                                            <td class="px-6 py-4">
+                                                <div class="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
+                                                    <img th:src="${ing.imageUrl != null ? ing.imageUrl : 'https://placehold.co/100?text=Ing'}" 
+                                                         class="w-full h-full object-cover">
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <p class="font-bold text-dark-ink" th:text="${ing.name}">Apple</p>
+                                                <p class="text-xs text-gray-500" th:text="${ing.caloriesPer100g} + ' kcal/100g'">52 kcal</p>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-gray-600">
+                                                <span class="flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-sm">person</span>
+                                                    <span th:text="${ing.createdByUserId}">User 123</span>
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-gray-500" th:text="${#temporals.format(ing.createdAt, 'dd MMM yyyy')}">Date</td>
+                                            <td class="px-6 py-4 text-right">
+                                                <a th:href="@{/admin/ingredient/review/{id}(id=${ing.ingredientId})}" 
+                                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-bold transition">
+                                                    Review
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(ingredients)}">
+                                            <td colspan="5" class="px-6 py-10 text-center text-gray-400 italic">
+                                                No pending ingredients found. Good job!
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <button onclick="prevPage()" id="btn-prev" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
-                                    <span class="material-symbols-outlined text-base">chevron_left</span> Prev
-                                </button>
-
-                                <div class="bg-nutri-green/10 text-nutri-green px-3 py-1.5 rounded-lg text-sm font-bold">
-                                    Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+                            <div id="pagination-controls" class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white hidden">
+                                <div class="text-sm text-gray-500">
+                                    Showing <span id="start-index" class="font-bold text-dark-ink">0</span> 
+                                    to <span id="end-index" class="font-bold text-dark-ink">0</span> 
+                                    of <span id="total-rows" class="font-bold text-dark-ink">0</span> entries
                                 </div>
 
-                                <button onclick="nextPage()" id="btn-next" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
-                                    Next <span class="material-symbols-outlined text-base">chevron_right</span>
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="prevPage()" id="btn-prev" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                                        <span class="material-symbols-outlined text-base">chevron_left</span> Prev
+                                    </button>
+
+                                    <div class="bg-nutri-green/10 text-nutri-green px-3 py-1.5 rounded-lg text-sm font-bold">
+                                        Page <span id="current-page">1</span> / <span id="total-pages">1</span>
+                                    </div>
+
+                                    <button onclick="nextPage()" id="btn-next" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                                        Next <span class="material-symbols-outlined text-base">chevron_right</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
