@@ -67,9 +67,9 @@
                         <span class="material-symbols-outlined">print</span> Print
                     </button>
 
-                    <a th:href="@{/shopping-list/{id}/export(id=${currentListId})}" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition shadow-sm">
+                    <button onclick="exportExcel()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition shadow-sm">
                         <span class="material-symbols-outlined">table_view</span> Excel
-                    </a>
+                    </button>
 
                     <button onclick="sendEmail()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-sm">
                         <span class="material-symbols-outlined">mail</span> Email
@@ -123,88 +123,128 @@
             </div>
 
         </main>
+        
+        <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
 
         <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <script th:inline="javascript">
-                                // 1. Lấy dữ liệu từ Server
-                                const plannedDates = /*[[${plannedDates}]]*/ [];
-                                const savedFromDate = /*[[${fromDateStr}]]*/ null;
-                                const savedToDate = /*[[${toDateStr}]]*/ null;
-                                const currentListId = /*[[${currentListId}]]*/ null;
+                        // 1. Lấy dữ liệu từ Server
+                        const plannedDates = /*[[${plannedDates}]]*/ [];
+                        const savedFromDate = /*[[${fromDateStr}]]*/ null;
+                        const savedToDate = /*[[${toDateStr}]]*/ null;
+                        const currentListId = /*[[${currentListId}]]*/ null;
 
-                                // 2. Cấu hình ngày mặc định (nếu đã chọn trước đó)
-                                let defaultDates = [];
-                                if (savedFromDate && savedToDate) {
-                                    defaultDates = [savedFromDate, savedToDate];
+                        // 2. Cấu hình ngày mặc định (nếu đã chọn trước đó)
+                        let defaultDates = [];
+                        if (savedFromDate && savedToDate) {
+                            defaultDates = [savedFromDate, savedToDate];
+                        }
+
+                        // 3. Khởi tạo Flatpickr
+                        flatpickr("#dateRangePicker", {
+                            mode: "range",
+                            dateFormat: "Y-m-d",
+                            altInput: true,
+                            altFormat: "F j, Y",
+                            minDate: "today",
+                            defaultDate: defaultDates, // [QUAN TRỌNG] Set lại ngày đã chọn
+                            onDayCreate: function (dObj, dStr, fp, dayElem) {
+                                // Highlight ngày có plan bằng chấm xanh
+                                // Cần múi giờ chuẩn để tránh lệch ngày
+                                const dateStr = dayElem.dateObj.toLocaleDateString('en-CA'); // Format YYYY-MM-DD chuẩn quốc tế
+                                if (plannedDates.includes(dateStr)) {
+                                    dayElem.classList.add("has-plan");
+                                    dayElem.innerHTML += "<span class='plan-dot'></span>";
                                 }
+                            }
+                        });
 
-                                // 3. Khởi tạo Flatpickr
-                                flatpickr("#dateRangePicker", {
-                                    mode: "range",
-                                    dateFormat: "Y-m-d",
-                                    altInput: true,
-                                    altFormat: "F j, Y",
-                                    minDate: "today",
-                                    defaultDate: defaultDates, // [QUAN TRỌNG] Set lại ngày đã chọn
-                                    onDayCreate: function (dObj, dStr, fp, dayElem) {
-                                        // Highlight ngày có plan bằng chấm xanh
-                                        // Cần múi giờ chuẩn để tránh lệch ngày
-                                        const dateStr = dayElem.dateObj.toLocaleDateString('en-CA'); // Format YYYY-MM-DD chuẩn quốc tế
-                                        if (plannedDates.includes(dateStr)) {
-                                            dayElem.classList.add("has-plan");
-                                            dayElem.innerHTML += "<span class='plan-dot'></span>";
-                                        }
-                                    }
-                                });
+                        // 4. Các hàm xử lý sự kiện
+                        function submitGenerate() {
+                            const range = document.getElementById("dateRangePicker").value;
+                            if (!range || !range.includes(" to ")) {
+                                // Dùng Toast hoặc Alert tùy bạn (ở đây alert cho đơn giản nếu chưa có Toast)
+                                if (typeof ZaderToast !== 'undefined') {
+                                    ZaderToast.error("Please select both start and end dates.");
+                                } else {
+                                    alert("Please select both start and end dates.");
+                                }
+                                return;
+                            }
+                            document.getElementById("hiddenDateRange").value = range;
+                            document.getElementById("generateForm").submit();
+                        }
 
-                                // 4. Các hàm xử lý sự kiện
-                                function submitGenerate() {
-                                    const range = document.getElementById("dateRangePicker").value;
-                                    if (!range || !range.includes(" to ")) {
-                                        // Dùng Toast hoặc Alert tùy bạn (ở đây alert cho đơn giản nếu chưa có Toast)
-                                        if (typeof ZaderToast !== 'undefined') {
-                                            ZaderToast.error("Please select both start and end dates.");
+                        function toggleItem(itemId, checkbox) {
+                            const textDiv = document.getElementById('text-' + itemId);
+                            if (checkbox.checked) {
+                                textDiv.classList.add('opacity-40', 'line-through');
+                            } else {
+                                textDiv.classList.remove('opacity-40', 'line-through');
+                            }
+                            fetch('/shopping-list/api/check?itemId=' + itemId, {method: 'POST'});
+                        }
+
+                        function sendEmail() {
+                            if (!currentListId)
+                                return;
+
+                            let loadingID = ZaderToast.loading("Sending email...");
+
+                            fetch(`/shopping-list/${currentListId}/email`, {method: 'POST'})
+                                    .then(res => {
+                                        ZaderToast.remove(loadingID);
+                                        if (res.ok) {
+                                            ZaderToast.success("Email sent successfully!");
                                         } else {
-                                            alert("Please select both start and end dates.");
-                                        }
-                                        return;
-                                    }
-                                    document.getElementById("hiddenDateRange").value = range;
-                                    document.getElementById("generateForm").submit();
-                                }
-
-                                function toggleItem(itemId, checkbox) {
-                                    const textDiv = document.getElementById('text-' + itemId);
-                                    if (checkbox.checked) {
-                                        textDiv.classList.add('opacity-40', 'line-through');
-                                    } else {
-                                        textDiv.classList.remove('opacity-40', 'line-through');
-                                    }
-                                    fetch('/shopping-list/api/check?itemId=' + itemId, {method: 'POST'});
-                                }
-
-                                function sendEmail() {
-                                    if (!currentListId)
-                                        return;
-
-                                    if (typeof ZaderToast !== 'undefined')
-                                        ZaderToast.loading("Sending email...");
-
-                                    fetch(`/shopping-list/${currentListId}/email`, {method: 'POST'})
-                                            .then(res => {
-                                                if (res.ok) {
-                                                    if (typeof ZaderToast !== 'undefined')
-                                                        ZaderToast.success("Email sent!");
-                                                } else {
-                                                    if (typeof ZaderToast !== 'undefined')
-                                                        ZaderToast.error("Failed to send email.");
-                                                }
-                                            })
-                                            .catch(() => {
-                                                if (typeof ZaderToast !== 'undefined')
-                                                    ZaderToast.error("Connection error.");
+                                            // Cố gắng đọc lỗi từ JSON trả về
+                                            return res.json().then(data => {
+                                                throw new Error(data.error || "Failed to send email");
                                             });
-                                }
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        ZaderToast.error(err.message || "Connection error.");
+                                    });
+                        }
+
+                        function exportExcel() {
+                            if (!currentListId)
+                                return;
+
+                            // 1. Hiện thông báo đang xử lý
+                            // Lưu ID của toast loading để đóng sau này (nếu cần, ZaderToast.loading tự đóng khi gọi success/error đè lên cũng được)
+                            let loadingID = ZaderToast.loading("Generating Excel file...");
+
+                            fetch(`/shopping-list/${currentListId}/export`)
+                                    .then(response => {
+                                        ZaderToast.remove(loadingID);
+                                        if (response.ok) {
+                                            return response.blob(); // Chuyển response thành Blob (file)
+                                        }
+                                        throw new Error("Export failed");
+                                    })
+                                    .then(blob => {
+                                        // 2. Tạo link tải ảo
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        // Đặt tên file (Có thể lấy từ header hoặc tự đặt)
+                                        a.download = `ShoppingList_${currentListId}.xlsx`;
+                                        document.body.appendChild(a);
+                                        a.click(); // Tự động click để tải
+                                        a.remove(); // Xóa link ảo
+                                        window.URL.revokeObjectURL(url); // Giải phóng bộ nhớ
+
+                                        // 3. Thông báo thành công
+                                        ZaderToast.success("Excel downloaded successfully!");
+                                    })
+                                    .catch(error => {
+                                        console.error('Excel export error:', error);
+                                        ZaderToast.error("Failed to export Excel.");
+                                    });
+                        }
         </script>
         <style>
             /* Style cho chấm xanh trên lịch */

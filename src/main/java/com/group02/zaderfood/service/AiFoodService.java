@@ -23,10 +23,12 @@ import java.util.Map;
 import org.springframework.web.client.RestClientException;
 
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
+import com.group02.zaderfood.entity.AiRequestLog;
 import com.group02.zaderfood.entity.AiSavedRecipes;
 import com.group02.zaderfood.entity.CollectionItem;
 import com.group02.zaderfood.entity.Recipe;
 import com.group02.zaderfood.entity.RecipeCollection;
+import com.group02.zaderfood.repository.AiRequestLogRepository;
 import com.group02.zaderfood.repository.AiSavedRecipeRepository;
 import com.group02.zaderfood.repository.CollectionItemRepository;
 import com.group02.zaderfood.repository.RecipeCollectionRepository;
@@ -37,6 +39,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -57,6 +61,9 @@ public class AiFoodService {
     @Autowired
     private FileStorageService fileStorageService;
 
+    @Autowired
+    private AiRequestLogRepository logRepository;
+    
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper()
             .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
@@ -69,6 +76,46 @@ public class AiFoodService {
         factory.setConnectTimeout(60000);
         factory.setReadTimeout(600000); // 10 phút
         return new RestTemplate(factory);
+    }
+    
+    private Integer getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails) {
+            return ((CustomUserDetails) auth.getPrincipal()).getUserId();
+        }
+        return null; // Khách vãng lai hoặc system call
+    }
+    
+    private void saveAiLog(String type, String prompt, String responseJson) {
+        try {
+            int tokens = 0;
+            String actualResponseContent = "";
+
+            // Cố gắng trích xuất số token và nội dung từ JSON raw của Ollama
+            if (responseJson != null) {
+                JsonNode root = objectMapper.readTree(responseJson);
+                if (root.has("eval_count")) {
+                    tokens = root.get("eval_count").asInt();
+                }
+                if (root.has("response")) {
+                    actualResponseContent = root.get("response").asText();
+                } else {
+                    actualResponseContent = responseJson; // Fallback nếu không đúng chuẩn
+                }
+            }
+
+            AiRequestLog log = new AiRequestLog();
+            log.setUserId(getCurrentUserId());
+            log.setRequestType(type);
+            log.setPromptContent(prompt.length() > 2000 ? prompt.substring(0, 2000) + "..." : prompt); // Cắt ngắn nếu quá dài
+            log.setAiResponse(actualResponseContent); // Lưu nội dung trả lời (text)
+            log.setTokensUsed(tokens);
+            log.setCreatedAt(LocalDateTime.now());
+
+            logRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("Failed to save AI Log: " + e.getMessage());
+        }
     }
 
     public AiFoodResponse analyzeFood(String textDescription, MultipartFile imageFile) {
@@ -118,6 +165,8 @@ public class AiFoodService {
             String rawResponse = restTemplate.postForObject(ollamaUrl, entity, String.class);
             System.err.println(rawResponse);
 
+            saveAiLog("ANALYZE_FOOD", promptText, rawResponse);
+            
             // 5. Xử lý kết quả
             return parseOllamaResponse(rawResponse);
 
@@ -226,6 +275,8 @@ public class AiFoodService {
             System.out.println("--- SENDING PROMPT TO AI ---");
             String rawResponse = getRestTemplate().postForObject(ollamaUrl, entity, String.class);
 
+            saveAiLog("WEEKLY_PLAN", promptText, rawResponse);
+            
             return parseWeeklyPlanResponse(rawResponse);
 
         } catch (Exception e) {
@@ -328,6 +379,8 @@ public class AiFoodService {
 
             String rawResponse = getRestTemplate().postForObject(ollamaUrl, entity, String.class);
             System.out.println(rawResponse);
+            
+            saveAiLog("PANTRY_RECIPES", promptText, rawResponse);
 
             return parsePantryAiResponse(rawResponse);
 
