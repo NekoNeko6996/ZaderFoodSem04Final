@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 @Data
 @NoArgsConstructor
@@ -68,6 +70,7 @@ public class Ingredient implements Serializable {
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CategoryId", insertable = false, updatable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     private IngredientCategory ingredientCategory; // <--- Biến này sẽ tạo ra getter: getIngredientCategory()
 
 }
