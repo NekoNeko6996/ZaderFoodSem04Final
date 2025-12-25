@@ -450,6 +450,9 @@ public class MealPlanController {
             }
 
             model.addAttribute("dayDetail", dayDetail);
+            
+            
+            System.out.println(dayDetail.meals.getFirst().carbs);
 
             // --- 1. THIẾT LẬP MẶC ĐỊNH (FALLBACK) ---
             int targetCalories = 2000;
@@ -561,9 +564,12 @@ public class MealPlanController {
 
         item.setCustomDishName(aiResult.getDishName());
         item.setCalories(BigDecimal.valueOf(aiResult.getCalories()));
-        item.setProtein(parseDecimal(aiResult.getProtein())); // Cần hàm parse "30g" -> 30
+        item.setProtein(parseDecimal(aiResult.getProtein()));
         item.setCarbs(parseDecimal(aiResult.getCarbs()));
         item.setFat(parseDecimal(aiResult.getFat()));
+        
+        System.out.println("AI CARB");
+        System.out.println(aiResult.getCarbs());
 
         item.setImageUrl(imageUrl);
         item.setRecipeId(null);     // Món custom không có RecipeId
