@@ -120,8 +120,8 @@ public class MealPlanController {
                 }
 
                 // 4. Lấy lịch sử (History)
-                List<DailyMealPlan> recentPlans = mealPlanService.getAllPlans(user.getUserId());
-                model.addAttribute("recentPlans", recentPlans);
+                List<DailyMealPlan> upcomingPlans = mealPlanService.getUpcomingPlans(user.getUserId());
+                model.addAttribute("recentPlans", upcomingPlans);
 
             } catch (Exception e) {
                 // Nếu lỗi, userProfileDTO vẫn là object rỗng (new UserProfileDTO()) nên không crash view 

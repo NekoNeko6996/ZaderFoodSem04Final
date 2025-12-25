@@ -182,11 +182,13 @@
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex items-center gap-3">
                                 <div class="flex flex-col items-center justify-center w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-lg font-bold border border-orange-100 dark:border-orange-800">
-                                    <span class="text-xs uppercase" th:text="${#temporals.format(plan.planDate, 'MMM')}">DEC</span>
+                                    <span class="text-xs uppercase" 
+                                          th:text="${#temporals.format(plan.planDate, 'MMM', T(java.util.Locale).ENGLISH)}">DEC</span>
                                     <span class="text-lg leading-none" th:text="${#temporals.format(plan.planDate, 'dd')}">12</span>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-dark-ink dark:text-gray-200" th:text="${#temporals.format(plan.planDate, 'EEEE')}">Monday</h4>
+                                    <h4 class="font-bold text-dark-ink dark:text-gray-200" 
+                                        th:text="${#temporals.format(plan.planDate, 'EEEE', T(java.util.Locale).ENGLISH)}">Monday</h4>
                                     <p class="text-xs text-gray-400" th:text="${plan.isGeneratedByAI ? 'AI Generated' : 'Manual Plan'}">Type</p>
                                 </div>
                             </div>

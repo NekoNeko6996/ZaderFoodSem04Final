@@ -947,7 +947,7 @@ public class MealPlanService {
                 .stream().map(DailyMealPlan::getPlanDate).collect(Collectors.toList());
     }
 
-    public List<DailyMealPlan> getAllPlans(Integer userId) {
-        return dailyRepo.findByUserIdOrderByPlanDateDesc(userId);
+    public List<DailyMealPlan> getUpcomingPlans(Integer userId) {
+        return dailyRepo.findByUserIdAndPlanDateGreaterThanEqualOrderByPlanDateAsc(userId, LocalDate.now());
     }
 }
