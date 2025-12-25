@@ -3,6 +3,7 @@ package com.group02.zaderfood.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group02.zaderfood.dto.AiFoodResponse;
 import com.group02.zaderfood.dto.DayDetailDTO;
+import com.group02.zaderfood.dto.DayDetailDTO.MealDetail;
 import com.group02.zaderfood.dto.SavePlanDTO;
 import com.group02.zaderfood.dto.UserProfileDTO;
 import com.group02.zaderfood.dto.WeeklyPlanDTO;
@@ -19,6 +20,7 @@ import com.group02.zaderfood.service.AiFoodService;
 import com.group02.zaderfood.service.CustomUserDetails;
 import com.group02.zaderfood.service.FileStorageService;
 import com.group02.zaderfood.service.MealPlanService;
+import com.group02.zaderfood.service.RecipeService;
 import com.group02.zaderfood.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -76,6 +78,8 @@ public class MealPlanController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private RecipeService recipeService;
 
     private String getDayLabel(LocalDate date) {
         // EEEE: Tên thứ (Monday), dd/MM: Ngày tháng
@@ -86,7 +90,8 @@ public class MealPlanController {
     @GetMapping("/generate")
     public String showGeneratePage(Model model,
             @AuthenticationPrincipal CustomUserDetails currentUser,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            @AuthenticationPrincipal CustomUserDetails user) {
 
         // Default values
         int defaultCalories = 2000;
@@ -115,8 +120,8 @@ public class MealPlanController {
                 }
 
                 // 4. Lấy lịch sử (History)
-                List<DailyMealPlan> history = mealPlanService.getRecentPlans(currentUser.getUserId());
-                model.addAttribute("planHistory", history);
+                List<DailyMealPlan> upcomingPlans = mealPlanService.getUpcomingPlans(user.getUserId());
+                model.addAttribute("recentPlans", upcomingPlans);
 
             } catch (Exception e) {
                 // Nếu lỗi, userProfileDTO vẫn là object rỗng (new UserProfileDTO()) nên không crash view 
@@ -450,6 +455,9 @@ public class MealPlanController {
             }
 
             model.addAttribute("dayDetail", dayDetail);
+            
+            
+            System.out.println(dayDetail.meals.getFirst().carbs);
 
             // --- 1. THIẾT LẬP MẶC ĐỊNH (FALLBACK) ---
             int targetCalories = 2000;
@@ -561,9 +569,12 @@ public class MealPlanController {
 
         item.setCustomDishName(aiResult.getDishName());
         item.setCalories(BigDecimal.valueOf(aiResult.getCalories()));
-        item.setProtein(parseDecimal(aiResult.getProtein())); // Cần hàm parse "30g" -> 30
+        item.setProtein(parseDecimal(aiResult.getProtein()));
         item.setCarbs(parseDecimal(aiResult.getCarbs()));
         item.setFat(parseDecimal(aiResult.getFat()));
+        
+        System.out.println("AI CARB");
+        System.out.println(aiResult.getCarbs());
 
         item.setImageUrl(imageUrl);
         item.setRecipeId(null);     // Món custom không có RecipeId

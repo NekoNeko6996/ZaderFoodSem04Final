@@ -126,17 +126,6 @@
                     </div>
 
                     <div th:if="${activeTab == 'collections'}">
-                        <div class="p-4 bg-white rounded-lg border border-border-light mx-4 mt-4 shadow-sm">
-                            <h3 class="text-lg font-bold text-dark-ink mb-2">Create New Collection</h3>
-                            <form th:action="@{/user/favorites/collections/create}" method="post" class="flex gap-3">
-                                <input type="text" name="name" required
-                                       class="flex-1 rounded-lg border-border-light focus:ring-nutri-green focus:border-nutri-green" 
-                                       placeholder="e.g. Weekend Brunch...">
-                                <button type="submit" class="bg-primary text-white font-bold px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
-                                    <span class="material-symbols-outlined">add</span> Create
-                                </button>
-                            </form>
-                        </div>
 
                         <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div th:each="dto : ${myCollections}" class="group bg-card-white border border-border-light rounded-xl p-5 hover:shadow-md transition-all cursor-pointer">
@@ -175,6 +164,12 @@
                                         </button>
                                     </form>
                                 </div>
+                            </div>
+                            
+                            <div th:if="${#lists.isEmpty(myCollections)}" class="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-border-light rounded-xl bg-card-white/50 min-h-[300px]">
+                                <span class="material-symbols-outlined text-5xl text-soft-grey mb-4">folder_off</span>
+                                <p class="text-lg font-bold text-dark-ink">You don't have any collections yet.</p>
+                                <p class="text-lg font-bold text-mute">Add the recipe to your favorites list to display it!</p>
                             </div>
                         </div>
                     </div>

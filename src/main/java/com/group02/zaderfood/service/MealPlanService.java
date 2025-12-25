@@ -289,7 +289,7 @@ public class MealPlanService {
         DayDetailDTO dto = new DayDetailDTO();
         dto.date = date;
         dto.dayName = date.format(DateTimeFormatter.ofPattern("EEEE dd/MM", Locale.ENGLISH));
-        
+
         dto.totalCalories = dailyPlan.getTotalCalories().intValue();
         // Lấy macros (xử lý null an toàn)
         dto.totalProtein = dailyPlan.getTotalProtein() != null ? dailyPlan.getTotalProtein().intValue() : 0;
@@ -329,6 +329,10 @@ public class MealPlanService {
                     String ingName = (ing != null) ? ing.getName() : "Unknown";
                     String ingImg = (ing != null && ing.getImageUrl() != null) ? ing.getImageUrl() : "/images/ingredients/default.png";
                     String category = "Pantry";
+
+                    if (ing != null) {
+                        ri.setIngredient(ing);
+                    }
 
                     BigDecimal qty = (ri.getQuantity() != null) ? ri.getQuantity() : BigDecimal.ZERO;
                     if (item.getQuantityMultiplier() != null) {
@@ -425,11 +429,11 @@ public class MealPlanService {
 
         dto.totalCalories = dailyPlan.getTotalCalories().intValue();
         dto.dailyIngredients = ingredientList;
-        
+
         dto.suggestions = new ArrayList<>();
 
         int remainingCal = dto.totalCalories - consumedCal;
-        
+
         // Chỉ gợi ý nếu còn thiếu năng lượng đáng kể (> 100kcal)
         if (remainingCal > 100) {
 
@@ -520,19 +524,20 @@ public class MealPlanService {
 
         LocalDate firstDay = LocalDate.of(year, month, 1);
         int daysInMonth = firstDay.lengthOfMonth();
-
-        // 1. Lấy tất cả Plan trong tháng đó của User
         LocalDate lastDay = firstDay.plusDays(daysInMonth - 1);
-        List<DailyMealPlan> monthPlans = dailyRepo.findByUserIdAndDateRange(userId, firstDay, lastDay);
 
-        // Map để tra cứu nhanh: Date -> Plan
+        // 1. Lấy tất cả Plan trong tháng
+        List<DailyMealPlan> monthPlans = dailyRepo.findByUserIdAndDateRange(userId, firstDay, lastDay);
         Map<LocalDate, DailyMealPlan> planMap = monthPlans.stream()
                 .collect(Collectors.toMap(DailyMealPlan::getPlanDate, p -> p));
 
-        // 2. Tạo dữ liệu cho từng ngày
+        // 2. Duyệt từng ngày
         for (int i = 1; i <= daysInMonth; i++) {
             LocalDate currentDate = LocalDate.of(year, month, i);
             CalendarDayDTO dto = new CalendarDayDTO(i, currentDate);
+
+            // [NEW] Gán Goal cho ngày
+            dto.calorieGoal = calorieGoal;
 
             if (currentDate.equals(LocalDate.now())) {
                 dto.isToday = true;
@@ -544,20 +549,42 @@ public class MealPlanService {
                 int actualCal = plan.getTotalCalories().intValue();
                 dto.totalCalories = actualCal;
 
-                // --- LOGIC TÔ MÀU (Dựa trên % so với Goal) ---
+                // --- [NEW] TÍNH CALO THEO BỮA ---
+                // Lấy danh sách món ăn của plan này
+                List<MealItem> items = itemRepo.findByMealPlanId(plan.getMealPlanId());
+
+                int b = 0, l = 0, d = 0, s = 0;
+                for (MealItem item : items) {
+                    int cal = (item.getCalories() != null) ? item.getCalories().intValue() : 0;
+                    if (item.getMealTimeType() != null) {
+                        switch (item.getMealTimeType()) {
+                            case BREAKFAST ->
+                                b += cal;
+                            case LUNCH ->
+                                l += cal;
+                            case DINNER ->
+                                d += cal;
+                            case SNACK ->
+                                s += cal;
+                        }
+                    }
+                }
+                dto.breakfastCal = b;
+                dto.lunchCal = l;
+                dto.dinnerCal = d;
+                dto.snackCal = s;
+                // -------------------------------
+
+                // Logic tô màu (Giữ nguyên)
                 if (actualCal == 0) {
-                    dto.statusColor = "GRAY"; // Đã lên lịch nhưng chưa có món/chưa ăn
+                    dto.statusColor = "GRAY";
                 } else {
                     double ratio = (double) actualCal / calorieGoal;
-
                     if (ratio >= 0.9 && ratio <= 1.1) {
-                        // Chênh lệch +/- 10% -> Tốt (XANH)
                         dto.statusColor = "GREEN";
                     } else if (ratio >= 0.8 && ratio <= 1.2) {
-                        // Chênh lệch +/- 20% -> Khá (VÀNG)
                         dto.statusColor = "YELLOW";
                     } else {
-                        // Chênh lệch quá nhiều -> Cảnh báo (ĐỎ)
                         dto.statusColor = "RED";
                     }
                 }
@@ -850,10 +877,10 @@ public class MealPlanService {
     public void deleteMealItem(Integer itemId) {
         itemRepo.deleteById(itemId);
     }
-    
+
     @Transactional
-    public void addRecipeToPlan(Integer userId, LocalDate date, Integer recipeId, String typeStr) {
-        // 1. Tìm/Tạo Plan
+    public boolean addRecipeToPlan(Integer userId, LocalDate date, Integer recipeId, String typeStr) {
+        // 1. Tìm hoặc Tạo DailyPlan (Nếu chưa có ngày đó thì tạo mới)
         DailyMealPlan dailyPlan = dailyRepo.findByUserIdAndPlanDate(userId, date)
                 .orElseGet(() -> {
                     DailyMealPlan newPlan = new DailyMealPlan();
@@ -862,37 +889,65 @@ public class MealPlanService {
                     newPlan.setTotalCalories(BigDecimal.ZERO);
                     newPlan.setStatus(PlanStatus.PLANNED);
                     newPlan.setCreatedAt(LocalDateTime.now());
+                    newPlan.setIsGeneratedByAI(false); // Đánh dấu là user tự thêm
                     return dailyRepo.save(newPlan);
                 });
 
-        // 2. Lấy thông tin Recipe
-        Recipe r = recipeRepo.findById(recipeId).orElseThrow(() -> new RuntimeException("Recipe not found"));
-        // Tính toán lại để chắc chắn có calo
-        recipeService.calculateRecipeMacros(r);
+        MealType mealType = MealType.valueOf(typeStr.toUpperCase());
 
-        // 3. Tạo MealItem
+        // 2. [QUAN TRỌNG] Kiểm tra trùng lặp
+        boolean exists = itemRepo.existsByMealPlanIdAndRecipeIdAndMealTimeType(
+                dailyPlan.getMealPlanId(),
+                recipeId,
+                mealType
+        );
+
+        if (exists) {
+            return false; // Đã có món này trong bữa này rồi
+        }
+
+        // 3. Lấy thông tin Recipe để copy sang MealItem
+        Recipe r = recipeRepo.findById(recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        // Tính lại calo nếu null
+        if (r.getTotalCalories() == null) {
+            recipeService.calculateRecipeMacros(r);
+        }
+
+        // 4. Tạo MealItem mới
         MealItem item = new MealItem();
         item.setMealPlanId(dailyPlan.getMealPlanId());
         item.setRecipeId(recipeId);
-        item.setCustomDishName(r.getName()); // Lưu tên để hiển thị nhanh
+        item.setCustomDishName(r.getName());
         item.setCalories(r.getTotalCalories());
         item.setProtein(r.getProtein());
         item.setCarbs(r.getCarbs());
         item.setFat(r.getFat());
         item.setImageUrl(r.getImageUrl());
-        
-        item.setMealTimeType(MealType.valueOf(typeStr.toUpperCase()));
+        item.setMealTimeType(mealType);
         item.setStatus("PENDING");
         item.setQuantityMultiplier(BigDecimal.ONE);
-        item.setIsCustomEntry(false); // Đây là món từ Recipe, không phải custom
+        item.setIsCustomEntry(false);
         item.setCreatedAt(LocalDateTime.now());
 
         itemRepo.save(item);
+
+        // 5. Cập nhật lại tổng Calo cho DailyPlan
+        BigDecimal newTotal = dailyPlan.getTotalCalories().add(r.getTotalCalories() != null ? r.getTotalCalories() : BigDecimal.ZERO);
+        dailyPlan.setTotalCalories(newTotal);
+        dailyRepo.save(dailyPlan);
+
+        return true; // Thêm thành công
     }
-    
+
     public List<LocalDate> getUpcomingPlannedDates(Integer userId) {
-    // Lấy các ngày có plan từ hôm nay trở đi
-    return dailyRepo.findByUserIdAndPlanDateGreaterThanEqual(userId, LocalDate.now())
-            .stream().map(DailyMealPlan::getPlanDate).collect(Collectors.toList());
-}
+        // Lấy các ngày có plan từ hôm nay trở đi
+        return dailyRepo.findByUserIdAndPlanDateGreaterThanEqual(userId, LocalDate.now())
+                .stream().map(DailyMealPlan::getPlanDate).collect(Collectors.toList());
+    }
+
+    public List<DailyMealPlan> getUpcomingPlans(Integer userId) {
+        return dailyRepo.findByUserIdAndPlanDateGreaterThanEqualOrderByPlanDateAsc(userId, LocalDate.now());
+    }
 }

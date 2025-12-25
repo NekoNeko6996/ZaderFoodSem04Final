@@ -29,4 +29,6 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Integer>
     List<Ingredient> findByIsActiveTrue();
     
     List<Ingredient> findByIsActiveFalseOrderByCreatedAtDesc();
+    
+    long countByIsActiveFalse();
 }

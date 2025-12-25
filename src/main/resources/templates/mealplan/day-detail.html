@@ -173,7 +173,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div th:each="sugg : ${dayDetail.suggestions}" class="bg-white dark:bg-[#1e1e1e] border border-orange-100 dark:border-orange-900/30 p-3 rounded-xl flex gap-3 shadow-sm hover:shadow-md transition-all relative group">
-                    <img th:src="${sugg.imageUrl != null ? (sugg.imageUrl.startsWith('http') ? sugg.imageUrl : '/images/' + sugg.imageUrl) : 'https://placehold.co/100?text=Food'}" 
+                    <img th:src="${sugg.imageUrl != null ? sugg.imageUrl : 'https://placehold.co/100?text=Food'}" 
                          class="w-20 h-20 rounded-lg object-cover flex-shrink-0 bg-gray-100">
 
                     <div class="flex flex-col justify-between flex-grow">

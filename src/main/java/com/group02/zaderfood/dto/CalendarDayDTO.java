@@ -9,6 +9,13 @@ public class CalendarDayDTO {
     public int totalCalories;   // Calo thực tế
     public String statusColor;  // "GRAY", "GREEN", "YELLOW", "RED", "NONE"
     public boolean isToday;     // Để highlight ngày hiện tại
+    
+    // [NEW] Thêm các trường này
+    public int calorieGoal;
+    public int breakfastCal;
+    public int lunchCal;
+    public int dinnerCal;
+    public int snackCal;
 
     // Constructor nhanh
     public CalendarDayDTO(int dayValue, LocalDate fullDate) {

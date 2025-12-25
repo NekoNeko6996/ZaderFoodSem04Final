@@ -1,5 +1,6 @@
 package com.group02.zaderfood.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class SavePlanDTO {
@@ -17,5 +18,8 @@ public class SavePlanDTO {
         public String recipeName;
         public int calories;
         public String type;         // "Breakfast", "Lunch", "Dinner"
+        private BigDecimal protein;
+        private BigDecimal carbs;
+        private BigDecimal fat;
     }
 }
