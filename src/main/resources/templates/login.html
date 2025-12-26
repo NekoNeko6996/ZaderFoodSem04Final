@@ -10,6 +10,8 @@
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
 
+        <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
+
         <script>
             tailwind.config = {
                 theme: {
@@ -24,19 +26,36 @@
                 }
             };
         </script>
-        <style> .material-symbols-outlined {
+        <style> 
+            .material-symbols-outlined {
                 font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            } </style>
+            } 
+            /* Đảm bảo canvas nằm dưới cùng */
+            #tsparticles {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                z-index: 0; /* Nằm dưới */
+            }
+        </style>
     </head>
-    <body class="bg-background-light dark:bg-background-dark font-display">
-        <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-            <div th:replace="~{fragments/navbar_auth :: header_nav}"></div>
+    <body class="bg-smart-white dark:bg-background-dark font-display overflow-hidden"> <div class="relative flex min-h-screen w-full flex-col">
+            
+            <div id="tsparticles"></div>
 
-            <div class="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+            <div class="relative z-10">
+                <div th:replace="~{fragments/navbar_auth :: header_nav}"></div>
+            </div>
+
+            <div class="relative z-10 flex flex-1 flex-col items-center justify-center p-4">
                 <div class="w-full max-w-sm">
-                    <form th:action="@{/authenticateTheUser}" method="POST" class="flex flex-col gap-8 rounded-xl bg-card-white p-8 shadow-lg border border-smart-mist">
+                    <form th:action="@{/authenticateTheUser}" method="POST" 
+                          class="flex flex-col gap-8 rounded-xl bg-white/90 backdrop-blur-sm p-8 shadow-2xl border border-white/50 ring-1 ring-black/5">
 
                         <div class="flex flex-col items-center gap-2 text-center">
+                            <div class="p-3 bg-green-50 rounded-full mb-2">
+                                <span class="material-symbols-outlined text-nutri-green text-3xl">lock</span>
+                            </div>
                             <h2 class="text-3xl font-bold tracking-tight text-dark-ink">Welcome Back</h2>
                             <p class="text-soft-grey text-sm">Please enter your details to sign in.</p>
                         </div>
@@ -56,7 +75,7 @@
                                 <label class="mb-1.5 text-sm font-medium text-dark-ink" for="email">Email</label>
                                 <div class="relative flex w-full items-center">
                                     <input type="text" name="username" id="email" 
-                                           class="form-input h-12 w-full flex-1 rounded-lg border border-smart-mist bg-white px-4 py-2 text-dark-ink placeholder:text-soft-grey focus:border-nutri-green focus:ring-1 focus:ring-nutri-green" 
+                                           class="form-input h-12 w-full flex-1 rounded-lg border border-smart-mist bg-white px-4 py-2 text-dark-ink placeholder:text-soft-grey focus:border-nutri-green focus:ring-1 focus:ring-nutri-green transition-all" 
                                            placeholder="Enter your email" required />
                                 </div>
                             </div>
@@ -65,14 +84,17 @@
                                 <label class="mb-1.5 text-sm font-medium text-dark-ink" for="password">Password</label>
                                 <div class="relative flex w-full items-center">
                                     <input type="password" name="password" id="password" 
-                                           class="form-input h-12 w-full flex-1 rounded-lg border border-smart-mist bg-white px-4 py-2 pr-10 text-dark-ink placeholder:text-soft-grey focus:border-nutri-green focus:ring-1 focus:ring-nutri-green" 
+                                           class="form-input h-12 w-full flex-1 rounded-lg border border-smart-mist bg-white px-4 py-2 pr-10 text-dark-ink placeholder:text-soft-grey focus:border-nutri-green focus:ring-1 focus:ring-nutri-green transition-all" 
                                            placeholder="Enter your password" required />
+                                    <button type="button" onclick="togglePassword()" class="absolute right-3 text-soft-grey hover:text-dark-ink transition-colors">
+                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-4">
-                            <button type="submit" class="flex h-12 w-full items-center justify-center rounded-lg bg-nutri-green text-base font-bold text-white transition-all hover:bg-deep-forest hover:shadow-md focus:outline-none focus:ring-2 focus:ring-nutri-green focus:ring-offset-2">
+                            <button type="submit" class="flex h-12 w-full items-center justify-center rounded-lg bg-nutri-green text-base font-bold text-white transition-all hover:bg-deep-forest hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-nutri-green focus:ring-offset-2">
                                 Sign In
                             </button>
                             <div class="text-center">
@@ -82,7 +104,7 @@
 
                         <div class="relative">
                             <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-smart-mist"></div></div>
-                            <div class="relative flex justify-center text-sm"><span class="bg-card-white px-2 text-soft-grey">Or</span></div>
+                            <div class="relative flex justify-center text-sm"><span class="bg-white px-2 text-soft-grey">Or</span></div>
                         </div>
 
                         <p class="text-center text-sm text-soft-grey">Don't have an account? 
@@ -96,15 +118,89 @@
         <script>
             function togglePassword() {
                 const passwordInput = document.getElementById('password');
-                const icon = document.querySelector('.material-symbols-outlined'); // Chọn icon bên trong nút
+                const icon = document.querySelector('.material-symbols-outlined'); // Chọn icon
 
                 if (passwordInput.type === "password") {
                     passwordInput.type = "text";
-                    // Tùy chọn: đổi icon nếu muốn (ví dụ visibility_off)
                 } else {
                     passwordInput.type = "password";
                 }
             }
+
+            // [NEW] Cấu hình Particles
+            (async () => {
+                await tsParticles.load("tsparticles", {
+                    background: {
+                        color: {
+                            value: "transparent", // Nền trong suốt để thấy background của body
+                        },
+                    },
+                    fpsLimit: 120,
+                    interactivity: {
+                        events: {
+                            onClick: {
+                                enable: true,
+                                mode: "push", // Click chuột sẽ tạo thêm hạt
+                            },
+                            onHover: {
+                                enable: true,
+                                mode: "grab", // Di chuột sẽ nối dây với hạt (hiệu ứng Neuron)
+                            },
+                            resize: true,
+                        },
+                        modes: {
+                            push: {
+                                quantity: 4,
+                            },
+                            grab: {
+                                distance: 140,
+                                links: {
+                                    opacity: 1
+                                }
+                            },
+                        },
+                    },
+                    particles: {
+                        color: {
+                            value: "#4CAF50", // Màu xanh Nutri-Green
+                        },
+                        links: {
+                            color: "#4CAF50",
+                            distance: 150,
+                            enable: true,
+                            opacity: 0.3, // Độ mờ của dây nối
+                            width: 1,
+                        },
+                        move: {
+                            direction: "none",
+                            enable: true,
+                            outModes: {
+                                default: "bounce",
+                            },
+                            random: false,
+                            speed: 2, // Tốc độ di chuyển
+                            straight: false,
+                        },
+                        number: {
+                            density: {
+                                enable: true,
+                                area: 800,
+                            },
+                            value: 80, // Số lượng hạt
+                        },
+                        opacity: {
+                            value: 0.5,
+                        },
+                        shape: {
+                            type: "circle", // Hình tròn
+                        },
+                        size: {
+                            value: { min: 1, max: 5 },
+                        },
+                    },
+                    detectRetina: true,
+                });
+            })();
         </script>
     </body>
 </html>

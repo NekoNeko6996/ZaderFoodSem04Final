@@ -158,6 +158,8 @@ public class AiFoodService {
             // 4. Gửi Request
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.add("User-Agent", "ZaderFood-Backend-v1");
+            headers.add("ngrok-skip-browser-warning", "true");
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
             System.out.println("--- SENDING PROMPT TO AI ---");
@@ -270,6 +272,8 @@ public class AiFoodService {
             // 5. Gửi Request
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.add("User-Agent", "ZaderFood-Backend-v1");
+            headers.add("ngrok-skip-browser-warning", "true");
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
             System.out.println("--- SENDING PROMPT TO AI ---");
@@ -375,6 +379,8 @@ public class AiFoodService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.add("User-Agent", "ZaderFood-Backend-v1");
+            headers.add("ngrok-skip-browser-warning", "true");
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
             String rawResponse = getRestTemplate().postForObject(ollamaUrl, entity, String.class);
