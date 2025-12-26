@@ -286,6 +286,7 @@
                 if (!response.ok)
                     throw new Error("Server error");
                 
+                
                 message_alert.classList.add("hidden");
 
                 const resultData = await response.json();
@@ -302,6 +303,9 @@
                     Swal.fire('Error', 'Could not analyze. Please try again.', 'error');
                 else
                     ZaderToast.error("Could not analyze.");
+                
+                console.log(error);
+                console.log(response);
             } finally {
                 setLoading(false);
             }

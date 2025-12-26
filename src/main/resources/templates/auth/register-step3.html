@@ -14,6 +14,20 @@
         <style> .material-symbols-outlined {
                 font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             } </style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
+
+        <script id="tailwind-config">
+            tailwind.config = {
+                theme: {extend: {colors: {"nutri-green": "#4CAF50", "chef-orange": "#FF7043", "dark-ink": "#263238", "soft-grey": "#78909C", "smart-mist": "#ECEFF1", "card-white": "#FFFFFF", "smart-white": "#FAFAFA", "error": "#E53935"}, fontFamily: {"display": ["Plus Jakarta Sans", "sans-serif"]}}}
+            }
+        </script>
+        <style> #tsparticles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        } </style>
     </head>
     <body class="font-display">
         <div th:replace="~{fragments/navbar_auth :: header_nav}"></div>
@@ -83,6 +97,16 @@
         </div>
 
         <script>
+            (async () => {
+                await tsParticles.load("tsparticles", {
+                    background: {color: {value: "transparent"}},
+                    fpsLimit: 120,
+                    interactivity: {events: {onClick: {enable: true, mode: "push"}, onHover: {enable: true, mode: "grab"}, resize: true}, modes: {push: {quantity: 4}, grab: {distance: 140, links: {opacity: 1}}}},
+                    particles: {color: {value: "#4CAF50"}, links: {color: "#4CAF50", distance: 150, enable: true, opacity: 0.3, width: 1}, move: {enable: true, speed: 2}, number: {density: {enable: true, area: 800}, value: 80}, opacity: {value: 0.5}, shape: {type: "circle"}, size: {value: {min: 1, max: 5}}},
+                    detectRetina: true,
+                });
+            })();
+            
             // 1. Toggle Ẩn/Hiện mật khẩu
             function togglePassword(inputId) {
                 const input = document.getElementById(inputId);
