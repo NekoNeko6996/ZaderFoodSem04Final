@@ -4,18 +4,35 @@
         <title>Sign Up - Step 1</title>
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+        <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
+
         <script id="tailwind-config">
             tailwind.config = {
                 theme: {extend: {colors: {"nutri-green": "#4CAF50", "chef-orange": "#FF7043", "dark-ink": "#263238", "soft-grey": "#78909C", "smart-mist": "#ECEFF1", "card-white": "#FFFFFF", "smart-white": "#FAFAFA", "error": "#E53935"}, fontFamily: {"display": ["Plus Jakarta Sans", "sans-serif"]}}}
             }
         </script>
+        <style>
+            #tsparticles {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+            }
+        </style>
     </head>
-    <body class="font-display">
-        <div th:replace="~{fragments/navbar_auth :: header_nav}"></div>
+    <body class="font-display overflow-hidden bg-smart-white">
 
-        <div class="relative flex h-auto min-h-screen w-full flex-col items-center justify-center bg-smart-white p-4 sm:p-6 lg:p-8">
+        <div id="tsparticles"></div>
+
+        <div class="relative z-10">
+            <div th:replace="~{fragments/navbar_auth :: header_nav}"></div>
+        </div>
+
+        <div class="relative z-10 flex h-auto min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
             <div class="w-full max-w-md">
-                <form th:action="@{/register/step1}" method="POST" class="flex flex-col items-center rounded-xl border border-smart-mist bg-card-white p-6 shadow-lg sm:p-8">
+                <form th:action="@{/register/step1}" method="POST" 
+                      class="flex flex-col items-center rounded-xl border border-smart-mist bg-white/90 backdrop-blur-sm p-6 shadow-xl sm:p-8 ring-1 ring-black/5">
 
                     <div class="w-full mb-6 flex gap-2">
                         <div class="h-1 flex-1 bg-nutri-green rounded"></div>
@@ -32,12 +49,12 @@
                         <label class="flex flex-col">
                             <p class="text-dark-ink text-sm font-medium pb-2">Email Address</p>
                             <input name="email" type="email" required
-                                   class="w-full rounded-lg border border-smart-mist h-12 p-4 text-dark-ink focus:ring-2 focus:ring-nutri-green/50 focus:border-nutri-green outline-none"
+                                   class="w-full rounded-lg border border-smart-mist h-12 p-4 text-dark-ink focus:ring-2 focus:ring-nutri-green/50 focus:border-nutri-green outline-none bg-white/80"
                                    placeholder="Enter your email" />
                         </label>
                     </div>
 
-                    <button type="submit" class="w-full h-12 mt-6 rounded-lg bg-nutri-green text-white font-bold hover:opacity-90">
+                    <button type="submit" class="w-full h-12 mt-6 rounded-lg bg-nutri-green text-white font-bold hover:opacity-90 transition-all hover:shadow-lg">
                         Send OTP Code
                     </button>
 
@@ -45,5 +62,32 @@
                 </form>
             </div>
         </div>
+
+        <script>
+            (async () => {
+                await tsParticles.load("tsparticles", {
+                    background: {color: {value: "transparent"}},
+                    fpsLimit: 120,
+                    interactivity: {
+                        events: {
+                            onClick: {enable: true, mode: "push"},
+                            onHover: {enable: true, mode: "grab"},
+                            resize: true,
+                        },
+                        modes: {push: {quantity: 4}, grab: {distance: 140, links: {opacity: 1}}},
+                    },
+                    particles: {
+                        color: {value: "#4CAF50"},
+                        links: {color: "#4CAF50", distance: 150, enable: true, opacity: 0.3, width: 1},
+                        move: {enable: true, speed: 2},
+                        number: {density: {enable: true, area: 800}, value: 80},
+                        opacity: {value: 0.5},
+                        shape: {type: "circle"},
+                        size: {value: {min: 1, max: 5}},
+                    },
+                    detectRetina: true,
+                });
+            })();
+        </script>
     </body>
 </html>
