@@ -11,4 +11,6 @@ public class ShoppingListItemDTO {
     private Boolean isBought;
     private String categoryName;
     private String imageUrl;
+    
+    private BigDecimal pantryStock;
 }

@@ -31,6 +31,9 @@ public class ShoppingListItem implements Serializable {
 
     @Column(name = "Quantity")
     private BigDecimal quantity;
+    
+    @Column(name = "LastAddedQty")
+    private BigDecimal lastAddedQty;
 
     @Column(name = "Unit")
     @Nationalized
