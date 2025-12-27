@@ -56,7 +56,10 @@ public class ShoppingListService {
         // 1. Kiểm tra xem đã có list cho khoảng này chưa
         Optional<ShoppingList> existingList = listRepo.findByUserIdAndFromDateAndToDate(userId, fromDate, toDate);
         if (existingList.isPresent()) {
-            return existingList.get();
+            ShoppingList list = existingList.get();
+            syncListItemsWithPlan(userId, list);
+            updateListStatusFromPantry(userId, list);
+            return list;
         }
 
         // 2. Nếu chưa có, tạo mới
@@ -73,6 +76,100 @@ public class ShoppingListService {
         calculateAndSaveItems(userId, savedList);
 
         return savedList;
+    }
+
+    private void updateListStatusFromPantry(Integer userId, ShoppingList list) {
+        List<ShoppingListItem> items = itemRepo.findByListId(list.getListId());
+        boolean changed = false;
+
+        for (ShoppingListItem item : items) {
+            if (item.getIngredientId() != null) {
+                // Kiểm tra lại xem tủ có đủ không
+                boolean currentEnough = checkPantryAvailability(userId, item.getIngredientId(), item.getQuantity(), item.getUnit());
+
+                // Nếu trạng thái khác với hiện tại thì cập nhật
+                if (Boolean.TRUE.equals(item.getIsBought()) != currentEnough) {
+                    item.setIsBought(currentEnough);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            itemRepo.saveAll(items);
+        }
+    }
+
+    private boolean checkPantryAvailability(Integer userId, Integer ingredientId, BigDecimal needed, String unit) {
+        UserPantry inPantry = pantryRepo.findByUserIdAndIngredientId(userId, ingredientId);
+        if (inPantry != null && inPantry.getQuantity() != null) {
+            // So sánh đơn giản (giả sử cùng unit, nếu khác cần logic convert)
+            if (unit != null && unit.equalsIgnoreCase(inPantry.getUnit())) {
+                return inPantry.getQuantity().compareTo(needed) >= 0;
+            }
+        }
+        return false;
+    }
+
+    private void syncListItemsWithPlan(Integer userId, ShoppingList list) {
+        // 1. Tính toán lại nhu cầu thực tế từ Meal Plan hiện tại
+        List<DailyMealPlan> plans = mealPlanRepo.findByUserIdAndPlanDateBetween(userId, list.getFromDate(), list.getToDate());
+        List<Integer> planIds = plans.stream().map(DailyMealPlan::getMealPlanId).toList();
+
+        Map<Integer, BigDecimal> freshTotals = new HashMap<>();
+
+        if (!planIds.isEmpty()) {
+            List<MealItem> mealItems = mealItemRepo.findByMealPlanIdIn(planIds);
+            for (MealItem meal : mealItems) {
+                if (meal.getRecipeId() != null) {
+                    List<RecipeIngredient> recipeIngs = recipeIngredientRepo.findByRecipeRecipeId(meal.getRecipeId());
+                    BigDecimal multiplier = meal.getQuantityMultiplier() != null ? meal.getQuantityMultiplier() : BigDecimal.ONE;
+                    for (RecipeIngredient ri : recipeIngs) {
+                        BigDecimal totalQty = ri.getQuantity().multiply(multiplier);
+                        freshTotals.merge(ri.getIngredientId(), totalQty, BigDecimal::add);
+                    }
+                }
+            }
+        }
+
+        // 2. Cập nhật các item đang có trong Shopping List
+        List<ShoppingListItem> existingItems = itemRepo.findByListId(list.getListId());
+
+        for (ShoppingListItem item : existingItems) {
+            if (item.getIngredientId() != null) {
+                // Lấy số lượng mới nhất (nếu không còn trong plan thì là 0)
+                BigDecimal newQuantity = freshTotals.getOrDefault(item.getIngredientId(), BigDecimal.ZERO);
+
+                // Chỉ update nếu có sự thay đổi
+                if (newQuantity.compareTo(item.getQuantity()) != 0) {
+                    item.setQuantity(newQuantity);
+                    // Reset trạng thái IsBought nếu số lượng tăng lên để user check lại
+                    if (newQuantity.compareTo(item.getQuantity()) > 0) {
+                        item.setIsBought(false);
+                    }
+                }
+                // Đánh dấu là đã xử lý
+                freshTotals.remove(item.getIngredientId());
+            }
+        }
+
+        // 3. Thêm các món mới (nếu Meal Plan có món mới chưa có trong List)
+        for (Map.Entry<Integer, BigDecimal> entry : freshTotals.entrySet()) {
+            ShoppingListItem newItem = new ShoppingListItem();
+            newItem.setListId(list.getListId());
+            newItem.setIngredientId(entry.getKey());
+            newItem.setQuantity(entry.getValue());
+            newItem.setIsBought(false);
+
+            // Lấy Unit (tạm thời query lại hoặc lấy từ cache logic cũ, ở đây demo query nhanh)
+            Ingredient ing = ingredientRepo.findById(entry.getKey()).orElse(null);
+            if (ing != null) {
+                newItem.setUnit(ing.getBaseUnit());
+            }
+
+            existingItems.add(newItem);
+        }
+
+        itemRepo.saveAll(existingItems);
     }
 
     private void calculateAndSaveItems(Integer userId, ShoppingList list) {
@@ -184,24 +281,31 @@ public class ShoppingListService {
 
     // Lấy chi tiết list và nhóm theo Category
     public Map<String, List<ShoppingListItemDTO>> getListDetailsGrouped(Integer listId) {
-        List<ShoppingListItem> items = itemRepo.findByListId(listId);
-        
+        // 1. Lấy dữ liệu Shopping List & Sync trạng thái
         ShoppingList list = listRepo.findById(listId).orElseThrow();
         Integer userId = list.getUserId();
-        List<UserPantry> userPantry = pantryRepo.findByUserIdOrderByExpiryDateAsc(userId);
-        
-        Map<Integer, BigDecimal> pantryMap = new HashMap<>();
-        for (UserPantry p : userPantry) {
-            pantryMap.merge(p.getIngredientId(), p.getQuantity(), BigDecimal::add);
-        }
+        updateListStatusFromPantry(userId, list); // Đảm bảo trạng thái IsBought chuẩn
 
-        // DTO để chứa thông tin hiển thị (Tên, Ảnh, Category...)
+        List<ShoppingListItem> items = itemRepo.findByListId(listId);
+
+        // 2. Lấy Map Pantry để tra cứu nhanh
+        List<UserPantry> pantryItems = pantryRepo.findByUserIdOrderByExpiryDateAsc(userId);
+        Map<Integer, BigDecimal> pantryMap = pantryItems.stream()
+                .collect(Collectors.toMap(
+                        UserPantry::getIngredientId,
+                        UserPantry::getQuantity,
+                        BigDecimal::add // Cộng dồn nếu có nhiều dòng trùng ID
+                ));
+
         List<ShoppingListItemDTO> dtos = items.stream().map(item -> {
             ShoppingListItemDTO dto = new ShoppingListItemDTO();
             dto.setItemId(item.getItemId());
-            dto.setQuantity(item.getQuantity());
             dto.setUnit(item.getUnit());
             dto.setIsBought(item.getIsBought());
+
+            // Lấy TỔNG CẦN (Gross) từ DB
+            BigDecimal totalNeeded = item.getQuantity();
+            BigDecimal inStock = BigDecimal.ZERO;
 
             if (item.getIngredientId() != null) {
                 Ingredient ing = ingredientRepo.findById(item.getIngredientId()).orElse(null);
@@ -209,26 +313,36 @@ public class ShoppingListService {
                     dto.setName(ing.getName());
                     dto.setImageUrl(ing.getImageUrl());
 
+                    // [FIX] Sửa đoạn lấy Category Name (Dùng ID thay vì Object)
                     if (ing.getCategoryId() != null) {
+                        // Tra cứu Category từ Repo
                         IngredientCategory cat = categoryRepo.findById(ing.getCategoryId()).orElse(null);
                         dto.setCategoryName(cat != null ? cat.getName() : "Other");
                     } else {
                         dto.setCategoryName("Other");
                     }
-                    
-                    BigDecimal stock = pantryMap.getOrDefault(item.getIngredientId(), BigDecimal.ZERO);
-                    dto.setPantryStock(stock);
+
+                    // Lấy số lượng đang có trong tủ
+                    inStock = pantryMap.getOrDefault(item.getIngredientId(), BigDecimal.ZERO);
+                    dto.setPantryStock(inStock);
                 }
             } else {
                 dto.setName(item.getCustomItemName());
                 dto.setCategoryName("Custom / Other");
-                dto.setImageUrl(null);
                 dto.setPantryStock(BigDecimal.ZERO);
             }
+
+            // Tính toán số lượng cần mua hiển thị (Net Quantity)
+            if (Boolean.TRUE.equals(item.getIsBought())) {
+                dto.setQuantity(BigDecimal.ZERO);
+            } else {
+                BigDecimal toBuy = totalNeeded.subtract(inStock);
+                dto.setQuantity(toBuy.compareTo(BigDecimal.ZERO) > 0 ? toBuy : BigDecimal.ZERO);
+            }
+
             return dto;
         }).collect(Collectors.toList());
 
-        // Group by Category Name
         return dtos.stream().collect(Collectors.groupingBy(ShoppingListItemDTO::getCategoryName));
     }
 
@@ -237,14 +351,99 @@ public class ShoppingListService {
         ShoppingListItem item = shoppingItemRepo.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        // Đảo ngược trạng thái
         boolean newStatus = !Boolean.TRUE.equals(item.getIsBought());
-        item.setIsBought(newStatus);
-        shoppingItemRepo.save(item);
 
+        // 1. Cập nhật trạng thái Checkbox
+        item.setIsBought(newStatus);
+
+        // 2. Lấy User ID
+        ShoppingList listHeader = shoppingListRepo.findById(item.getListId()).orElseThrow();
+        Integer userId = listHeader.getUserId();
+
+        // 3. Xử lý Logic Pantry
         if (newStatus) {
-            addToPantry(item);
+            // [CHECK]: Tính toán lượng thiếu và thêm vào tủ
+            handleCheckItem(userId, item);
+        } else {
+            // [UNCHECK]: Hoàn tác lại đúng lượng đã thêm
+            handleUncheckItem(userId, item);
         }
+
+        // 4. Lưu Item (bao gồm cả LastAddedQty vừa cập nhật)
+        shoppingItemRepo.save(item);
+    }
+
+    private void handleCheckItem(Integer userId, ShoppingListItem item) {
+        if (item.getIngredientId() == null) {
+            return;
+        }
+
+        UserPantry pantryItem = pantryRepo.findByUserIdAndIngredientId(userId, item.getIngredientId());
+
+        BigDecimal currentQty = (pantryItem != null) ? pantryItem.getQuantity() : BigDecimal.ZERO;
+        BigDecimal totalNeeded = item.getQuantity();
+
+        // Tính lượng cần thêm = Max(0, Cần - Có)
+        BigDecimal toAdd = BigDecimal.ZERO;
+        if (currentQty.compareTo(totalNeeded) < 0) {
+            toAdd = totalNeeded.subtract(currentQty);
+        }
+
+        System.out.println(currentQty);
+        System.out.println(totalNeeded);
+        System.out.println(toAdd);
+
+        // Chỉ thêm nếu thực sự thiếu
+        if (toAdd.compareTo(BigDecimal.ZERO) > 0) {
+            if (pantryItem != null) {
+                pantryItem.setQuantity(pantryItem.getQuantity().add(toAdd));
+                pantryItem.setCreatedAt(LocalDateTime.now()); // Update ngày mới
+                pantryRepo.save(pantryItem);
+            } else {
+                // Tạo mới nếu chưa có
+                UserPantry newPantry = new UserPantry();
+                newPantry.setUserId(userId);
+                newPantry.setIngredientId(item.getIngredientId());
+                newPantry.setQuantity(toAdd);
+                newPantry.setUnit(item.getUnit());
+                newPantry.setExpiryDate(null);
+                newPantry.setCreatedAt(LocalDateTime.now());
+                pantryRepo.save(newPantry);
+            }
+        }
+
+        // [QUAN TRỌNG] Ghi nhớ số lượng đã thêm để sau này Undo
+        item.setLastAddedQty(toAdd);
+    }
+
+    private void handleUncheckItem(Integer userId, ShoppingListItem item) {
+        if (item.getIngredientId() == null) {
+            return;
+        }
+
+        // Lấy lại con số đã thêm trong quá khứ
+        BigDecimal toRemove = item.getLastAddedQty();
+
+        // Nếu lúc trước không thêm gì (do tủ đủ rồi), thì giờ không trừ gì cả
+        if (toRemove == null || toRemove.compareTo(BigDecimal.ZERO) <= 0) {
+            item.setLastAddedQty(BigDecimal.ZERO); // Reset
+            return;
+        }
+
+        UserPantry pantryItem = pantryRepo.findByUserIdAndIngredientId(userId, item.getIngredientId());
+        if (pantryItem != null) {
+            BigDecimal newQty = pantryItem.getQuantity().subtract(toRemove);
+
+            if (newQty.compareTo(BigDecimal.ZERO) <= 0) {
+                pantryRepo.delete(pantryItem);
+            } else {
+                pantryItem.setQuantity(newQty);
+                pantryRepo.save(pantryItem);
+            }
+        }
+
+        // [QUAN TRỌNG] Reset biến nhớ về 0
+        item.setLastAddedQty(BigDecimal.ZERO);
     }
 
     private void addToPantry(ShoppingListItem item) {
