@@ -238,4 +238,13 @@ public class PantryController {
 
         return "redirect:/user/pantry?success=saved";
     }
+    
+    @PostMapping("/update")
+    public String updateItem(@RequestParam Integer pantryId,
+                             @RequestParam BigDecimal quantity,
+                             @RequestParam(required = false) LocalDate expiryDate) {
+        // Gọi service cập nhật (Hàm updatePantryItem đã có trong PantryService của bạn)
+        pantryService.updatePantryItem(pantryId, quantity, expiryDate);
+        return "redirect:/user/pantry";
+    }
 }

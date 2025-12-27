@@ -10,35 +10,6 @@
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        <style>
-            .material-symbols-outlined {
-                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            }
-            /* Ẩn thanh cuộn cho datalist đẹp hơn nếu cần */
-
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            .animate-fade-in {
-                animation: fadeIn 0.5s ease-out forwards;
-            }
-
-            .hide-scrollbar::-webkit-scrollbar {
-                display: none;
-            }
-            .hide-scrollbar {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-            }
-        </style>
-
         <script id="tailwind-config">
             tailwind.config = {
                 darkMode: "class",
@@ -57,104 +28,104 @@
                 },
             }
         </script>
+        <style>
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+            .recipe-card-img {
+                height: 160px;
+                object-fit: cover;
+                width: 100%;
+            }
+            /* Style cho card nguyên liệu trong modal */
+            .ing-card-img {
+                height: 100px;
+                object-fit: cover;
+                width: 100%;
+            }
+        </style>
     </head>
     <body class="font-display bg-background-light text-dark-ink">
-        <div class="relative flex justify-center flex-col min-h-screen w-full overflow-x-hidden group/design-root">
+        <div class="relative flex justify-center flex-col min-h-screen w-full overflow-x-hidden">
             <div th:replace="~{fragments/navbar :: header_nav}"></div>
+
             <main class="bg-gray-50 min-h-screen container-fluid flex justify-center">
-                <div class="p-8 container">
+                <div class="p-4 sm:p-8 container max-w-7xl">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
                             <h1 class="text-3xl font-extrabold text-dark-ink flex items-center gap-2">
-                                <span class="material-symbols-outlined text-4xl text-nutri-green">kitchen</span> 
+                                <span class="material-symbols-outlined text-4xl text-nutri-green">kitchen</span>
                                 Smart Pantry
                             </h1>
-                            <p class="text-soft-grey mt-1">Manage ingredients you have at home to get smart recipe suggestions.</p>
+                            <p class="text-soft-grey mt-1">Manage ingredients to track expiry and get recipe ideas.</p>
                         </div>
-                        <button onclick="confirmAiSuggestion()" class="flex gap-2 flex-row justify-center bg-gradient-to-r from-nutri-green to-green-600 p-2 rounded-2xl text-white">
+                        <button onclick="confirmAiSuggestion()" class="flex gap-2 items-center justify-center bg-gradient-to-r from-nutri-green to-green-600 px-6 py-3 rounded-2xl text-white font-bold shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5">
                             <span class="material-symbols-outlined">auto_awesome</span> What can I cook?
                         </button>
                     </div>
-                    <div id="smart-suggestions" class="mb-8 transition-all duration-500 ease-in-out">
-                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 relative overflow-hidden shadow-sm min-h-[200px]">
 
-                            <div class="absolute right-0 top-0 opacity-5 pointer-events-none">
-                                <span class="material-symbols-outlined text-[180px] text-nutri-green -mr-8 -mt-8">soup_kitchen</span>
-                            </div>
-
-                            <div class="relative z-10">
-                                <div class="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 class="font-bold text-xl text-dark-ink flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-nutri-green">restaurant_menu</span>
-                                            Here's a suggestion for you
-                                        </h3>
-                                        <p class="text-sm text-gray-600 mt-1">
-                                            Dishes you can cook with your current inventory.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div id="suggestion-empty-state" 
-                                     th:classappend="${hasAiSuggestions} ? 'hidden' : ''"
-                                     class="flex flex-col items-center justify-center py-8 text-center animate-fade-in">
-                                    <div class="bg-white/60 p-4 rounded-full mb-3 shadow-sm border border-green-100/50">
-                                        <span class="material-symbols-outlined text-4xl text-nutri-green opacity-50">auto_awesome</span>
-                                    </div>
-                                    <h4 class="font-bold text-gray-600">No suggestions loaded yet</h4>
-                                    <p class="text-sm text-gray-500 mt-1">
-                                        Try clicking <strong class="text-nutri-green">"What can I cook?"</strong> to generate recipes!
-                                    </p>
-                                </div>
-
-                                <div id="suggestion-results" 
-                                     th:classappend="${!hasAiSuggestions} ? 'hidden' : ''"
-                                     class="mt-6">
-
-                                    <div class="relative">
-                                        <div id="suggestion-grid" class="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scroll-smooth hide-scrollbar px-1">
-
-                                            <div th:if="${hasAiSuggestions}" th:each="r, iterStat : ${aiSuggestions}"
-                                                 th:onclick="'window.location.href=\'/user/pantry/ai-recipe/' + ${iterStat.index} + '\''"
-                                                 class="min-w-[280px] w-[280px] flex-shrink-0 snap-center bg-white rounded-xl p-3 shadow-sm border border-green-100 hover:shadow-md transition cursor-pointer group hover:-translate-y-1 animate-fade-in">
-
-                                                <div class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-gray-100">
-                                                    <img th:src="${r.imageUrl != null ? r.imageUrl : 'https://placehold.co/300?text=AI+Dish'}" 
-                                                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-
-                                                    <div class="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold shadow-sm border flex items-center gap-1"
-                                                         th:classappend="${r.matchPercentage >= 90} ? 'text-green-700 border-green-100' : 'text-yellow-600 border-yellow-100'">
-                                                        <span class="material-symbols-outlined text-[12px]" 
-                                                              th:text="${r.matchPercentage >= 90} ? 'check_circle' : 'auto_awesome'"></span> 
-                                                        <span th:text="${r.matchPercentage >= 90} ? 'Great Match' : 'AI Creative'"></span>
-                                                    </div>
-                                                </div>
-
-                                                <h4 class="font-bold text-dark-ink text-sm truncate" th:text="${r.name}">Recipe Name</h4>
-
-                                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
-                                                    <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">timer</span> <span th:text="${r.timeMin}">30</span>m</span>
-                                                    <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> <span th:text="${r.calories}">400</span> kcal</span>
+                    <div id="smart-suggestions" class="mb-8">
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 relative overflow-hidden shadow-sm">
+                            <div id="suggestion-results" th:classappend="${!hasAiSuggestions} ? 'hidden' : ''" class="mt-6">
+                                <div class="relative">
+                                    <div id="suggestion-grid" class="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scroll-smooth hide-scrollbar px-1">
+                                        <div th:if="${hasAiSuggestions}" th:each="r, iterStat : ${aiSuggestions}"
+                                             th:onclick="'window.location.href=\'/user/pantry/ai-recipe/' + ${iterStat.index} + '\''"
+                                             class="min-w-[280px] w-[280px] flex-shrink-0 snap-center bg-white rounded-xl p-3 shadow-sm border border-green-100 hover:shadow-md transition cursor-pointer group hover:-translate-y-1 animate-fade-in">
+                                            <div class="relative rounded-lg overflow-hidden mb-3 bg-gray-100">
+                                                <img th:src="${r.imageUrl != null ? r.imageUrl : 'https://placehold.co/300?text=AI+Dish'}"
+                                                     class="recipe-card-img group-hover:scale-105 transition duration-500">
+                                                <div class="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold shadow-sm border flex items-center gap-1"
+                                                     th:classappend="${r.matchPercentage >= 90} ? 'text-green-700 border-green-100' : 'text-yellow-600 border-yellow-100'">
+                                                    <span class="material-symbols-outlined text-[12px]" th:text="${r.matchPercentage >= 90} ? 'check_circle' : 'auto_awesome'"></span>
+                                                    <span th:text="${r.matchPercentage >= 90} ? 'Great Match' : 'AI Creative'"></span>
                                                 </div>
                                             </div>
-
+                                            <h4 class="font-bold text-dark-ink text-sm truncate" th:text="${r.name}">Recipe Name</h4>
+                                            <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">timer</span> <span th:text="${r.timeMin}">30</span>m</span>
+                                                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> <span th:text="${r.calories}">400</span> kcal</span>
+                                            </div>
                                         </div>
-                                        <div class="absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-white/80 to-transparent pointer-events-none"></div>
-                                    </div>
-
-                                    <div class="mt-4 text-center flex justify-center gap-3">
-                                        <button id="btn-clear-ai" onclick="clearAiResults()" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-sm">delete</span> Clear Results
-                                        </button>
                                     </div>
                                 </div>
-
+                                <div class="mt-4 text-center flex justify-center gap-3">
+                                    <button id="btn-clear-ai" onclick="clearAiResults()" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">delete</span> Clear Results
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="suggestion-empty-state" th:classappend="${hasAiSuggestions} ? 'hidden' : ''" class="flex flex-col items-center justify-center py-8 text-center animate-fade-in">
+                                <div class="bg-white/60 p-4 rounded-full mb-3 shadow-sm border border-green-100/50">
+                                    <span class="material-symbols-outlined text-4xl text-nutri-green opacity-50">auto_awesome</span>
+                                </div>
+                                <h4 class="font-bold text-gray-600">No suggestions loaded yet</h4>
+                                <p class="text-sm text-gray-500 mt-1">Try clicking <strong class="text-nutri-green">"What can I cook?"</strong> to generate recipes!</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
                         <div class="lg:col-span-1">
                             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4">
                                 <h3 class="font-bold text-lg text-dark-ink mb-4 flex items-center gap-2">
@@ -164,20 +135,15 @@
                                 <form th:action="@{/user/pantry/add}" method="post" class="flex flex-col gap-4" onsubmit="return validateForm()">
 
                                     <div>
-                                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Ingredient Name</label>
-                                        <div class="relative">
-                                            <input list="ing-list" id="ing-input" class="w-full border-gray-200 rounded-lg pl-10 focus:ring-nutri-green focus:border-nutri-green" placeholder="e.g. Eggs, Milk..." onchange="updateIngDetails(this)" autocomplete="off" required>
-                                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+                                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Ingredient</label>
+                                        <div class="relative cursor-pointer" onclick="openIngModal()">
+                                            <input type="text" id="ing-input" 
+                                                   class="w-full border-gray-200 rounded-lg pl-10 focus:ring-nutri-green focus:border-nutri-green cursor-pointer bg-white" 
+                                                   placeholder="Click to select..." readonly required>
+                                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-nutri-green">search</span>
+                                            <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400">expand_more</span>
 
                                             <input type="hidden" name="ingredientId" id="real-ing-id">
-
-                                            <datalist id="ing-list">
-                                                <option th:each="ing : ${allIngredients}" 
-                                                        th:value="${ing.name}" 
-                                                        th:data-id="${ing.ingredientId}" 
-                                                        th:data-unit="${ing.baseUnit}"
-                                                        th:data-img="${ing.imageUrl}"></option>
-                                            </datalist>
                                         </div>
                                     </div>
 
@@ -188,94 +154,174 @@
                                         </div>
                                         <div>
                                             <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Unit</label>
-                                            <input type="text" name="unit" id="ing-unit" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green focus:border-nutri-green" placeholder="kg, pcs...">
+                                            <input type="text" name="unit" id="ing-unit" 
+                                                   class="w-full border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed focus:ring-0" 
+                                                   placeholder="Auto" readonly>
                                         </div>
                                     </div>
 
                                     <div>
                                         <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Expiry Date</label>
-                                        <div class="relative">
-                                            <input type="date" name="expiryDate" class="w-full border-gray-200 rounded-lg pl-10 focus:ring-nutri-green focus:border-nutri-green" required>
-                                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">calendar_today</span>
-                                        </div>
+                                        <input type="date" name="expiryDate" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green focus:border-nutri-green" required>
                                         <div class="flex gap-2 mt-2">
-                                            <button type="button" onclick="setExpiry(7)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition">+1 Week</button>
-                                            <button type="button" onclick="setExpiry(14)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition">+2 Weeks</button>
-                                            <button type="button" onclick="setExpiry(30)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition">+1 Month</button>
+                                            <button type="button" onclick="setExpiry(7)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">+1 Week</button>
+                                            <button type="button" onclick="setExpiry(14)" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">+2 Weeks</button>
                                         </div>
                                     </div>
 
-                                    <button type="submit" class="w-full bg-dark-ink text-white font-bold py-3 rounded-xl hover:bg-black transition shadow-lg mt-2 flex justify-center items-center gap-2">
-                                        Add to Pantry
-                                    </button>
+                                    <button type="submit" class="w-full bg-dark-ink text-white font-bold py-3 rounded-xl hover:bg-black transition shadow-lg mt-2">Add to Pantry</button>
                                 </form>
                             </div>
                         </div>
 
                         <div class="lg:col-span-2">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-bold text-lg text-dark-ink">Current Stock (<span th:text="${pantryItems.size()}">0</span>)</h3>
-
-                                <select class="text-sm border-gray-200 rounded-lg focus:ring-nutri-green">
-                                    <option>Sort by Expiry (Soonest)</option>
-                                    <option>Sort by Name</option>
-                                </select>
-                            </div>
-
-                            <div th:if="${pantryItems.empty}" class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm flex flex-col items-center">
-                                <div class="bg-green-50 p-4 rounded-full mb-4">
-                                    <span class="material-symbols-outlined text-4xl text-nutri-green">kitchen</span>
+                            <div class="mb-6 space-y-4">
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <div class="relative flex-1">
+                                        <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400">search</span>
+                                        <input type="text" id="pantry-search" onkeyup="filterPantry()" class="w-full pl-10 h-12 rounded-xl border-gray-200 focus:ring-nutri-green focus:border-nutri-green shadow-sm" placeholder="Search ingredients...">
+                                    </div>
+                                    <select class="h-12 border-gray-200 rounded-xl focus:ring-nutri-green text-sm">
+                                        <option>Sort by Expiry</option>
+                                        <option>Sort by Name</option>
+                                    </select>
                                 </div>
-                                <h4 class="font-bold text-lg text-dark-ink">Your pantry is empty</h4>
-                                <p class="text-soft-grey text-sm mt-1 max-w-xs mx-auto">Add ingredients you have at home to track expiration dates and get recipe ideas.</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="setFilter('all', this)" class="filter-btn active px-4 py-2 rounded-lg text-sm font-bold bg-dark-ink text-white transition">All</button>
+                                    <button onclick="setFilter('expired', this)" class="filter-btn px-4 py-2 rounded-lg text-sm font-bold bg-white text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition flex items-center gap-1"><span class="material-symbols-outlined text-sm">warning</span> Expired</button>
+                                    <button onclick="setFilter('expiring', this)" class="filter-btn px-4 py-2 rounded-lg text-sm font-bold bg-white text-gray-600 border border-gray-200 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-200 transition flex items-center gap-1"><span class="material-symbols-outlined text-sm">timelapse</span> Expiring Soon</button>
+                                    <button onclick="setFilter('no-date', this)" class="filter-btn px-4 py-2 rounded-lg text-sm font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 transition">No Date</button>
+                                </div>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div th:each="item : ${pantryItems}" 
-                                     class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 relative group hover:shadow-md transition duration-200 overflow-hidden">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-lg text-dark-ink">Current Stock (<span id="total-count" th:text="${pantryItems.size()}">0</span>)</h3>
+                                <span id="showing-count" class="text-xs font-medium text-gray-500">Showing all</span>
+                            </div>
 
-                                    <div th:classappend="${item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'bg-red-500' : 
-                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(3)) ? 'bg-red-400' : 
-                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(7)) ? 'bg-yellow-400' : 'bg-nutri-green'))}"
-                                         class="w-1.5 h-full absolute left-0 top-0"></div>
+                            <div id="pantry-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4" th:with="today=${T(java.time.LocalDate).now()}">
+                                <div th:each="item : ${pantryItems}" class="pantry-item bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 relative group hover:shadow-md transition duration-200 overflow-hidden"
+                                     th:attr="data-name=${item.ingredient.name.toLowerCase()}, data-status=${item.expiryDate == null ? 'no-date' : (item.expiryDate.isBefore(today) ? 'expired' : (item.expiryDate.isBefore(today.plusDays(3)) ? 'expiring' : 'good'))}">
 
-                                    <img th:src="${item.ingredient.imageUrl}"
-                                         onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=404'"
-                                         class="w-16 h-16 rounded-xl object-cover bg-gray-50 border border-gray-100">
+                                    <div th:classappend="${item.expiryDate == null ? 'bg-gray-300' : (item.expiryDate.isBefore(today) ? 'bg-red-500' : (item.expiryDate.isBefore(today.plusDays(3)) ? 'bg-yellow-400' : 'bg-nutri-green'))}" class="w-1.5 h-full absolute left-0 top-0"></div>
+
+                                    <img th:src="${item.ingredient.imageUrl}" onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Ingred'" class="w-16 h-16 rounded-xl object-cover bg-gray-50 border border-gray-100">
 
                                     <div class="flex-1 min-w-0">
-                                        <h4 class="font-bold text-dark-ink truncate" th:text="${item.ingredient.name}">Ingredient Name</h4>
+                                        <h4 class="font-bold text-dark-ink truncate" th:text="${item.ingredient.name}">Name</h4>
                                         <p class="text-sm text-gray-500 font-medium">
-                                            <span th:text="${#numbers.formatDecimal(item.quantity, 0, 'COMMA', 1, 'POINT')}">1.0</span> 
-                                            <span th:text="${item.unit}">kg</span>
+                                            <span th:text="${#numbers.formatDecimal(item.quantity, 0, 'COMMA', 1, 'POINT')}">1.0</span> <span th:text="${item.unit}">kg</span>
                                         </p>
-
-                                        <div class="flex items-center gap-1 text-xs font-bold mt-1"
-                                             th:classappend="${item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'text-red-600' : 
-                                             (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(5)) ? 'text-yellow-600' : 'text-green-600')}">
+                                        <div class="flex items-center gap-1 text-xs font-bold mt-1" th:classappend="${item.expiryDate == null ? 'text-gray-400' : (item.expiryDate.isBefore(today) ? 'text-red-600' : (item.expiryDate.isBefore(today.plusDays(5)) ? 'text-yellow-600' : 'text-green-600'))}">
                                             <span class="material-symbols-outlined text-[14px]">event</span>
-                                            <span th:if="${item.expiryDate.isBefore(T(java.time.LocalDate).now())}">Expired!</span>
-                                            <span th:unless="${item.expiryDate.isBefore(T(java.time.LocalDate).now())}" 
-                                                  th:text="${#temporals.format(item.expiryDate, 'dd MMM')}">01 Jan</span>
+                                            <span th:if="${item.expiryDate == null}">No Date</span>
+                                            <span th:if="${item.expiryDate != null}" th:text="${#temporals.format(item.expiryDate, 'dd MMM yyyy')}">Date</span>
                                         </div>
                                     </div>
 
-                                    <form th:id="'delete-pantry-' + ${item.pantryId}" 
-                                          th:action="@{/user/pantry/delete/{id}(id=${item.pantryId})}" 
-                                          method="post" class="hidden">
-                                    </form>
-                                    <button type="button" 
-                                            th:onclick="confirmDelete('delete-pantry-[[${item.pantryId}]]')"
-                                            class="opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-lg"
-                                            title="Remove Item">
-                                        <span class="material-symbols-outlined text-lg">delete</span>
-                                    </button>
+                                    <div class="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button" th:onclick="openEditModal([[${item.pantryId}]], [[${item.ingredient.name}]], [[${item.quantity}]], [[${item.expiryDate != null ? item.expiryDate.toString() : ''}]])" class="bg-blue-50 text-blue-500 hover:bg-blue-100 p-1.5 rounded-lg" title="Edit"><span class="material-symbols-outlined text-lg">edit</span></button>
+                                        <form th:id="'delete-pantry-' + ${item.pantryId}" th:action="@{/user/pantry/delete/{id}(id=${item.pantryId})}" method="post" class="hidden"></form>
+                                        <button type="button" th:onclick="confirmDelete('delete-pantry-[[${item.pantryId}]]')" class="bg-red-50 text-red-500 hover:bg-red-100 p-1.5 rounded-lg" title="Remove"><span class="material-symbols-outlined text-lg">delete</span></button>
+                                    </div>
                                 </div>
                             </div>
+                            <div id="no-results" class="hidden text-center py-10"><p class="text-gray-400 italic">No ingredients match your filter.</p></div>
                         </div>
                     </div>
                 </div>
             </main>
+        </div>
+
+        <div id="ingSelectionModal" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col transform scale-95 transition-transform duration-300" id="ingModalContent">
+
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl z-10">
+                    <div>
+                        <h3 class="font-bold text-xl text-dark-ink">Select Ingredient</h3>
+                        <p class="text-sm text-gray-500">Choose from available ingredients to add.</p>
+                    </div>
+                    <button onclick="closeIngModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                    </button>
+                </div>
+
+                <div class="p-4 bg-gray-50 border-b border-gray-100">
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400">search</span>
+                        <input type="text" id="ing-modal-search" onkeyup="filterModalIngredients()" 
+                               class="w-full pl-10 h-11 rounded-xl border-gray-200 focus:ring-nutri-green focus:border-nutri-green" 
+                               placeholder="Search by name (e.g. Tomato, Beef)..." autofocus>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+                    <div id="ing-modal-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                        <div th:each="ing : ${allIngredients}" 
+                             class="ing-select-card bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-nutri-green hover:ring-2 hover:ring-nutri-green/20 transition cursor-pointer flex flex-col gap-2 group"
+                             th:attr="data-name=${ing.name.toLowerCase()}"
+                             th:onclick="selectIngredient([[${ing.ingredientId}]], [[${ing.name}]], [[${ing.baseUnit}]], [[${ing.imageUrl}]])">
+
+                            <div class="relative rounded-lg overflow-hidden bg-gray-100 aspect-square">
+                                <img th:src="${ing.imageUrl}" onerror="this.onerror=null; this.src='https://placehold.co/100x100?text=Food'" 
+                                     class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                    <span class="text-white text-[10px] font-bold uppercase tracking-wider" th:text="${ing.baseUnit}">KG</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="font-bold text-dark-ink text-sm truncate" th:text="${ing.name}">Ingredient Name</h4>
+                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                    <span class="flex items-center gap-0.5" title="Calories (Est.)">
+                                        <span class="material-symbols-outlined text-[12px] text-orange-400">local_fire_department</span>
+                                        <span th:text="${ing.caloriesPer100g != null ? ing.caloriesPer100g + ' kcal' : 'N/A'}"></span>
+                                    </span>
+                                    <span class="flex items-center gap-0.5" title="Base Unit">
+                                        <span class="material-symbols-outlined text-[12px] text-blue-400">scale</span>
+                                        <span th:text="${ing.baseUnit}">kg</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="ing-modal-empty" class="hidden text-center py-10">
+                        <span class="material-symbols-outlined text-4xl text-gray-300">search_off</span>
+                        <p class="text-gray-400 mt-2">No ingredients found.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="editModal" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-300" id="editModalContent">
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="font-bold text-xl text-dark-ink">Edit Item</h3>
+                    <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <form th:action="@{/user/pantry/update}" method="post" class="p-6 space-y-4">
+                    <input type="hidden" name="pantryId" id="edit-id">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Ingredient</label>
+                        <input type="text" id="edit-name" class="w-full bg-gray-100 border-transparent rounded-lg text-gray-500 cursor-not-allowed" readonly>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Quantity</label>
+                        <input type="number" step="0.1" name="quantity" id="edit-qty" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Expiry Date</label>
+                        <input type="date" name="expiryDate" id="edit-date" class="w-full border-gray-200 rounded-lg focus:ring-nutri-green">
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeEditModal()" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">Cancel</button>
+                        <button type="submit" class="flex-1 px-4 py-2.5 bg-nutri-green text-white font-bold rounded-xl hover:bg-green-600 transition shadow-lg shadow-green-200">Save Changes</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <footer th:replace="~{fragments/footer :: footer_section}"></footer>
@@ -365,7 +411,7 @@
                                 if (recipes.length === 0) {
                                     if (typeof ZaderToast !== 'undefined')
                                         ZaderToast.remove(toastId);
-                                        ZaderToast.show('No matching recipes found based on your items.');
+                                    ZaderToast.show('No matching recipes found based on your items.');
                                     return;
                                 }
 
@@ -445,15 +491,15 @@
                         renderSuggestions(result.value.data);
 
                         console.log(result.value);
-                        if(result.value.data.length <= 0) {
+                        if (result.value.data.length <= 0) {
                             Swal.fire({
-                            title: 'No Recipe Return!',
-                            text: 'Try add some ingredient to your pantry and try again!',
-                            icon: 'error',
-                            timer: 3000,
-                            showConfirmButton: false
-                        });
-                        return;
+                                title: 'No Recipe Return!',
+                                text: 'Try add some ingredient to your pantry and try again!',
+                                icon: 'error',
+                                timer: 3000,
+                                showConfirmButton: false
+                            });
+                            return;
                         }
 
                         Swal.fire({
@@ -533,6 +579,160 @@
 
                 if (typeof ZaderToast !== 'undefined')
                     ZaderToast.info('AI results cleared.');
+            }
+
+            // --- [NEW] 1. FILTER & SEARCH LOGIC ---
+            let activeFilter = 'all';
+
+            function setFilter(filterType, btn) {
+                activeFilter = filterType;
+
+                // Update Button Styles
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-dark-ink', 'text-white');
+                    b.classList.add('bg-white', 'text-gray-600');
+                });
+                if (btn) {
+                    btn.classList.remove('bg-white', 'text-gray-600');
+                    btn.classList.add('active', 'bg-dark-ink', 'text-white');
+                }
+
+                filterPantry();
+            }
+
+            function filterPantry() {
+                const query = document.getElementById('pantry-search').value.toLowerCase();
+                const items = document.querySelectorAll('.pantry-item');
+                let visibleCount = 0;
+
+                items.forEach(item => {
+                    const name = item.getAttribute('data-name');
+                    const status = item.getAttribute('data-status');
+
+                    let matchSearch = name.includes(query);
+                    let matchFilter = true;
+
+                    if (activeFilter === 'expired')
+                        matchFilter = (status === 'expired');
+                    else if (activeFilter === 'expiring')
+                        matchFilter = (status === 'expiring'); // <= 3 days
+                    else if (activeFilter === 'no-date')
+                        matchFilter = (status === 'no-date');
+                    // 'good' items are usually not a separate filter unless requested, 'all' covers everything
+
+                    if (matchSearch && matchFilter) {
+                        item.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                // Update UI Summary
+                document.getElementById('showing-count').innerText = `Showing ${visibleCount}`;
+                const noResults = document.getElementById('no-results');
+                if (visibleCount === 0)
+                    noResults.classList.remove('hidden');
+                else
+                    noResults.classList.add('hidden');
+            }
+
+            // --- [NEW] 2. EDIT MODAL LOGIC ---
+            function openEditModal(id, name, qty, date) {
+                document.getElementById('edit-id').value = id;
+                document.getElementById('edit-name').value = name;
+                document.getElementById('edit-qty').value = qty;
+                document.getElementById('edit-date').value = date || '';
+
+                const modal = document.getElementById('editModal');
+                const content = document.getElementById('editModalContent');
+                modal.classList.remove('hidden');
+                // Small delay for animation
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                }, 10);
+            }
+
+            function closeEditModal() {
+                const modal = document.getElementById('editModal');
+                const content = document.getElementById('editModalContent');
+
+                modal.classList.add('opacity-0');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            function openIngModal() {
+                const modal = document.getElementById('ingSelectionModal');
+                const content = document.getElementById('ingModalContent');
+                const searchInput = document.getElementById('ing-modal-search');
+
+                modal.classList.remove('hidden');
+                // Animation
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                    searchInput.focus(); // Auto focus search
+                }, 10);
+            }
+
+            function closeIngModal() {
+                const modal = document.getElementById('ingSelectionModal');
+                const content = document.getElementById('ingModalContent');
+
+                modal.classList.add('opacity-0');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    // Clear search when closed
+                    document.getElementById('ing-modal-search').value = '';
+                    filterModalIngredients();
+                }, 300);
+            }
+
+            function filterModalIngredients() {
+                const query = document.getElementById('ing-modal-search').value.toLowerCase();
+                const items = document.querySelectorAll('.ing-select-card');
+                let visibleCount = 0;
+
+                items.forEach(item => {
+                    const name = item.getAttribute('data-name');
+                    if (name.includes(query)) {
+                        item.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                const emptyState = document.getElementById('ing-modal-empty');
+                if (visibleCount === 0)
+                    emptyState.classList.remove('hidden');
+                else
+                    emptyState.classList.add('hidden');
+            }
+
+            // [IMPORTANT] Hàm được gọi khi user chọn 1 món trong modal
+            function selectIngredient(id, name, unit, imgUrl) {
+                // 1. Điền thông tin vào form
+                document.getElementById('ing-input').value = name;
+                document.getElementById('real-ing-id').value = id;
+                document.getElementById('ing-unit').value = unit || 'unit'; // Auto-fill Unit
+
+                // 2. Đóng modal
+                closeIngModal();
+
+                // (Optional) Focus vào ô số lượng để nhập tiếp
+                document.querySelector('input[name="quantity"]').focus();
             }
         </script>
         <script th:inline="javascript">
