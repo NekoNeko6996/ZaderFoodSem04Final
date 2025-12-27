@@ -104,8 +104,21 @@
                                 <div class="flex-1 transition-opacity duration-300" 
                                      th:classappend="${item.isBought} ? 'opacity-40 line-through' : ''"
                                      th:id="'text-' + ${item.itemId}">
-                                    <p class="font-bold text-sm text-dark-ink" th:text="${item.name}">Beef</p>
+
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-sm text-dark-ink" th:text="${item.name}">Beef</p>
+
+                                        <span th:if="${item.pantryStock != null and item.pantryStock > 0}" 
+                                              class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 font-bold flex items-center gap-1"
+                                              title="Available in Pantry">
+                                            <span class="material-symbols-outlined text-[10px]">kitchen</span>
+                                            <span th:text="${#numbers.formatDecimal(item.pantryStock, 0, 1)}">50</span>
+                                            <span th:text="${item.unit}">g</span>
+                                        </span>
+                                    </div>
+
                                     <p class="text-xs text-gray-500">
+                                        To buy: 
                                         <span th:text="${#numbers.formatDecimal(item.quantity, 0, 1)}">200</span> 
                                         <span th:text="${item.unit}">g</span>
                                     </p>
@@ -123,11 +136,11 @@
             </div>
 
         </main>
-        
-        <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
 
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-        <script th:inline="javascript">
+    <th:block th:replace="~{fragments/toast :: toast-system}"></th:block>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script th:inline="javascript">
                         // 1. Lấy dữ liệu từ Server
                         const plannedDates = /*[[${plannedDates}]]*/ [];
                         const savedFromDate = /*[[${fromDateStr}]]*/ null;
@@ -177,12 +190,24 @@
 
                         function toggleItem(itemId, checkbox) {
                             const textDiv = document.getElementById('text-' + itemId);
+
+                            // UI Update
                             if (checkbox.checked) {
                                 textDiv.classList.add('opacity-40', 'line-through');
                             } else {
                                 textDiv.classList.remove('opacity-40', 'line-through');
                             }
-                            fetch('/shopping-list/api/check?itemId=' + itemId, {method: 'POST'});
+
+                            // Call API
+                            fetch('/shopping-list/api/check?itemId=' + itemId, {method: 'POST'})
+                                    .then(res => {
+                                        if (res.ok && checkbox.checked) {
+                                            // [NEW] Thông báo khi tích chọn
+                                            if (typeof ZaderToast !== 'undefined') {
+                                                ZaderToast.success("Item bought & added to Pantry!");
+                                            }
+                                        }
+                                    });
                         }
 
                         function sendEmail() {
@@ -245,22 +270,22 @@
                                         ZaderToast.error("Failed to export Excel.");
                                     });
                         }
-        </script>
-        <style>
-            /* Style cho chấm xanh trên lịch */
-            .plan-dot {
-                position: absolute;
-                bottom: 2px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 4px;
-                height: 4px;
-                background-color: #10B981; /* Green-500 */
-                border-radius: 50%;
-            }
-            .has-plan {
-                font-weight: bold;
-            }
-        </style>
-    </body>
+    </script>
+    <style>
+        /* Style cho chấm xanh trên lịch */
+        .plan-dot {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #10B981; /* Green-500 */
+            border-radius: 50%;
+        }
+        .has-plan {
+            font-weight: bold;
+        }
+    </style>
+</body>
 </html>

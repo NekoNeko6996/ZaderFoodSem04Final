@@ -44,6 +44,12 @@ public class ShoppingListService {
     private EmailService emailService;
     @Autowired
     private UserRepository userRepo;
+    @Autowired
+    private ShoppingListItemRepository shoppingItemRepo;
+    @Autowired
+    private ShoppingListRepository shoppingListRepo;
+    @Autowired
+    private UserPantryRepository pantryRepo;
 
     @Transactional
     public ShoppingList generateOrGetList(Integer userId, LocalDate fromDate, LocalDate toDate) {
@@ -115,17 +121,50 @@ public class ShoppingListService {
         // 4. Lưu vào DB
         List<ShoppingListItem> listItems = new ArrayList<>();
 
-        // Lưu nguyên liệu từ Recipe
         for (Map.Entry<Integer, BigDecimal> entry : ingredientTotals.entrySet()) {
+            Integer ingredientId = entry.getKey();
+            BigDecimal neededQty = entry.getValue(); // VD: Cần 300g
+            String unit = ingredientUnits.get(ingredientId);
+
             ShoppingListItem item = new ShoppingListItem();
             item.setListId(list.getListId());
-            item.setIngredientId(entry.getKey());
-            item.setQuantity(entry.getValue());
-            item.setUnit(ingredientUnits.get(entry.getKey()));
-            item.setIsBought(false);
+            item.setIngredientId(ingredientId);
+            item.setUnit(unit);
 
-            // Lấy tên nguyên liệu để hiển thị (tùy chọn lưu cứng hoặc join bảng)
-            // Ở đây entity ShoppingListItem có IngredientId, ta sẽ join khi query
+            // --- [LOGIC MỚI: TRỪ ĐI LƯỢNG ĐANG CÓ TRONG PANTRY] ---
+            // Tìm trong Pantry xem có không
+            UserPantry inPantry = pantryRepo.findByUserIdAndIngredientId(userId, ingredientId);
+
+            BigDecimal finalQuantityToBuy = neededQty;
+            boolean autoCheck = false;
+
+            if (inPantry != null && inPantry.getQuantity() != null) {
+                // Kiểm tra đơn vị có khớp không (VD: cùng là 'g' hoặc 'ml')
+                // (Lưu ý: Nếu khác đơn vị như 'g' vs 'kg' thì cần logic quy đổi phức tạp hơn, tạm thời so sánh chuỗi)
+                if (unit.equalsIgnoreCase(inPantry.getUnit())) {
+
+                    BigDecimal inStock = inPantry.getQuantity(); // VD: Có 150g
+
+                    if (inStock.compareTo(neededQty) >= 0) {
+                        // Trường hợp 1: Tủ có ĐỦ hoặc DƯ (Có 400g >= Cần 300g)
+                        finalQuantityToBuy = BigDecimal.ZERO;
+                        autoCheck = true; // Tự động gạch đi
+                    } else {
+                        // Trường hợp 2: Tủ có MỘT ÍT (Có 150g < Cần 300g)
+                        // Cần mua = 300 - 150 = 150g
+                        finalQuantityToBuy = neededQty.subtract(inStock);
+                        autoCheck = false; // Vẫn phải đi mua phần thiếu
+                    }
+                }
+            }
+
+            // Lưu số lượng thực tế cần mua
+            // Nếu finalQuantityToBuy là 0 (đã đủ), ta vẫn lưu item nhưng set IsBought=true để user biết là không cần mua
+            item.setQuantity(finalQuantityToBuy);
+            item.setIsBought(autoCheck);
+
+            // Chỉ thêm vào list nếu cần mua > 0 HOẶC user muốn thấy cả những món đã đủ (tùy chọn)
+            // Ở đây mình thêm tất cả để user review được tổng thể
             listItems.add(item);
         }
 
@@ -146,6 +185,15 @@ public class ShoppingListService {
     // Lấy chi tiết list và nhóm theo Category
     public Map<String, List<ShoppingListItemDTO>> getListDetailsGrouped(Integer listId) {
         List<ShoppingListItem> items = itemRepo.findByListId(listId);
+        
+        ShoppingList list = listRepo.findById(listId).orElseThrow();
+        Integer userId = list.getUserId();
+        List<UserPantry> userPantry = pantryRepo.findByUserIdOrderByExpiryDateAsc(userId);
+        
+        Map<Integer, BigDecimal> pantryMap = new HashMap<>();
+        for (UserPantry p : userPantry) {
+            pantryMap.merge(p.getIngredientId(), p.getQuantity(), BigDecimal::add);
+        }
 
         // DTO để chứa thông tin hiển thị (Tên, Ảnh, Category...)
         List<ShoppingListItemDTO> dtos = items.stream().map(item -> {
@@ -167,11 +215,15 @@ public class ShoppingListService {
                     } else {
                         dto.setCategoryName("Other");
                     }
+                    
+                    BigDecimal stock = pantryMap.getOrDefault(item.getIngredientId(), BigDecimal.ZERO);
+                    dto.setPantryStock(stock);
                 }
             } else {
                 dto.setName(item.getCustomItemName());
                 dto.setCategoryName("Custom / Other");
                 dto.setImageUrl(null);
+                dto.setPantryStock(BigDecimal.ZERO);
             }
             return dto;
         }).collect(Collectors.toList());
@@ -182,9 +234,60 @@ public class ShoppingListService {
 
     @Transactional
     public void toggleItemStatus(Integer itemId) {
-        ShoppingListItem item = itemRepo.findById(itemId).orElseThrow();
-        item.setIsBought(!item.getIsBought());
-        itemRepo.save(item);
+        ShoppingListItem item = shoppingItemRepo.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        // Đảo ngược trạng thái
+        boolean newStatus = !Boolean.TRUE.equals(item.getIsBought());
+        item.setIsBought(newStatus);
+        shoppingItemRepo.save(item);
+
+        if (newStatus) {
+            addToPantry(item);
+        }
+    }
+
+    private void addToPantry(ShoppingListItem item) {
+        // 1. Chỉ thêm những món có liên kết với Ingredient (Món custom không có ID thì không thêm được hoặc cần logic riêng)
+        if (item.getIngredientId() == null) {
+            return;
+        }
+
+        // 2. Lấy thông tin User sở hữu Shopping List
+        ShoppingList listHeader = shoppingListRepo.findById(item.getListId())
+                .orElseThrow(() -> new RuntimeException("List not found"));
+        Integer userId = listHeader.getUserId();
+
+        // 3. Kiểm tra xem nguyên liệu này đã có trong tủ chưa
+        UserPantry pantryItem = pantryRepo.findByUserIdAndIngredientId(userId, item.getIngredientId());
+
+        if (pantryItem != null) {
+            // TRƯỜNG HỢP A: Đã có -> Cộng dồn số lượng
+            // (Lưu ý: Cần xử lý quy đổi đơn vị nếu khác nhau, ở đây giả sử cùng đơn vị cho đơn giản)
+            if (pantryItem.getUnit().equalsIgnoreCase(item.getUnit())) {
+                pantryItem.setQuantity(pantryItem.getQuantity().add(item.getQuantity()));
+                pantryItem.setCreatedAt(LocalDateTime.now()); // Update thời gian mới nhất
+                pantryRepo.save(pantryItem);
+            } else {
+                // Khác đơn vị -> Tạo dòng mới (hoặc bạn phải viết hàm convertUnit)
+                createNewPantryItem(userId, item);
+            }
+        } else {
+            // TRƯỜNG HỢP B: Chưa có -> Tạo mới
+            createNewPantryItem(userId, item);
+        }
+    }
+
+    private void createNewPantryItem(Integer userId, ShoppingListItem item) {
+        UserPantry newPantry = new UserPantry();
+        newPantry.setUserId(userId);
+        newPantry.setIngredientId(item.getIngredientId());
+        newPantry.setQuantity(item.getQuantity());
+        newPantry.setUnit(item.getUnit());
+        newPantry.setExpiryDate(null); // [YC] Để null, người dùng nhập sau
+        newPantry.setCreatedAt(LocalDateTime.now());
+
+        pantryRepo.save(newPantry);
     }
 
     public ShoppingList getListById(Integer listId) {

@@ -234,9 +234,10 @@
                                 <div th:each="item : ${pantryItems}" 
                                      class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 relative group hover:shadow-md transition duration-200 overflow-hidden">
 
-                                    <div th:classappend="${item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'bg-red-500' : 
+                                    <div th:classappend="${item.expiryDate == null ? 'bg-gray-300' : 
+                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'bg-red-500' : 
                                          (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(3)) ? 'bg-red-400' : 
-                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(7)) ? 'bg-yellow-400' : 'bg-nutri-green'))}"
+                                         (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(7)) ? 'bg-yellow-400' : 'bg-nutri-green')))}"
                                          class="w-1.5 h-full absolute left-0 top-0"></div>
 
                                     <img th:src="${item.ingredient.imageUrl}"
@@ -251,11 +252,13 @@
                                         </p>
 
                                         <div class="flex items-center gap-1 text-xs font-bold mt-1"
-                                             th:classappend="${item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'text-red-600' : 
-                                             (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(5)) ? 'text-yellow-600' : 'text-green-600')}">
+                                             th:classappend="${item.expiryDate == null ? 'text-gray-400' : 
+                                             (item.expiryDate.isBefore(T(java.time.LocalDate).now()) ? 'text-red-600' : 
+                                             (item.expiryDate.isBefore(T(java.time.LocalDate).now().plusDays(5)) ? 'text-yellow-600' : 'text-green-600'))}">
                                             <span class="material-symbols-outlined text-[14px]">event</span>
-                                            <span th:if="${item.expiryDate.isBefore(T(java.time.LocalDate).now())}">Expired!</span>
-                                            <span th:unless="${item.expiryDate.isBefore(T(java.time.LocalDate).now())}" 
+                                            <span th:if="${item.expiryDate == null}">No Date</span>
+                                            <span th:if="${item.expiryDate != null and item.expiryDate.isBefore(T(java.time.LocalDate).now())}">Expired!</span>
+                                            <span th:if="${item.expiryDate != null and !item.expiryDate.isBefore(T(java.time.LocalDate).now())}" 
                                                   th:text="${#temporals.format(item.expiryDate, 'dd MMM')}">01 Jan</span>
                                         </div>
                                     </div>
@@ -365,7 +368,7 @@
                                 if (recipes.length === 0) {
                                     if (typeof ZaderToast !== 'undefined')
                                         ZaderToast.remove(toastId);
-                                        ZaderToast.show('No matching recipes found based on your items.');
+                                    ZaderToast.show('No matching recipes found based on your items.');
                                     return;
                                 }
 
@@ -445,15 +448,15 @@
                         renderSuggestions(result.value.data);
 
                         console.log(result.value);
-                        if(result.value.data.length <= 0) {
+                        if (result.value.data.length <= 0) {
                             Swal.fire({
-                            title: 'No Recipe Return!',
-                            text: 'Try add some ingredient to your pantry and try again!',
-                            icon: 'error',
-                            timer: 3000,
-                            showConfirmButton: false
-                        });
-                        return;
+                                title: 'No Recipe Return!',
+                                text: 'Try add some ingredient to your pantry and try again!',
+                                icon: 'error',
+                                timer: 3000,
+                                showConfirmButton: false
+                            });
+                            return;
                         }
 
                         Swal.fire({
